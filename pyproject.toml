@@ -4,4 +4,21 @@ version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
-dependencies = []
+dependencies = [
+    "demucs>=4.0.1",
+    "librosa>=0.11.0",
+    "mir-eval>=0.8.2",
+    "nnaudio>=0.3.4",
+    "pretty-midi>=0.2.11",
+    "pydub>=0.25.1",
+    "resampy>=0.4.3",
+    "torchcodec>=0.9.1",
+]
+
+[[tool.uv.index]]
+url = "file:///home/vasilisqq/MY_WORLD/diplom/pytorch-cu128"
+
+[[tool.uv.index]]
+name = "pytorch-cu128"
+url = "https://download.pytorch.org/whl/cu128"
+explicit = true
