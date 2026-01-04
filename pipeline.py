@@ -16,11 +16,13 @@ def quantize_and_reduce_pipeline(
     midi_dir: str | Path,
     *,
     subdivisions_quant: int = 4,
+    include_drums: bool = False,
 ) -> None:
     stems_dir = Path(stems_dir).resolve()
     midi_dir = Path(midi_dir).resolve()
     midi_dir.mkdir(parents=True, exist_ok=True)
 
+    # Use mixture/drums/other only for beat tracking, never for note transcription.
     beat_audio = None
     for name in ["mixture.wav", "drums.wav", "other.wav"]:
         p = stems_dir / name
@@ -55,15 +57,17 @@ def quantize_and_reduce_pipeline(
             subdivisions=subdivisions_quant,
         )
 
+    # NOTE: Drums are intentionally excluded from the playable piano reduction.
     drums_q = None
-    drums_src = midi_dir / "drums.mid"
-    if drums_src.exists():
-        drums_q = quantize_midi_file(
-            drums_src,
-            midi_dir / "drums_q.mid",
-            beat_times,
-            subdivisions=2,
-        )
+    if include_drums:
+        drums_src = midi_dir / "drums.mid"
+        if drums_src.exists():
+            drums_q = quantize_midi_file(
+                drums_src,
+                midi_dir / "drums_q.mid",
+                beat_times,
+                subdivisions=2,
+            )
 
     complete_midi(
         vocals_mid=str(vocals_q),
@@ -72,10 +76,16 @@ def quantize_and_reduce_pipeline(
         drums_mid=str(drums_q) if drums_q else None,
         out_mid=str(midi_dir / "piano_reduction_playable.mid"),
         beat_times=beat_times,
+        include_drums=include_drums,
     )
 
 
-def stems_to_midi(stems_dir: str | Path, midi_dir: str | Path) -> None:
+def stems_to_midi(
+    stems_dir: str | Path,
+    midi_dir: str | Path,
+    *,
+    transcribe_drums: bool = False,
+) -> None:
     stems_dir = Path(stems_dir).resolve()
     midi_dir = Path(midi_dir).resolve()
     midi_dir.mkdir(parents=True, exist_ok=True)
@@ -84,9 +94,10 @@ def stems_to_midi(stems_dir: str | Path, midi_dir: str | Path) -> None:
     stem_to_midi(stems_dir / "bass.wav", midi_dir / "bass.mid")
     stem_to_midi(stems_dir / "other.wav", midi_dir / "other.mid")
 
-    drums_wav = stems_dir / "drums.wav"
-    if drums_wav.exists():
-        stem_to_midi(drums_wav, midi_dir / "drums.mid")
+    if transcribe_drums:
+        drums_wav = stems_dir / "drums.wav"
+        if drums_wav.exists():
+            stem_to_midi(drums_wav, midi_dir / "drums.mid")
 
 
 def _materialize_input_as_output_wav(root: Path, input_name: str, out_wav_name: str = "output.wav") -> Path:
@@ -138,8 +149,8 @@ def run_from_local_file(
         raise FileNotFoundError(f"После demucs не найден vocals.wav в {stems_dir}")
 
     midi_dir = root / "midi_out"
-    stems_to_midi(stems_dir, midi_dir)
-    quantize_and_reduce_pipeline(stems_dir, midi_dir, subdivisions_quant=4)
+    stems_to_midi(stems_dir, midi_dir, transcribe_drums=False)
+    quantize_and_reduce_pipeline(stems_dir, midi_dir, subdivisions_quant=4, include_drums=False)
 
 
 def run_default_paths() -> None:
@@ -150,5 +161,5 @@ def run_default_paths() -> None:
     stems_dir = root / "separated" / "htdemucs" / "output"
     midi_dir = root / "midi_out"
 
-    stems_to_midi(stems_dir, midi_dir)
-    quantize_and_reduce_pipeline(stems_dir, midi_dir, subdivisions_quant=4)
+    stems_to_midi(stems_dir, midi_dir, transcribe_drums=False)
+    quantize_and_reduce_pipeline(stems_dir, midi_dir, subdivisions_quant=4, include_drums=False)

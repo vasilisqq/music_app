@@ -200,37 +200,6 @@ def _monophonic_reduce(
     return out
 
 
-def _remove_harmony_when_melody_active(
-    melody: list[pretty_midi.Note],
-    harmony: list[pretty_midi.Note],
-) -> list[pretty_midi.Note]:
-    if not melody or not harmony:
-        return harmony
-    mel = sorted(melody, key=lambda n: float(n.start))
-    out = []
-    for h in harmony:
-        t = float(h.start) + 1e-6
-        ok = True
-        for m in mel:
-            if float(m.start) <= t < float(m.end):
-                ok = False
-                break
-        if ok:
-            out.append(h)
-    return out
-
-
-def _make_drums_instrument_from_any_notes(pm: pretty_midi.PrettyMIDI) -> pretty_midi.Instrument:
-    inst = pretty_midi.Instrument(program=0, is_drum=True, name="Drums")
-    for n in _iter_notes(pm, drop_drums=False):
-        p = int(_clamp(int(n.pitch), 35, 81))
-        inst.notes.append(pretty_midi.Note(int(n.velocity), p, float(n.start), float(n.end)))
-    inst.notes.sort(key=lambda x: (float(x.start), int(x.pitch)))
-    inst.notes = _merge_adjacent_same_pitch(inst.notes, gap_tol=1e-6)
-    inst.notes = _remove_same_pitch_overlaps(inst.notes)
-    return inst
-
-
 def _pick_melody_skyline(
     notes: list[pretty_midi.Note],
     *,
@@ -273,22 +242,28 @@ def complete_midi(
     out_mid: str,
     *,
     beat_times: list[float],
+    include_drums: bool = False,
 ) -> None:
-    # tighter ranges reduce junk
-    right_range = Range(lo=52, hi=92)  # E3..G6
-    left_range = Range(lo=28, hi=55)   # E1..G3
-    harmony_range = Range(lo=55, hi=88)
+    """Build a 2-hand piano-only reduction.
 
-    # strict filters for playability (tune if becomes too empty)
-    min_note_duration = 0.08
-    min_vel_v = 35
-    min_vel_b = 30
-    min_vel_o = 45
+    Drums are excluded by default to ensure the output is playable on piano only.
+    """
+
+    # tighter ranges reduce junk
+    right_range = Range(lo=52, hi=96)  # E3..C7
+    left_range = Range(lo=28, hi=60)   # E1..C4
+    harmony_range = Range(lo=48, hi=92)  # C3..G6
+
+    # filters for playability (tune if becomes too empty)
+    min_note_duration = 0.06
+    min_vel_v = 30
+    min_vel_b = 25
+    min_vel_o = 28
 
     pm_v = pretty_midi.PrettyMIDI(vocals_mid)
     pm_b = pretty_midi.PrettyMIDI(bass_mid)
     pm_o = pretty_midi.PrettyMIDI(other_mid) if other_mid else None
-    pm_d = pretty_midi.PrettyMIDI(drums_mid) if drums_mid else None
+    pm_d = pretty_midi.PrettyMIDI(drums_mid) if (drums_mid and include_drums) else None
 
     v_notes = _clean_notes(_iter_notes(pm_v, drop_drums=True), pitch_range=right_range, min_dur=min_note_duration, min_vel=min_vel_v)
     b_notes = _clean_notes(_iter_notes(pm_b, drop_drums=True), pitch_range=left_range,  min_dur=min_note_duration, min_vel=min_vel_b)
@@ -297,29 +272,42 @@ def complete_midi(
     if pm_o is not None:
         o_notes = _clean_notes(_iter_notes(pm_o, drop_drums=True), pitch_range=harmony_range, min_dur=min_note_duration, min_vel=min_vel_o)
 
+    # time grids
     grid_mel = _build_subbeat_grid(beat_times, subdivisions=2)  # 1/8
-    grid_har = _build_subbeat_grid(beat_times, subdivisions=1)  # 1/4
+    grid_har = _build_subbeat_grid(beat_times, subdivisions=2)  # 1/8 (denser than before)
 
-    # Bass
-    b_notes = _limit_polyphony_on_grid(b_notes, times=grid_mel, max_notes_per_slice=1, prefer="max_velocity", hand_span_limit=None)
-    bassline = _monophonic_reduce(b_notes, choose_rule="min_pitch")
+    # --- Bass gating: avoid "phantom bass" from separation artifacts ---
+    total_bass_dur = sum(float(n.end) - float(n.start) for n in b_notes)
+    if total_bass_dur < 0.8 or len(b_notes) < 8:
+        b_notes = []
 
-    # Melody (prefer OTHER if present else VOCALS)
-    melody_src = o_notes if o_notes else v_notes
+    # Left hand: allow richer texture (not only monophonic)
+    left_texture: list[pretty_midi.Note] = []
+    if b_notes:
+        # Up to 2 notes per 1/8 slice in LH (bass + fifth/octave possibilities)
+        left_texture = _limit_polyphony_on_grid(
+            b_notes,
+            times=grid_mel,
+            max_notes_per_slice=2,
+            prefer="max_velocity",
+            hand_span_limit=16,
+        )
+
+    # Melody: prefer VOCALS (more stable lead), fallback to OTHER
+    melody_src = v_notes if v_notes else o_notes
     melody = _pick_melody_skyline(melody_src, times=grid_mel)
 
-    # Harmony: very light
+    # Right-hand harmony from OTHER
     harmony: list[pretty_midi.Note] = []
     if o_notes:
         harmony = _limit_polyphony_on_grid(
             o_notes,
             times=grid_har,
-            max_notes_per_slice=1,
+            max_notes_per_slice=3,
             prefer="max_velocity",
             avoid_below_pitch=left_range.hi,
-            hand_span_limit=12,
+            hand_span_limit=14,
         )
-        harmony = _remove_harmony_when_melody_active(melody, harmony)
 
     out_pm = pretty_midi.PrettyMIDI()
     piano_program = 0
@@ -329,22 +317,23 @@ def complete_midi(
 
     right.notes.extend(melody)
     right.notes.extend(harmony)
-    left.notes.extend(bassline)
+    left.notes.extend(left_texture)
 
     right.notes.sort(key=lambda n: (float(n.start), int(n.pitch)))
     left.notes.sort(key=lambda n: (float(n.start), int(n.pitch)))
 
-    right.notes = _merge_adjacent_same_pitch(right.notes, gap_tol=0.02)
+    right.notes = _merge_adjacent_same_pitch(right.notes, gap_tol=0.03)
     right.notes = _remove_same_pitch_overlaps(right.notes)
-    left.notes = _merge_adjacent_same_pitch(left.notes, gap_tol=0.03)
+    left.notes = _merge_adjacent_same_pitch(left.notes, gap_tol=0.04)
     left.notes = _remove_same_pitch_overlaps(left.notes)
 
-    out_pm.instruments.append(right)
-    out_pm.instruments.append(left)
+    if right.notes:
+        out_pm.instruments.append(right)
+    if left.notes:
+        out_pm.instruments.append(left)
 
-    if pm_d is not None:
-        drum_inst = _make_drums_instrument_from_any_notes(pm_d)
-        if drum_inst.notes:
-            out_pm.instruments.append(drum_inst)
+    # Drums are intentionally omitted from the piano reduction.
+    # If you ever need them for debugging, set include_drums=True and add a drum instrument here.
+    _ = pm_d  # keep variable used
 
     out_pm.write(out_mid)
