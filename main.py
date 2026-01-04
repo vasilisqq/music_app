@@ -1,12 +1,13 @@
 from __future__ import annotations
 
-import config  # noqa: F401  (side effects: torch hub dir + sys.path for basic_pitch_torch)
+import config  # noqa: F401
 
-from pipeline import run_default_paths
+from pipeline import run_from_local_file
 
 
 def main() -> None:
-    run_default_paths()
+    # Файл должен лежать рядом с этим main.py
+    run_from_local_file("input.mp3", always_reseparate=False)
 
 
 if __name__ == "__main__":
