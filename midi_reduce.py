@@ -22,8 +22,6 @@ class KeyEstimate:
     confidence: float
 
 
-# Krumhansl-style pitch class profiles (common defaults used in many key-finders).
-# They don't need to be perfect; we only use them as a stabilizer to reduce "out-of-key" noise.
 _MAJOR_PROFILE = [
     6.35, 2.23, 3.48, 2.33, 4.38, 4.09, 2.52, 5.19, 2.39, 3.66, 2.29, 2.88,
 ]
@@ -51,10 +49,6 @@ def _norm(a: list[float]) -> float:
 
 
 def _estimate_key_ks(notes: list[pretty_midi.Note]) -> KeyEstimate:
-    """Very small global key estimator (major/minor) from MIDI notes.
-
-    Uses a pitch-class histogram weighted by (duration * velocity).
-    """
     if not notes:
         return KeyEstimate(tonic_pc=0, mode="major", confidence=0.0)
 
@@ -248,17 +242,11 @@ def _pick_melody_smooth(
     notes: list[pretty_midi.Note],
     *,
     times: list[float],
-    candidates_per_slice: int = 6,
+    candidates_per_slice: int = 8,
     velocity_weight: float = 1.0,
     pitch_weight: float = 0.02,
-    jump_penalty: float = 0.10,
+    jump_penalty: float = 0.08,
 ) -> list[pretty_midi.Note]:
-    """Pick a monophonic melody that changes more smoothly than skyline.
-
-    Greedy (but stable) strategy: at each time slice, choose the note that
-    maximizes a score balancing confidence (velocity), slightly preferring
-    higher pitches, and penalizing large jumps from the previous chosen pitch.
-    """
     if not notes or len(times) < 2:
         return []
 
@@ -275,7 +263,6 @@ def _pick_melody_smooth(
             last_pitch = None
             continue
 
-        # limit candidates for stability / speed
         active.sort(key=lambda n: (int(n.velocity), int(n.pitch)), reverse=True)
         cand = active[:max(1, candidates_per_slice)]
 
@@ -287,7 +274,7 @@ def _pick_melody_smooth(
 
             score = velocity_weight * (v / 127.0) + pitch_weight * (p / 127.0)
             if last_pitch is not None:
-                score -= jump_penalty * (abs(p - last_pitch) / 12.0)  # in octaves
+                score -= jump_penalty * (abs(p - last_pitch) / 12.0)
 
             if score > best_score:
                 best_score = score
@@ -323,8 +310,6 @@ def complete_midi(
     beat_times: list[float],
     include_drums: bool = False,
 ) -> None:
-    """Build a 2-hand piano-only reduction."""
-
     # ranges reduce junk
     right_range = Range(lo=52, hi=96)  # E3..C7
     left_range = Range(lo=28, hi=60)   # E1..C4
@@ -361,7 +346,8 @@ def complete_midi(
             min_vel=config.OTHER_MIN_VEL,
         )
 
-    grid_mel = _build_subbeat_grid(beat_times, subdivisions=2)  # 1/8
+    # More detailed melody grid => more notes / less "stretched" durations
+    grid_mel = _build_subbeat_grid(beat_times, subdivisions=max(1, int(config.MELODY_GRID_SUBDIV)))
     grid_har = _build_subbeat_grid(beat_times, subdivisions=max(1, int(config.HARMONY_GRID_SUBDIV)))
 
     # --- Bass gating: avoid "phantom bass" from separation artifacts ---
@@ -380,8 +366,15 @@ def complete_midi(
             hand_span_limit=int(config.LH_SPAN_LIMIT),
         )
 
-    # Melody: prefer VOCALS
-    melody_src = v_notes if v_notes else o_notes
+    # Melody source selection:
+    # - For instrumental tracks, VOCALS can be empty/weird; OTHER often contains the lead.
+    # - Prefer OTHER if it clearly contains more usable notes.
+    melody_src: list[pretty_midi.Note]
+    if o_notes and (len(o_notes) >= max(20, int(len(v_notes) * 1.2))):
+        melody_src = o_notes
+    else:
+        melody_src = v_notes if v_notes else o_notes
+
     melody = _pick_melody_smooth(
         melody_src,
         times=grid_mel,
@@ -391,13 +384,17 @@ def complete_midi(
         jump_penalty=float(config.MELODY_JUMP_PENALTY),
     )
 
-    # Harmony: slower harmonic rhythm + more notes per chord
+    # Harmony (from OTHER), but if OTHER is used as melody source, reduce harmony density
     harmony: list[pretty_midi.Note] = []
     if o_notes:
+        max_harmony = int(config.HARMONY_MAX_NOTES)
+        if melody_src is o_notes:
+            max_harmony = max(1, max_harmony - 1)
+
         harmony = _limit_polyphony_on_grid(
             o_notes,
             times=grid_har,
-            max_notes_per_slice=max(1, int(config.HARMONY_MAX_NOTES)),
+            max_notes_per_slice=max(1, max_harmony),
             prefer="max_velocity",
             avoid_below_pitch=left_range.hi,
             hand_span_limit=14,
@@ -427,9 +424,9 @@ def complete_midi(
     right.notes.sort(key=lambda n: (float(n.start), int(n.pitch)))
     left.notes.sort(key=lambda n: (float(n.start), int(n.pitch)))
 
-    right.notes = _merge_adjacent_same_pitch(right.notes, gap_tol=0.03)
+    right.notes = _merge_adjacent_same_pitch(right.notes, gap_tol=0.02)
     right.notes = _remove_same_pitch_overlaps(right.notes)
-    left.notes = _merge_adjacent_same_pitch(left.notes, gap_tol=0.04)
+    left.notes = _merge_adjacent_same_pitch(left.notes, gap_tol=0.03)
     left.notes = _remove_same_pitch_overlaps(left.notes)
 
     if right.notes:

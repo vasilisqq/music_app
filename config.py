@@ -20,8 +20,8 @@ sys.path.insert(0, str(BP_REPO_ROOT))
 # Basic Pitch tuning (per stem)
 # ---------------------------------------------------------------------------
 
-# Idea: "other" is the noisiest stem, so use stricter thresholds there.
-# Values are intentionally conservative; tune on your own examples.
+# "other" is the noisiest stem, but making it too strict can delete almost
+# everything. These defaults are softer to keep more musical content.
 BP_VOCALS_ONSET_THRESHOLD: float = 0.42
 BP_VOCALS_FRAME_THRESHOLD: float = 0.25
 BP_VOCALS_MIN_NOTE_LENGTH: float = 45.0
@@ -30,33 +30,30 @@ BP_BASS_ONSET_THRESHOLD: float = 0.50
 BP_BASS_FRAME_THRESHOLD: float = 0.30
 BP_BASS_MIN_NOTE_LENGTH: float = 70.0
 
-BP_OTHER_ONSET_THRESHOLD: float = 0.62
-BP_OTHER_FRAME_THRESHOLD: float = 0.38
-BP_OTHER_MIN_NOTE_LENGTH: float = 110.0
+# softened vs previous commit (to avoid overly sparse MIDI)
+BP_OTHER_ONSET_THRESHOLD: float = 0.52
+BP_OTHER_FRAME_THRESHOLD: float = 0.30
+BP_OTHER_MIN_NOTE_LENGTH: float = 70.0
 
 # ---------------------------------------------------------------------------
 # Piano reduction / musicality knobs
 # ---------------------------------------------------------------------------
 
-# Enable "soft" key/scale locking in the final MIDI reduction.
-# This tries to reduce chromatic out-of-key artifacts by snapping only 1-semitone
-# mistakes to the nearest pitch in the estimated key.
 ENABLE_KEY_LOCK: bool = True
-
-# Maximum semitone shift allowed by key-lock (1 == soft).
 KEY_LOCK_MAX_SHIFT: int = 1
 
-# Melody selection: smoother (less jumping) lead line.
-MELODY_CANDIDATES_PER_SLICE: int = 6
+# Melody selection
+MELODY_GRID_SUBDIV: int = 4  # 1/16 instead of 1/8 => more rhythmic detail
+MELODY_CANDIDATES_PER_SLICE: int = 8
 MELODY_VELOCITY_WEIGHT: float = 1.00
 MELODY_PITCH_WEIGHT: float = 0.02
-MELODY_JUMP_PENALTY: float = 0.10  # higher => smoother but can get stuck
+MELODY_JUMP_PENALTY: float = 0.08
 
 # Harmony extraction from OTHER
-HARMONY_GRID_SUBDIV: int = 1   # 1/4 (slower harmonic rhythm)
-HARMONY_MAX_NOTES: int = 4
-OTHER_MIN_VEL: int = 38
-OTHER_MIN_DUR: float = 0.08
+HARMONY_GRID_SUBDIV: int = 2   # 1/8 (less "too long" than 1/4)
+HARMONY_MAX_NOTES: int = 3
+OTHER_MIN_VEL: int = 30
+OTHER_MIN_DUR: float = 0.06
 
 # Left hand texture (from BASS stem)
 LH_MAX_NOTES: int = 4
