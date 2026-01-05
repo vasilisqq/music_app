@@ -116,7 +116,13 @@ def quantize_pretty_midi_to_beats(
     min_note_steps: int = 1,
     drop_drums: bool = False,
     merge_gap: float = 0.03,
+    start_mode: Literal["nearest", "floor", "ceil"] = "nearest",
 ) -> pretty_midi.PrettyMIDI:
+    """Quantize note starts to a beat grid.
+
+    Note: merge_gap can "swallow" repeated same-pitch notes if too large.
+    For lead lines, setting merge_gap=0 and start_mode="floor" is often safer.
+    """
     grid = _build_subbeat_grid(beat_times, subdivisions=subdivisions)
     if len(grid) < 2:
         raise ValueError("Quantization grid too small")
@@ -147,7 +153,7 @@ def quantize_pretty_midi_to_beats(
             if e0 <= s0:
                 continue
 
-            s = _quantize_time(s0, grid, mode="nearest")
+            s = _quantize_time(s0, grid, mode=start_mode)
             dur0 = e0 - s0
 
             steps = max(1, int(round(dur0 / min_step_sec)))
@@ -182,12 +188,20 @@ def quantize_midi_file(
     beat_times: list[float],
     *,
     subdivisions: int = 4,
+    merge_gap: float = 0.03,
+    start_mode: Literal["nearest", "floor", "ceil"] = "nearest",
 ) -> Path:
     in_mid = Path(in_mid).resolve()
     out_mid = Path(out_mid).resolve()
     out_mid.parent.mkdir(parents=True, exist_ok=True)
 
     pm = pretty_midi.PrettyMIDI(str(in_mid))
-    pm_q = quantize_pretty_midi_to_beats(pm, beat_times, subdivisions=subdivisions)
+    pm_q = quantize_pretty_midi_to_beats(
+        pm,
+        beat_times,
+        subdivisions=subdivisions,
+        merge_gap=merge_gap,
+        start_mode=start_mode,
+    )
     pm_q.write(str(out_mid))
     return out_mid

@@ -43,7 +43,7 @@ def quantize_and_reduce_pipeline(
 
     beat_times = detect_beats_madmom(beat_audio)
 
-    # Ensure required inputs exist (they can be empty MIDIs if stems were silent)
+    # Ensure required inputs exist (they can be empty MIDIs)
     if not (midi_dir / "vocals.mid").exists():
         _write_empty_midi(midi_dir / "vocals.mid")
     if not (midi_dir / "bass.mid").exists():
@@ -62,15 +62,22 @@ def quantize_and_reduce_pipeline(
         subdivisions=subdivisions_quant,
     )
 
-    other_q = None
+    other_used = None
     other_src = midi_dir / "other.mid"
     if other_src.exists():
-        other_q = quantize_midi_file(
-            other_src,
-            midi_dir / "other_q.mid",
-            beat_times,
-            subdivisions=subdivisions_quant,
-        )
+        if config.OTHER_USE_QUANTIZATION:
+            other_q = quantize_midi_file(
+                other_src,
+                midi_dir / "other_q.mid",
+                beat_times,
+                subdivisions=int(config.OTHER_Q_SUBDIVISIONS),
+                merge_gap=float(config.OTHER_Q_MERGE_GAP),
+                start_mode=str(config.OTHER_Q_START_MODE),
+            )
+            other_used = other_q
+        else:
+            # keep raw OTHER to avoid swallowing repeated notes
+            other_used = other_src
 
     # NOTE: Drums are intentionally excluded from the playable piano reduction.
     drums_q = None
@@ -87,7 +94,7 @@ def quantize_and_reduce_pipeline(
     complete_midi(
         vocals_mid=str(vocals_q),
         bass_mid=str(bass_q),
-        other_mid=str(other_q) if other_q else None,
+        other_mid=str(other_used) if other_used else None,
         drums_mid=str(drums_q) if drums_q else None,
         out_mid=str(midi_dir / "piano_reduction_playable.mid"),
         beat_times=beat_times,
@@ -139,9 +146,14 @@ def stems_to_midi(
 
         stem_to_midi(stem_wav, out_mid, params=params)
 
-    transcribe_or_empty("vocals.wav", "vocals.mid", vocals_params)
-    transcribe_or_empty("bass.wav", "bass.mid", bass_params)
-    transcribe_or_empty("other.wav", "other.mid", other_params)
+    if config.USE_ONLY_OTHER:
+        _write_empty_midi(midi_dir / "vocals.mid")
+        _write_empty_midi(midi_dir / "bass.mid")
+        transcribe_or_empty("other.wav", "other.mid", other_params)
+    else:
+        transcribe_or_empty("vocals.wav", "vocals.mid", vocals_params)
+        transcribe_or_empty("bass.wav", "bass.mid", bass_params)
+        transcribe_or_empty("other.wav", "other.mid", other_params)
 
     if transcribe_drums:
         drums_wav = stems_dir / "drums.wav"
@@ -154,10 +166,6 @@ def stems_to_midi(
 
 
 def _materialize_input_as_output_wav(root: Path, input_name: str, out_wav_name: str = "output.wav") -> Path:
-    """
-    Берёт input_name из папки проекта и гарантирует, что появится WAV с фиксированным именем out_wav_name.
-    Так stems от demucs будут в separated/htdemucs/<out_wav_name without ext>/, т.е. .../output/ (как у тебя раньше).
-    """
     input_path = (root / input_name).resolve()
     if not input_path.exists():
         raise FileNotFoundError(f"Файл не найден рядом с кодом: {input_path}")
@@ -165,12 +173,10 @@ def _materialize_input_as_output_wav(root: Path, input_name: str, out_wav_name: 
     out_wav = (root / out_wav_name).resolve()
 
     if input_path.suffix.lower() == ".mp3":
-        # mp3 -> output.wav
         convert_to_wav(input_path, out_wav=out_wav_name)
         return out_wav
 
     if input_path.suffix.lower() == ".wav":
-        # wav -> output.wav (копируем, чтобы имя было стабильным)
         if input_path.resolve() != out_wav:
             shutil.copyfile(str(input_path), str(out_wav))
         return out_wav
@@ -183,21 +189,14 @@ def run_from_local_file(
     *,
     always_reseparate: bool = False,
 ) -> None:
-    """
-    Вариант "как раньше":
-    - файл лежит рядом с кодом
-    - ты указываешь только имя
-    - demucs пишет в separated/htdemucs/output/
-    """
     root = Path(__file__).resolve().parent
 
     wav_path = _materialize_input_as_output_wav(root, input_name, out_wav_name="output.wav")
 
-    stems_dir = root / "separated" / "htdemucs" / wav_path.stem  # => .../output
+    stems_dir = root / "separated" / "htdemucs" / wav_path.stem
     if always_reseparate or (not stems_dir.exists()):
         separate_stems(wav_path)
 
-    # sanity-check: убеждаемся, что separation реально произошёл
     if not (stems_dir / "vocals.wav").exists():
         raise FileNotFoundError(f"После demucs не найден vocals.wav в {stems_dir}")
 
@@ -207,9 +206,6 @@ def run_from_local_file(
 
 
 def run_default_paths() -> None:
-    """
-    Старый режим: ты уже заранее сделал separation, и stems лежат в separated/htdemucs/output/
-    """
     root = Path(__file__).resolve().parent
     stems_dir = root / "separated" / "htdemucs" / "output"
     midi_dir = root / "midi_out"

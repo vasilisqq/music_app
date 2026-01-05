@@ -17,11 +17,27 @@ BP_REPO_ROOT = ROOT / "third_party" / "basic_pitch_torch"
 sys.path.insert(0, str(BP_REPO_ROOT))
 
 # ---------------------------------------------------------------------------
+# Pipeline switches
+# ---------------------------------------------------------------------------
+
+# If True, skip transcription of vocals/bass stems and build everything from OTHER.
+# Useful for instrumental tracks where Demucs stems are misleading/noisy.
+USE_ONLY_OTHER: bool = True
+
+# If True, quantize other.mid into other_q.mid and use it for reduction.
+# If False, reduction uses raw other.mid (keeps more micro-timing and avoids
+# "swallowed" repeated notes).
+OTHER_USE_QUANTIZATION: bool = False
+
+# Quantization settings for OTHER (when OTHER_USE_QUANTIZATION=True)
+OTHER_Q_SUBDIVISIONS: int = 8
+OTHER_Q_START_MODE: str = "floor"   # safer for repeated notes
+OTHER_Q_MERGE_GAP: float = 0.0      # avoid merging repeated same-pitch notes
+
+# ---------------------------------------------------------------------------
 # Stem silence detection
 # ---------------------------------------------------------------------------
 
-# If a stem is quieter than these thresholds, treat it as "silent" and skip
-# transcription (write an empty MIDI instead).
 STEM_SILENCE_RMS_DBFS: float = -62.0
 STEM_SILENCE_PEAK_DBFS: float = -52.0
 
@@ -48,24 +64,20 @@ BP_OTHER_MIN_NOTE_LENGTH: float = 55.0
 ENABLE_KEY_LOCK: bool = True
 KEY_LOCK_MAX_SHIFT: int = 1
 
-# Melody selection
 MELODY_GRID_SUBDIV: int = 4  # 1/16
 MELODY_CANDIDATES_PER_SLICE: int = 8
 MELODY_VELOCITY_WEIGHT: float = 1.00
 MELODY_PITCH_WEIGHT: float = 0.02
 MELODY_JUMP_PENALTY: float = 0.08
 
-# Harmony extraction from OTHER
 HARMONY_GRID_SUBDIV: int = 2   # 1/8
 HARMONY_MAX_NOTES: int = 3
 
-# OTHER post-filters (two levels)
 OTHER_MELODY_MIN_VEL: int = 18
 OTHER_MELODY_MIN_DUR: float = 0.03
 
 OTHER_HARMONY_MIN_VEL: int = 22
 OTHER_HARMONY_MIN_DUR: float = 0.04
 
-# Left hand texture (from BASS stem)
 LH_MAX_NOTES: int = 4
 LH_SPAN_LIMIT: int = 19
