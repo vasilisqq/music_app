@@ -32,6 +32,7 @@ def _build_subbeat_grid(beat_times: list[float], subdivisions: int) -> list[floa
 
 def _quantize_time(t: float, grid: list[float], mode: Literal["nearest", "floor", "ceil"]) -> float:
     import bisect
+
     idx = bisect.bisect_left(grid, t)
 
     if mode == "floor":
@@ -108,6 +109,50 @@ def _remove_same_pitch_overlaps(notes: list[pretty_midi.Note]) -> list[pretty_mi
     return out
 
 
+def _ensure_repeated_notes_not_collapsed(
+    notes_with_steps: list[tuple[pretty_midi.Note, int]],
+    *,
+    grid: list[float],
+    min_step_sec: float,
+    min_dur_sec: float,
+) -> list[pretty_midi.Note]:
+    """Prevent repeated same-pitch notes from collapsing onto the same grid point.
+
+    If two notes with the same pitch quantize to the same start, later notes are
+    pushed forward by at least one grid step (ceil to grid), keeping note count.
+    """
+    by_pitch: dict[int, list[tuple[pretty_midi.Note, int]]] = {}
+    for n, steps in notes_with_steps:
+        by_pitch.setdefault(int(n.pitch), []).append((n, steps))
+
+    out: list[pretty_midi.Note] = []
+    for _, arr in by_pitch.items():
+        arr.sort(key=lambda t: float(t[0].start))
+        prev_start: float | None = None
+
+        for n, steps in arr:
+            s = float(n.start)
+            if prev_start is not None:
+                # Push forward until strictly after prev_start.
+                tries = 0
+                while s <= prev_start + 1e-9 and tries < 8:
+                    s = _quantize_time(s + min_step_sec, grid, mode="ceil")
+                    tries += 1
+
+            e = s + max(1, int(steps)) * min_step_sec
+            e = _clamp(e, s + min_dur_sec, grid[-1])
+            if e <= s + 1e-9:
+                continue
+
+            n.start = float(s)
+            n.end = float(e)
+            prev_start = float(n.start)
+            out.append(n)
+
+    out.sort(key=lambda x: (float(x.start), int(x.pitch)))
+    return out
+
+
 def quantize_pretty_midi_to_beats(
     pm: pretty_midi.PrettyMIDI,
     beat_times: list[float],
@@ -117,11 +162,13 @@ def quantize_pretty_midi_to_beats(
     drop_drums: bool = False,
     merge_gap: float = 0.03,
     start_mode: Literal["nearest", "floor", "ceil"] = "nearest",
+    keep_repeated_notes: bool = False,
 ) -> pretty_midi.PrettyMIDI:
     """Quantize note starts to a beat grid.
 
-    Note: merge_gap can "swallow" repeated same-pitch notes if too large.
-    For lead lines, setting merge_gap=0 and start_mode="floor" is often safer.
+    Note swallowing typically happens when repeated same-pitch notes collapse to
+    the same grid start, then overlap removal shrinks one to zero length.
+    Use keep_repeated_notes=True + merge_gap=0 for lead lines.
     """
     grid = _build_subbeat_grid(beat_times, subdivisions=subdivisions)
     if len(grid) < 2:
@@ -146,7 +193,7 @@ def quantize_pretty_midi_to_beats(
             name=inst.name,
         )
 
-        new_notes: list[pretty_midi.Note] = []
+        notes_with_steps: list[tuple[pretty_midi.Note, int]] = []
         for n in inst.notes:
             s0 = float(n.start)
             e0 = float(n.end)
@@ -158,18 +205,31 @@ def quantize_pretty_midi_to_beats(
 
             steps = max(1, int(round(dur0 / min_step_sec)))
             steps = max(steps, min_note_steps)
-            e = s + steps * min_step_sec
 
+            e = s + steps * min_step_sec
             e = _clamp(e, s + min_dur_sec, grid[-1])
             if e <= s:
                 continue
 
-            new_notes.append(pretty_midi.Note(
-                velocity=int(n.velocity),
-                pitch=int(n.pitch),
-                start=float(s),
-                end=float(e),
+            notes_with_steps.append((
+                pretty_midi.Note(
+                    velocity=int(n.velocity),
+                    pitch=int(n.pitch),
+                    start=float(s),
+                    end=float(e),
+                ),
+                int(steps),
             ))
+
+        if keep_repeated_notes:
+            new_notes = _ensure_repeated_notes_not_collapsed(
+                notes_with_steps,
+                grid=grid,
+                min_step_sec=min_step_sec,
+                min_dur_sec=min_dur_sec,
+            )
+        else:
+            new_notes = [n for n, _ in notes_with_steps]
 
         new_notes.sort(key=lambda x: (float(x.start), int(x.pitch)))
         new_notes = _merge_adjacent_same_pitch(new_notes, gap_tol=merge_gap)
@@ -190,6 +250,7 @@ def quantize_midi_file(
     subdivisions: int = 4,
     merge_gap: float = 0.03,
     start_mode: Literal["nearest", "floor", "ceil"] = "nearest",
+    keep_repeated_notes: bool = False,
 ) -> Path:
     in_mid = Path(in_mid).resolve()
     out_mid = Path(out_mid).resolve()
@@ -202,6 +263,7 @@ def quantize_midi_file(
         subdivisions=subdivisions,
         merge_gap=merge_gap,
         start_mode=start_mode,
+        keep_repeated_notes=keep_repeated_notes,
     )
     pm_q.write(str(out_mid))
     return out_mid

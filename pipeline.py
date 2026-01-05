@@ -31,7 +31,6 @@ def quantize_and_reduce_pipeline(
     midi_dir = Path(midi_dir).resolve()
     midi_dir.mkdir(parents=True, exist_ok=True)
 
-    # Use mixture/drums/other only for beat tracking, never for note transcription.
     beat_audio = None
     for name in ["mixture.wav", "drums.wav", "other.wav"]:
         p = stems_dir / name
@@ -43,7 +42,6 @@ def quantize_and_reduce_pipeline(
 
     beat_times = detect_beats_madmom(beat_audio)
 
-    # Ensure required inputs exist (they can be empty MIDIs)
     if not (midi_dir / "vocals.mid").exists():
         _write_empty_midi(midi_dir / "vocals.mid")
     if not (midi_dir / "bass.mid").exists():
@@ -73,13 +71,12 @@ def quantize_and_reduce_pipeline(
                 subdivisions=int(config.OTHER_Q_SUBDIVISIONS),
                 merge_gap=float(config.OTHER_Q_MERGE_GAP),
                 start_mode=str(config.OTHER_Q_START_MODE),
+                keep_repeated_notes=bool(config.OTHER_Q_KEEP_REPEATED_NOTES),
             )
             other_used = other_q
         else:
-            # keep raw OTHER to avoid swallowing repeated notes
             other_used = other_src
 
-    # NOTE: Drums are intentionally excluded from the playable piano reduction.
     drums_q = None
     if include_drums:
         drums_src = midi_dir / "drums.mid"

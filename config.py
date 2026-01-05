@@ -20,19 +20,15 @@ sys.path.insert(0, str(BP_REPO_ROOT))
 # Pipeline switches
 # ---------------------------------------------------------------------------
 
-# If True, skip transcription of vocals/bass stems and build everything from OTHER.
-# Useful for instrumental tracks where Demucs stems are misleading/noisy.
 USE_ONLY_OTHER: bool = True
 
-# If True, quantize other.mid into other_q.mid and use it for reduction.
-# If False, reduction uses raw other.mid (keeps more micro-timing and avoids
-# "swallowed" repeated notes).
-OTHER_USE_QUANTIZATION: bool = False
+OTHER_USE_QUANTIZATION: bool = True
 
 # Quantization settings for OTHER (when OTHER_USE_QUANTIZATION=True)
 OTHER_Q_SUBDIVISIONS: int = 8
 OTHER_Q_START_MODE: str = "floor"   # safer for repeated notes
 OTHER_Q_MERGE_GAP: float = 0.0      # avoid merging repeated same-pitch notes
+OTHER_Q_KEEP_REPEATED_NOTES: bool = True  # prevent same-pitch repeats collapsing to one
 
 # ---------------------------------------------------------------------------
 # Stem silence detection
