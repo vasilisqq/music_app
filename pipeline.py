@@ -3,13 +3,21 @@ from __future__ import annotations
 import shutil
 from pathlib import Path
 
+import pretty_midi
+
 import config
-from audio_utils import convert_to_wav
+from audio_utils import convert_to_wav, is_wav_silent
 from beats_madmom import detect_beats_madmom
 from midi_quantize import quantize_midi_file
 from midi_reduce import complete_midi
 from separation import separate_stems
 from transcription_basic_pitch import BasicPitchParams, stem_to_midi
+
+
+def _write_empty_midi(path: str | Path) -> None:
+    path = Path(path).resolve()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    pretty_midi.PrettyMIDI().write(str(path))
 
 
 def quantize_and_reduce_pipeline(
@@ -34,6 +42,12 @@ def quantize_and_reduce_pipeline(
         raise FileNotFoundError(f"Не найдено drums.wav/other.wav/mixture.wav в {stems_dir}")
 
     beat_times = detect_beats_madmom(beat_audio)
+
+    # Ensure required inputs exist (they can be empty MIDIs if stems were silent)
+    if not (midi_dir / "vocals.mid").exists():
+        _write_empty_midi(midi_dir / "vocals.mid")
+    if not (midi_dir / "bass.mid").exists():
+        _write_empty_midi(midi_dir / "bass.mid")
 
     vocals_q = quantize_midi_file(
         midi_dir / "vocals.mid",
@@ -107,13 +121,35 @@ def stems_to_midi(
         minimum_note_length=config.BP_OTHER_MIN_NOTE_LENGTH,
     )
 
-    stem_to_midi(stems_dir / "vocals.wav", midi_dir / "vocals.mid", params=vocals_params)
-    stem_to_midi(stems_dir / "bass.wav", midi_dir / "bass.mid", params=bass_params)
-    stem_to_midi(stems_dir / "other.wav", midi_dir / "other.mid", params=other_params)
+    def transcribe_or_empty(stem_name: str, out_name: str, params: BasicPitchParams | None) -> None:
+        stem_wav = stems_dir / stem_name
+        out_mid = midi_dir / out_name
+
+        if not stem_wav.exists():
+            _write_empty_midi(out_mid)
+            return
+
+        if is_wav_silent(
+            stem_wav,
+            rms_dbfs_threshold=float(config.STEM_SILENCE_RMS_DBFS),
+            peak_dbfs_threshold=float(config.STEM_SILENCE_PEAK_DBFS),
+        ):
+            _write_empty_midi(out_mid)
+            return
+
+        stem_to_midi(stem_wav, out_mid, params=params)
+
+    transcribe_or_empty("vocals.wav", "vocals.mid", vocals_params)
+    transcribe_or_empty("bass.wav", "bass.mid", bass_params)
+    transcribe_or_empty("other.wav", "other.mid", other_params)
 
     if transcribe_drums:
         drums_wav = stems_dir / "drums.wav"
-        if drums_wav.exists():
+        if drums_wav.exists() and (not is_wav_silent(
+            drums_wav,
+            rms_dbfs_threshold=float(config.STEM_SILENCE_RMS_DBFS),
+            peak_dbfs_threshold=float(config.STEM_SILENCE_PEAK_DBFS),
+        )):
             stem_to_midi(drums_wav, midi_dir / "drums.mid")
 
 

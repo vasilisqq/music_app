@@ -17,11 +17,18 @@ BP_REPO_ROOT = ROOT / "third_party" / "basic_pitch_torch"
 sys.path.insert(0, str(BP_REPO_ROOT))
 
 # ---------------------------------------------------------------------------
+# Stem silence detection
+# ---------------------------------------------------------------------------
+
+# If a stem is quieter than these thresholds, treat it as "silent" and skip
+# transcription (write an empty MIDI instead).
+STEM_SILENCE_RMS_DBFS: float = -62.0
+STEM_SILENCE_PEAK_DBFS: float = -52.0
+
+# ---------------------------------------------------------------------------
 # Basic Pitch tuning (per stem)
 # ---------------------------------------------------------------------------
 
-# "other" often contains the lead for non-vocal tracks. If it's too strict,
-# the result becomes sparse and "stretched".
 BP_VOCALS_ONSET_THRESHOLD: float = 0.42
 BP_VOCALS_FRAME_THRESHOLD: float = 0.25
 BP_VOCALS_MIN_NOTE_LENGTH: float = 45.0
@@ -30,7 +37,6 @@ BP_BASS_ONSET_THRESHOLD: float = 0.50
 BP_BASS_FRAME_THRESHOLD: float = 0.30
 BP_BASS_MIN_NOTE_LENGTH: float = 70.0
 
-# soften OTHER even more (keep more notes)
 BP_OTHER_ONSET_THRESHOLD: float = 0.48
 BP_OTHER_FRAME_THRESHOLD: float = 0.27
 BP_OTHER_MIN_NOTE_LENGTH: float = 55.0
@@ -54,8 +60,6 @@ HARMONY_GRID_SUBDIV: int = 2   # 1/8
 HARMONY_MAX_NOTES: int = 3
 
 # OTHER post-filters (two levels)
-# - MELODY filters: softer to keep lead line
-# - HARMONY filters: stricter to avoid noisy chord soup
 OTHER_MELODY_MIN_VEL: int = 18
 OTHER_MELODY_MIN_DUR: float = 0.03
 
