@@ -10,6 +10,8 @@ def _build_subbeat_grid(beat_times: list[float], subdivisions: int) -> list[floa
     if len(beat_times) < 2:
         raise ValueError("Need at least 2 beat times to build a grid")
 
+    beat_times = sorted(float(t) for t in beat_times)
+
     diffs = [beat_times[i + 1] - beat_times[i] for i in range(len(beat_times) - 1)]
     diffs = [d for d in diffs if d > 1e-6]
     if not diffs:
@@ -17,7 +19,22 @@ def _build_subbeat_grid(beat_times: list[float], subdivisions: int) -> list[floa
 
     diffs_sorted = sorted(diffs)
     median_dt = diffs_sorted[len(diffs_sorted) // 2]
-    extended = beat_times + [beat_times[-1] + median_dt]
+
+    # IMPORTANT: beat trackers often return the first confident beat well after 0.0
+    # (e.g., intros). If we start the grid at beat_times[0], any notes before that
+    # get clamped to grid[0] and the beginning becomes "silent" after quantization.
+    # Fix: extend beats backwards to 0.0 using the median beat period.
+    first = beat_times[0]
+    prefix: list[float] = []
+    if first > 1e-6:
+        t = first
+        while (t - median_dt) > 0.0 + 1e-6:
+            t -= median_dt
+            prefix.append(t)
+        prefix.append(0.0)
+
+    extended_beats = sorted(set(prefix + beat_times))
+    extended = extended_beats + [extended_beats[-1] + median_dt]
 
     grid: list[float] = []
     for i in range(len(extended) - 1):
@@ -116,11 +133,6 @@ def _ensure_repeated_notes_not_collapsed(
     min_step_sec: float,
     min_dur_sec: float,
 ) -> list[pretty_midi.Note]:
-    """Prevent repeated same-pitch notes from collapsing onto the same grid point.
-
-    If two notes with the same pitch quantize to the same start, later notes are
-    pushed forward by at least one grid step (ceil to grid), keeping note count.
-    """
     by_pitch: dict[int, list[tuple[pretty_midi.Note, int]]] = {}
     for n, steps in notes_with_steps:
         by_pitch.setdefault(int(n.pitch), []).append((n, steps))
@@ -133,7 +145,6 @@ def _ensure_repeated_notes_not_collapsed(
         for n, steps in arr:
             s = float(n.start)
             if prev_start is not None:
-                # Push forward until strictly after prev_start.
                 tries = 0
                 while s <= prev_start + 1e-9 and tries < 8:
                     s = _quantize_time(s + min_step_sec, grid, mode="ceil")
@@ -164,12 +175,6 @@ def quantize_pretty_midi_to_beats(
     start_mode: Literal["nearest", "floor", "ceil"] = "nearest",
     keep_repeated_notes: bool = False,
 ) -> pretty_midi.PrettyMIDI:
-    """Quantize note starts to a beat grid.
-
-    Note swallowing typically happens when repeated same-pitch notes collapse to
-    the same grid start, then overlap removal shrinks one to zero length.
-    Use keep_repeated_notes=True + merge_gap=0 for lead lines.
-    """
     grid = _build_subbeat_grid(beat_times, subdivisions=subdivisions)
     if len(grid) < 2:
         raise ValueError("Quantization grid too small")
