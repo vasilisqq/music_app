@@ -3,12 +3,13 @@ from __future__ import annotations
 import shutil
 from pathlib import Path
 
+import config
 from audio_utils import convert_to_wav
 from beats_madmom import detect_beats_madmom
 from midi_quantize import quantize_midi_file
 from midi_reduce import complete_midi
 from separation import separate_stems
-from transcription_basic_pitch import stem_to_midi
+from transcription_basic_pitch import BasicPitchParams, stem_to_midi
 
 
 def quantize_and_reduce_pipeline(
@@ -90,9 +91,25 @@ def stems_to_midi(
     midi_dir = Path(midi_dir).resolve()
     midi_dir.mkdir(parents=True, exist_ok=True)
 
-    stem_to_midi(stems_dir / "vocals.wav", midi_dir / "vocals.mid")
-    stem_to_midi(stems_dir / "bass.wav", midi_dir / "bass.mid")
-    stem_to_midi(stems_dir / "other.wav", midi_dir / "other.mid")
+    vocals_params = BasicPitchParams(
+        onset_threshold=config.BP_VOCALS_ONSET_THRESHOLD,
+        frame_threshold=config.BP_VOCALS_FRAME_THRESHOLD,
+        minimum_note_length=config.BP_VOCALS_MIN_NOTE_LENGTH,
+    )
+    bass_params = BasicPitchParams(
+        onset_threshold=config.BP_BASS_ONSET_THRESHOLD,
+        frame_threshold=config.BP_BASS_FRAME_THRESHOLD,
+        minimum_note_length=config.BP_BASS_MIN_NOTE_LENGTH,
+    )
+    other_params = BasicPitchParams(
+        onset_threshold=config.BP_OTHER_ONSET_THRESHOLD,
+        frame_threshold=config.BP_OTHER_FRAME_THRESHOLD,
+        minimum_note_length=config.BP_OTHER_MIN_NOTE_LENGTH,
+    )
+
+    stem_to_midi(stems_dir / "vocals.wav", midi_dir / "vocals.mid", params=vocals_params)
+    stem_to_midi(stems_dir / "bass.wav", midi_dir / "bass.mid", params=bass_params)
+    stem_to_midi(stems_dir / "other.wav", midi_dir / "other.mid", params=other_params)
 
     if transcribe_drums:
         drums_wav = stems_dir / "drums.wav"

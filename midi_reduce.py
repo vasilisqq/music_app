@@ -70,7 +70,6 @@ def _estimate_key_ks(notes: list[pretty_midi.Note]) -> KeyEstimate:
 
     hist = [x / s for x in hist]
 
-    # Normalize profiles for dot-product comparison
     maj_norm = _norm(_MAJOR_PROFILE)
     min_norm = _norm(_MINOR_PROFILE)
 
@@ -96,7 +95,6 @@ def _estimate_key_ks(notes: list[pretty_midi.Note]) -> KeyEstimate:
 
 
 def _scale_pcs(tonic_pc: int, mode: Literal["major", "minor"]) -> set[int]:
-    # Natural minor is good enough as a "soft" stabilizer.
     degrees = {0, 2, 4, 5, 7, 9, 11} if mode == "major" else {0, 2, 3, 5, 7, 8, 10}
     return {(_pc(tonic_pc) + d) % 12 for d in degrees}
 
@@ -106,7 +104,6 @@ def _soft_snap_pitch_to_scale(pitch: int, *, allowed_pcs: set[int], max_shift: i
     if _pc(p) in allowed_pcs:
         return p
 
-    # "soft": only snap if we can fix it with <= max_shift semitones
     for d in range(1, max_shift + 1):
         up = p + d
         dn = p - d
@@ -114,7 +111,6 @@ def _soft_snap_pitch_to_scale(pitch: int, *, allowed_pcs: set[int], max_shift: i
         dn_ok = 21 <= dn <= 108 and (_pc(dn) in allowed_pcs)
 
         if dn_ok and up_ok:
-            # tie-break: prefer downward correction (usually safer for RH) if equal
             return dn
         if dn_ok:
             return dn
@@ -178,14 +174,6 @@ def _clean_notes(
         out.append(n)
     out.sort(key=lambda n: (float(n.start), int(n.pitch)))
     return out
-
-
-def _time_boundaries(notes: list[pretty_midi.Note]) -> list[float]:
-    tset = set()
-    for n in notes:
-        tset.add(float(n.start))
-        tset.add(float(n.end))
-    return sorted(tset)
 
 
 def _active_notes_at(
@@ -256,11 +244,21 @@ def _limit_polyphony_on_grid(
     return out
 
 
-def _pick_melody_skyline(
+def _pick_melody_smooth(
     notes: list[pretty_midi.Note],
     *,
     times: list[float],
+    candidates_per_slice: int = 6,
+    velocity_weight: float = 1.0,
+    pitch_weight: float = 0.02,
+    jump_penalty: float = 0.10,
 ) -> list[pretty_midi.Note]:
+    """Pick a monophonic melody that changes more smoothly than skyline.
+
+    Greedy (but stable) strategy: at each time slice, choose the note that
+    maximizes a score balancing confidence (velocity), slightly preferring
+    higher pitches, and penalizing large jumps from the previous chosen pitch.
+    """
     if not notes or len(times) < 2:
         return []
 
@@ -268,22 +266,47 @@ def _pick_melody_skyline(
     out: list[pretty_midi.Note] = []
     start_idx = 0
 
-    last_pitch = None
+    last_pitch: int | None = None
+
     for a, b in zip(times, times[1:]):
         probe_t = a + 1e-6
         active, start_idx = _active_notes_at(notes_sorted, probe_t, start_idx)
         if not active:
             last_pitch = None
             continue
-        best = max(active, key=lambda n: (int(n.pitch), int(n.velocity)))
+
+        # limit candidates for stability / speed
+        active.sort(key=lambda n: (int(n.velocity), int(n.pitch)), reverse=True)
+        cand = active[:max(1, candidates_per_slice)]
+
+        best = None
+        best_score = -1e18
+        for n in cand:
+            p = int(n.pitch)
+            v = int(n.velocity)
+
+            score = velocity_weight * (v / 127.0) + pitch_weight * (p / 127.0)
+            if last_pitch is not None:
+                score -= jump_penalty * (abs(p - last_pitch) / 12.0)  # in octaves
+
+            if score > best_score:
+                best_score = score
+                best = n
+
+        if best is None:
+            last_pitch = None
+            continue
+
         p = int(best.pitch)
         v = int(best.velocity)
-        if last_pitch == p and out:
+
+        if out and int(out[-1].pitch) == p:
             out[-1].end = float(b)
             out[-1].velocity = max(int(out[-1].velocity), v)
         else:
             out.append(pretty_midi.Note(v, p, float(a), float(b)))
-            last_pitch = p
+
+        last_pitch = p
 
     out = _merge_adjacent_same_pitch(out, gap_tol=0.02)
     out = _remove_same_pitch_overlaps(out)
@@ -302,64 +325,94 @@ def complete_midi(
 ) -> None:
     """Build a 2-hand piano-only reduction."""
 
-    # tighter ranges reduce junk
+    # ranges reduce junk
     right_range = Range(lo=52, hi=96)  # E3..C7
     left_range = Range(lo=28, hi=60)   # E1..C4
     harmony_range = Range(lo=48, hi=92)  # C3..G6
 
-    # filters for playability (tune if becomes too empty)
     min_note_duration = 0.06
     min_vel_v = 30
     min_vel_b = 25
-    min_vel_o = 28
 
     pm_v = pretty_midi.PrettyMIDI(vocals_mid)
     pm_b = pretty_midi.PrettyMIDI(bass_mid)
     pm_o = pretty_midi.PrettyMIDI(other_mid) if other_mid else None
     _ = pretty_midi.PrettyMIDI(drums_mid) if (drums_mid and include_drums) else None
 
-    v_notes = _clean_notes(_iter_notes(pm_v, drop_drums=True), pitch_range=right_range, min_dur=min_note_duration, min_vel=min_vel_v)
-    b_notes = _clean_notes(_iter_notes(pm_b, drop_drums=True), pitch_range=left_range,  min_dur=min_note_duration, min_vel=min_vel_b)
+    v_notes = _clean_notes(
+        _iter_notes(pm_v, drop_drums=True),
+        pitch_range=right_range,
+        min_dur=min_note_duration,
+        min_vel=min_vel_v,
+    )
+    b_notes = _clean_notes(
+        _iter_notes(pm_b, drop_drums=True),
+        pitch_range=left_range,
+        min_dur=min_note_duration,
+        min_vel=min_vel_b,
+    )
 
     o_notes: list[pretty_midi.Note] = []
     if pm_o is not None:
-        o_notes = _clean_notes(_iter_notes(pm_o, drop_drums=True), pitch_range=harmony_range, min_dur=min_note_duration, min_vel=min_vel_o)
+        o_notes = _clean_notes(
+            _iter_notes(pm_o, drop_drums=True),
+            pitch_range=harmony_range,
+            min_dur=config.OTHER_MIN_DUR,
+            min_vel=config.OTHER_MIN_VEL,
+        )
 
-    # time grids
     grid_mel = _build_subbeat_grid(beat_times, subdivisions=2)  # 1/8
-    grid_har = _build_subbeat_grid(beat_times, subdivisions=2)  # 1/8
+    grid_har = _build_subbeat_grid(beat_times, subdivisions=max(1, int(config.HARMONY_GRID_SUBDIV)))
 
     # --- Bass gating: avoid "phantom bass" from separation artifacts ---
     total_bass_dur = sum(float(n.end) - float(n.start) for n in b_notes)
     if total_bass_dur < 0.8 or len(b_notes) < 8:
         b_notes = []
 
-    # Left hand texture
+    # Left hand texture (can be complex)
     left_texture: list[pretty_midi.Note] = []
     if b_notes:
         left_texture = _limit_polyphony_on_grid(
             b_notes,
             times=grid_mel,
-            max_notes_per_slice=2,
+            max_notes_per_slice=max(1, int(config.LH_MAX_NOTES)),
             prefer="max_velocity",
-            hand_span_limit=16,
+            hand_span_limit=int(config.LH_SPAN_LIMIT),
         )
 
-    # Melody: prefer VOCALS (more stable lead), fallback to OTHER
+    # Melody: prefer VOCALS
     melody_src = v_notes if v_notes else o_notes
-    melody = _pick_melody_skyline(melody_src, times=grid_mel)
+    melody = _pick_melody_smooth(
+        melody_src,
+        times=grid_mel,
+        candidates_per_slice=int(config.MELODY_CANDIDATES_PER_SLICE),
+        velocity_weight=float(config.MELODY_VELOCITY_WEIGHT),
+        pitch_weight=float(config.MELODY_PITCH_WEIGHT),
+        jump_penalty=float(config.MELODY_JUMP_PENALTY),
+    )
 
-    # Right-hand harmony from OTHER
+    # Harmony: slower harmonic rhythm + more notes per chord
     harmony: list[pretty_midi.Note] = []
     if o_notes:
         harmony = _limit_polyphony_on_grid(
             o_notes,
             times=grid_har,
-            max_notes_per_slice=3,
+            max_notes_per_slice=max(1, int(config.HARMONY_MAX_NOTES)),
             prefer="max_velocity",
             avoid_below_pitch=left_range.hi,
             hand_span_limit=14,
         )
+
+    # --- Soft key-lock (scale snapping) ---
+    if config.ENABLE_KEY_LOCK:
+        key_basis = melody + left_texture
+        if not key_basis:
+            key_basis = melody + harmony + left_texture
+        key = _estimate_key_ks(key_basis)
+
+        melody = _soft_snap_notes_to_key(melody, key=key, max_shift=config.KEY_LOCK_MAX_SHIFT)
+        harmony = _soft_snap_notes_to_key(harmony, key=key, max_shift=config.KEY_LOCK_MAX_SHIFT)
+        left_texture = _soft_snap_notes_to_key(left_texture, key=key, max_shift=config.KEY_LOCK_MAX_SHIFT)
 
     out_pm = pretty_midi.PrettyMIDI()
     piano_program = 0
@@ -378,12 +431,6 @@ def complete_midi(
     right.notes = _remove_same_pitch_overlaps(right.notes)
     left.notes = _merge_adjacent_same_pitch(left.notes, gap_tol=0.04)
     left.notes = _remove_same_pitch_overlaps(left.notes)
-
-    # --- Soft key-lock (scale snapping) ---
-    if config.ENABLE_KEY_LOCK:
-        key = _estimate_key_ks(right.notes + left.notes)
-        right.notes = _soft_snap_notes_to_key(right.notes, key=key, max_shift=config.KEY_LOCK_MAX_SHIFT)
-        left.notes = _soft_snap_notes_to_key(left.notes, key=key, max_shift=config.KEY_LOCK_MAX_SHIFT)
 
     if right.notes:
         out_pm.instruments.append(right)
