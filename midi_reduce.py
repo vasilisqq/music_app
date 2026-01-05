@@ -337,13 +337,21 @@ def complete_midi(
         min_vel=min_vel_b,
     )
 
-    o_notes: list[pretty_midi.Note] = []
+    o_notes_melody: list[pretty_midi.Note] = []
+    o_notes_harmony: list[pretty_midi.Note] = []
     if pm_o is not None:
-        o_notes = _clean_notes(
-            _iter_notes(pm_o, drop_drums=True),
+        raw_o = _iter_notes(pm_o, drop_drums=True)
+        o_notes_melody = _clean_notes(
+            raw_o,
             pitch_range=harmony_range,
-            min_dur=config.OTHER_MIN_DUR,
-            min_vel=config.OTHER_MIN_VEL,
+            min_dur=float(config.OTHER_MELODY_MIN_DUR),
+            min_vel=int(config.OTHER_MELODY_MIN_VEL),
+        )
+        o_notes_harmony = _clean_notes(
+            raw_o,
+            pitch_range=harmony_range,
+            min_dur=float(config.OTHER_HARMONY_MIN_DUR),
+            min_vel=int(config.OTHER_HARMONY_MIN_VEL),
         )
 
     # More detailed melody grid => more notes / less "stretched" durations
@@ -368,12 +376,13 @@ def complete_midi(
 
     # Melody source selection:
     # - For instrumental tracks, VOCALS can be empty/weird; OTHER often contains the lead.
-    # - Prefer OTHER if it clearly contains more usable notes.
-    melody_src: list[pretty_midi.Note]
-    if o_notes and (len(o_notes) >= max(20, int(len(v_notes) * 1.2))):
-        melody_src = o_notes
+    # - Prefer OTHER (melody-cleaned) if it clearly contains more usable notes.
+    if o_notes_melody and (len(o_notes_melody) >= max(20, int(len(v_notes) * 1.2))):
+        melody_src = o_notes_melody
+        used_other_as_melody = True
     else:
-        melody_src = v_notes if v_notes else o_notes
+        melody_src = v_notes if v_notes else o_notes_melody
+        used_other_as_melody = (melody_src is o_notes_melody)
 
     melody = _pick_melody_smooth(
         melody_src,
@@ -386,13 +395,13 @@ def complete_midi(
 
     # Harmony (from OTHER), but if OTHER is used as melody source, reduce harmony density
     harmony: list[pretty_midi.Note] = []
-    if o_notes:
+    if o_notes_harmony:
         max_harmony = int(config.HARMONY_MAX_NOTES)
-        if melody_src is o_notes:
+        if used_other_as_melody:
             max_harmony = max(1, max_harmony - 1)
 
         harmony = _limit_polyphony_on_grid(
-            o_notes,
+            o_notes_harmony,
             times=grid_har,
             max_notes_per_slice=max(1, max_harmony),
             prefer="max_velocity",
