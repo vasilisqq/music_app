@@ -274,20 +274,9 @@ def complete_midi(
     pm_v = pretty_midi.PrettyMIDI(vocals_mid)
     pm_b = pretty_midi.PrettyMIDI(bass_mid)
     pm_o = pretty_midi.PrettyMIDI(other_mid) if other_mid else None
-    _ = pretty_midi.PrettyMIDI(drums_mid) if (drums_mid and include_drums) else None
 
-    v_notes = _clean_notes(
-        _iter_notes(pm_v, drop_drums=True),
-        pitch_range=right_range,
-        min_dur=min_note_duration,
-        min_vel=min_vel_v,
-    )
-    b_notes = _clean_notes(
-        _iter_notes(pm_b, drop_drums=True),
-        pitch_range=left_range,
-        min_dur=min_note_duration,
-        min_vel=min_vel_b,
-    )
+    v_notes = _clean_notes(_iter_notes(pm_v, drop_drums=True), pitch_range=right_range, min_dur=min_note_duration, min_vel=min_vel_v)
+    b_notes = _clean_notes(_iter_notes(pm_b, drop_drums=True), pitch_range=left_range, min_dur=min_note_duration, min_vel=min_vel_b)
 
     raw_o: list[pretty_midi.Note] = []
     o_notes_harmony: list[pretty_midi.Note] = []
@@ -300,12 +289,11 @@ def complete_midi(
             min_vel=int(config.OTHER_HARMONY_MIN_VEL),
         )
 
-    # Bass gating
+    # Left texture stays as-is
     total_bass_dur = sum(float(n.end) - float(n.start) for n in b_notes)
     if total_bass_dur < 0.6 or len(b_notes) < 6:
         b_notes = []
 
-    # Left texture
     left_texture: list[pretty_midi.Note] = []
     if b_notes:
         grid_mel = _build_subbeat_grid(beat_times, subdivisions=max(1, int(config.MELODY_GRID_SUBDIV)))
@@ -317,31 +305,31 @@ def complete_midi(
             hand_span_limit=int(config.LH_SPAN_LIMIT),
         )
 
-    # Dense OTHER mode
+    # Dense OTHER
     if bool(getattr(config, "OTHER_DENSE_MODE", False)) and raw_o:
-        dense_grid = _build_subbeat_grid(
-            beat_times,
-            subdivisions=max(2, int(getattr(config, "OTHER_DENSE_GRID_SUBDIV", 8))),
-        )
+        dense_grid = _build_subbeat_grid(beat_times, subdivisions=max(2, int(getattr(config, "OTHER_DENSE_GRID_SUBDIV", 12))))
 
         src = o_notes_harmony if o_notes_harmony else raw_o
+        src = _add_hold(src, float(getattr(config, "OTHER_DENSE_HOLD_SEC", 0.18)))
 
-        # 1) Extend note ends a bit so short notes are still "active" at probe time.
-        src = _add_hold(src, float(getattr(config, "OTHER_DENSE_HOLD_SEC", 0.0)))
-
-        # 2) Light velocity filter to drop extreme junk, but keep lots of notes.
-        src = _clean_notes(src, pitch_range=harmony_range, min_dur=0.0, min_vel=int(getattr(config, "OTHER_DENSE_MIN_VEL", 6)))
+        # minimal filtering here; rely on max_notes_per_slice
+        src = _clean_notes(
+            src,
+            pitch_range=harmony_range,
+            min_dur=0.0,
+            min_vel=int(getattr(config, "OTHER_DENSE_MIN_VEL", 1)),
+        )
 
         right_dense = _limit_polyphony_on_grid(
             src,
             times=dense_grid,
-            max_notes_per_slice=max(2, int(getattr(config, "OTHER_DENSE_MAX_NOTES", 8))),
+            max_notes_per_slice=max(2, int(getattr(config, "OTHER_DENSE_MAX_NOTES", 12))),
             prefer="max_velocity",
             avoid_below_pitch=left_range.hi,
             hand_span_limit=getattr(config, "OTHER_DENSE_HAND_SPAN", None),
         )
 
-        # Key-lock is disabled by default for dense mode (key estimate often wrong).
+        # Keep key-lock off by default for dense mode
         if config.ENABLE_KEY_LOCK:
             key_basis = right_dense + left_texture
             key = _estimate_key_ks(key_basis)
@@ -349,10 +337,8 @@ def complete_midi(
             left_texture = _soft_snap_notes_to_key(left_texture, key=key, max_shift=config.KEY_LOCK_MAX_SHIFT)
 
         out_pm = pretty_midi.PrettyMIDI()
-        piano_program = 0
-
-        right = pretty_midi.Instrument(program=piano_program, is_drum=False, name="Piano RH")
-        left = pretty_midi.Instrument(program=piano_program, is_drum=False, name="Piano LH")
+        right = pretty_midi.Instrument(program=0, is_drum=False, name="Piano RH")
+        left = pretty_midi.Instrument(program=0, is_drum=False, name="Piano LH")
 
         right.notes.extend(right_dense)
         left.notes.extend(left_texture)
@@ -373,19 +359,5 @@ def complete_midi(
         out_pm.write(out_mid)
         return
 
-    # Fallback: if dense is off, just output OTHER cleaned (still playable-ish)
-    if raw_o:
-        out_pm = pretty_midi.PrettyMIDI()
-        piano_program = 0
-        right = pretty_midi.Instrument(program=piano_program, is_drum=False, name="Piano")
-        right.notes.extend(_clean_notes(raw_o, pitch_range=harmony_range, min_dur=float(config.OTHER_HARMONY_MIN_DUR), min_vel=int(config.OTHER_HARMONY_MIN_VEL)))
-        right.notes.sort(key=lambda n: (float(n.start), int(n.pitch)))
-        right.notes = _merge_adjacent_same_pitch(right.notes, gap_tol=0.02)
-        right.notes = _remove_same_pitch_overlaps(right.notes)
-        if right.notes:
-            out_pm.instruments.append(right)
-        out_pm.write(out_mid)
-        return
-
-    # Nothing to do
+    # fallback: empty
     pretty_midi.PrettyMIDI().write(out_mid)

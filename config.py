@@ -7,12 +7,10 @@ import torch
 
 ROOT = Path(__file__).resolve().parent
 
-# Torch hub cache inside repo
 PROJECT_HUB_DIR = ROOT / ".torch_hub"
 PROJECT_HUB_DIR.mkdir(parents=True, exist_ok=True)
 torch.hub.set_dir(str(PROJECT_HUB_DIR))
 
-# basic-pitch-torch as vendored dependency
 BP_REPO_ROOT = ROOT / "third_party" / "basic_pitch_torch"
 sys.path.insert(0, str(BP_REPO_ROOT))
 
@@ -21,29 +19,27 @@ sys.path.insert(0, str(BP_REPO_ROOT))
 # ---------------------------------------------------------------------------
 
 USE_ONLY_OTHER: bool = True
-
 OTHER_USE_QUANTIZATION: bool = True
 
 # Quantization settings for OTHER (when OTHER_USE_QUANTIZATION=True)
 OTHER_Q_SUBDIVISIONS: int = 8
-OTHER_Q_START_MODE: str = "floor"   # safer for repeated notes
-OTHER_Q_MERGE_GAP: float = 0.0      # avoid merging repeated same-pitch notes
+OTHER_Q_START_MODE: str = "floor"
+OTHER_Q_MERGE_GAP: float = 0.0
 OTHER_Q_KEEP_REPEATED_NOTES: bool = True
 
-# If True, build playable more directly from OTHER (dense texture).
+# Dense playable from OTHER
 OTHER_DENSE_MODE: bool = True
 
-# Dense mode: more notes per slice for a fuller transcription.
-OTHER_DENSE_GRID_SUBDIV: int = 8
-OTHER_DENSE_MAX_NOTES: int = 8
-OTHER_DENSE_HAND_SPAN: int | None = None  # disable span collapsing
+# Make texture denser (more notes kept)
+OTHER_DENSE_GRID_SUBDIV: int = 12
+OTHER_DENSE_MAX_NOTES: int = 12
+OTHER_DENSE_HAND_SPAN: int | None = None
 
-# When True, keep more notes by extending each chosen note by "hold" seconds.
-# This increases the chance a note stays active at the probe time in the slice.
-OTHER_DENSE_HOLD_SEC: float = 0.08
+# Longer hold => more short notes survive slicing
+OTHER_DENSE_HOLD_SEC: float = 0.18
 
-# Filter out extremely low-velocity junk in dense mode.
-OTHER_DENSE_MIN_VEL: int = 6
+# Very low threshold; rely on later limiting instead of pre-filtering
+OTHER_DENSE_MIN_VEL: int = 1
 
 # ---------------------------------------------------------------------------
 # Stem silence detection
@@ -72,8 +68,6 @@ BP_OTHER_MIN_NOTE_LENGTH: float = 55.0
 # Piano reduction / musicality knobs
 # ---------------------------------------------------------------------------
 
-# Key-lock can push notes to the nearest scale tone. If the key estimate is wrong
-# (very common on dense/polyphonic MIDI), it produces "wrong harmony".
 ENABLE_KEY_LOCK: bool = False
 KEY_LOCK_MAX_SHIFT: int = 1
 
