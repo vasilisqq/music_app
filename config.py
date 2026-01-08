@@ -28,7 +28,7 @@ OTHER_USE_QUANTIZATION: bool = True
 OTHER_Q_SUBDIVISIONS: int = 8
 OTHER_Q_START_MODE: str = "floor"   # safer for repeated notes
 OTHER_Q_MERGE_GAP: float = 0.0      # avoid merging repeated same-pitch notes
-OTHER_Q_KEEP_REPEATED_NOTES: bool = True  # prevent same-pitch repeats collapsing to one
+OTHER_Q_KEEP_REPEATED_NOTES: bool = True
 
 # ---------------------------------------------------------------------------
 # Stem silence detection
@@ -61,19 +61,20 @@ ENABLE_KEY_LOCK: bool = True
 KEY_LOCK_MAX_SHIFT: int = 1
 
 MELODY_GRID_SUBDIV: int = 4  # 1/16
-MELODY_CANDIDATES_PER_SLICE: int = 8
+MELODY_CANDIDATES_PER_SLICE: int = 10
 MELODY_VELOCITY_WEIGHT: float = 1.00
-MELODY_PITCH_WEIGHT: float = 0.02
-MELODY_JUMP_PENALTY: float = 0.08
+MELODY_PITCH_WEIGHT: float = 0.015
+MELODY_JUMP_PENALTY: float = 0.06
 
 HARMONY_GRID_SUBDIV: int = 2   # 1/8
-HARMONY_MAX_NOTES: int = 3
+HARMONY_MAX_NOTES: int = 4
 
-OTHER_MELODY_MIN_VEL: int = 18
-OTHER_MELODY_MIN_DUR: float = 0.03
+# Softer cleaning for OTHER-derived content to keep more notes.
+OTHER_MELODY_MIN_VEL: int = 10
+OTHER_MELODY_MIN_DUR: float = 0.015
 
-OTHER_HARMONY_MIN_VEL: int = 22
-OTHER_HARMONY_MIN_DUR: float = 0.04
+OTHER_HARMONY_MIN_VEL: int = 14
+OTHER_HARMONY_MIN_DUR: float = 0.02
 
 LH_MAX_NOTES: int = 4
 LH_SPAN_LIMIT: int = 19

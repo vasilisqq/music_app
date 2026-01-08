@@ -242,10 +242,10 @@ def _pick_melody_smooth(
     notes: list[pretty_midi.Note],
     *,
     times: list[float],
-    candidates_per_slice: int = 8,
+    candidates_per_slice: int = 10,
     velocity_weight: float = 1.0,
-    pitch_weight: float = 0.02,
-    jump_penalty: float = 0.08,
+    pitch_weight: float = 0.015,
+    jump_penalty: float = 0.06,
 ) -> list[pretty_midi.Note]:
     if not notes or len(times) < 2:
         return []
@@ -313,11 +313,11 @@ def complete_midi(
     # ranges reduce junk
     right_range = Range(lo=52, hi=96)  # E3..C7
     left_range = Range(lo=28, hi=60)   # E1..C4
-    harmony_range = Range(lo=48, hi=92)  # C3..G6
+    harmony_range = Range(lo=45, hi=96)  # a bit wider to keep more content
 
-    min_note_duration = 0.06
-    min_vel_v = 30
-    min_vel_b = 25
+    min_note_duration = 0.05
+    min_vel_v = 25
+    min_vel_b = 20
 
     pm_v = pretty_midi.PrettyMIDI(vocals_mid)
     pm_b = pretty_midi.PrettyMIDI(bass_mid)
@@ -354,16 +354,13 @@ def complete_midi(
             min_vel=int(config.OTHER_HARMONY_MIN_VEL),
         )
 
-    # More detailed melody grid => more notes / less "stretched" durations
     grid_mel = _build_subbeat_grid(beat_times, subdivisions=max(1, int(config.MELODY_GRID_SUBDIV)))
     grid_har = _build_subbeat_grid(beat_times, subdivisions=max(1, int(config.HARMONY_GRID_SUBDIV)))
 
-    # --- Bass gating: avoid "phantom bass" from separation artifacts ---
     total_bass_dur = sum(float(n.end) - float(n.start) for n in b_notes)
-    if total_bass_dur < 0.8 or len(b_notes) < 8:
+    if total_bass_dur < 0.6 or len(b_notes) < 6:
         b_notes = []
 
-    # Left hand texture (can be complex)
     left_texture: list[pretty_midi.Note] = []
     if b_notes:
         left_texture = _limit_polyphony_on_grid(
@@ -374,10 +371,7 @@ def complete_midi(
             hand_span_limit=int(config.LH_SPAN_LIMIT),
         )
 
-    # Melody source selection:
-    # - For instrumental tracks, VOCALS can be empty/weird; OTHER often contains the lead.
-    # - Prefer OTHER (melody-cleaned) if it clearly contains more usable notes.
-    if o_notes_melody and (len(o_notes_melody) >= max(20, int(len(v_notes) * 1.2))):
+    if o_notes_melody and (len(o_notes_melody) >= max(12, int(len(v_notes) * 1.1))):
         melody_src = o_notes_melody
         used_other_as_melody = True
     else:
@@ -393,12 +387,11 @@ def complete_midi(
         jump_penalty=float(config.MELODY_JUMP_PENALTY),
     )
 
-    # Harmony (from OTHER), but if OTHER is used as melody source, reduce harmony density
     harmony: list[pretty_midi.Note] = []
     if o_notes_harmony:
         max_harmony = int(config.HARMONY_MAX_NOTES)
         if used_other_as_melody:
-            max_harmony = max(1, max_harmony - 1)
+            max_harmony = max(1, max_harmony - 0)
 
         harmony = _limit_polyphony_on_grid(
             o_notes_harmony,
@@ -406,10 +399,9 @@ def complete_midi(
             max_notes_per_slice=max(1, max_harmony),
             prefer="max_velocity",
             avoid_below_pitch=left_range.hi,
-            hand_span_limit=14,
+            hand_span_limit=16,
         )
 
-    # --- Soft key-lock (scale snapping) ---
     if config.ENABLE_KEY_LOCK:
         key_basis = melody + left_texture
         if not key_basis:
