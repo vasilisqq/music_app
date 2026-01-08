@@ -19,10 +19,13 @@ sys.path.insert(0, str(BP_REPO_ROOT))
 # ---------------------------------------------------------------------------
 
 USE_ONLY_OTHER: bool = True
-OTHER_USE_QUANTIZATION: bool = True
+
+# Quantization for OTHER makes timing/durations more uniform and often removes
+# micro-rhythm details. For denser + more varied results, keep it off by default.
+OTHER_USE_QUANTIZATION: bool = False
 
 # Quantization settings for OTHER (when OTHER_USE_QUANTIZATION=True)
-OTHER_Q_SUBDIVISIONS: int = 8
+OTHER_Q_SUBDIVISIONS: int = 16
 OTHER_Q_START_MODE: str = "floor"
 OTHER_Q_MERGE_GAP: float = 0.0
 OTHER_Q_KEEP_REPEATED_NOTES: bool = True
@@ -31,12 +34,12 @@ OTHER_Q_KEEP_REPEATED_NOTES: bool = True
 OTHER_DENSE_MODE: bool = True
 
 # Make texture denser (more notes kept)
-OTHER_DENSE_GRID_SUBDIV: int = 12
-OTHER_DENSE_MAX_NOTES: int = 12
-OTHER_DENSE_HAND_SPAN: int | None = None
+OTHER_DENSE_GRID_SUBDIV: int = 24
+OTHER_DENSE_MAX_NOTES: int = 24
+OTHER_DENSE_HAND_SPAN: int | None = 16
 
 # Longer hold => more short notes survive slicing
-OTHER_DENSE_HOLD_SEC: float = 0.18
+OTHER_DENSE_HOLD_SEC: float = 0.35
 
 # Very low threshold; rely on later limiting instead of pre-filtering
 OTHER_DENSE_MIN_VEL: int = 1
@@ -60,9 +63,11 @@ BP_BASS_ONSET_THRESHOLD: float = 0.50
 BP_BASS_FRAME_THRESHOLD: float = 0.30
 BP_BASS_MIN_NOTE_LENGTH: float = 70.0
 
-BP_OTHER_ONSET_THRESHOLD: float = 0.48
-BP_OTHER_FRAME_THRESHOLD: float = 0.27
-BP_OTHER_MIN_NOTE_LENGTH: float = 55.0
+BP_OTHER_ONSET_THRESHOLD: float = 0.46
+BP_OTHER_FRAME_THRESHOLD: float = 0.25
+
+# Lower min note length to keep short notes that were previously dropped.
+BP_OTHER_MIN_NOTE_LENGTH: float = 20.0
 
 # ---------------------------------------------------------------------------
 # Piano reduction / musicality knobs
