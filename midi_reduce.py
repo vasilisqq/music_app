@@ -310,10 +310,9 @@ def complete_midi(
     beat_times: list[float],
     include_drums: bool = False,
 ) -> None:
-    # ranges reduce junk
-    right_range = Range(lo=52, hi=96)  # E3..C7
-    left_range = Range(lo=28, hi=60)   # E1..C4
-    harmony_range = Range(lo=45, hi=96)  # a bit wider to keep more content
+    right_range = Range(lo=52, hi=96)
+    left_range = Range(lo=28, hi=60)
+    harmony_range = Range(lo=45, hi=96)
 
     min_note_duration = 0.05
     min_vel_v = 25
@@ -337,6 +336,7 @@ def complete_midi(
         min_vel=min_vel_b,
     )
 
+    raw_o: list[pretty_midi.Note] = []
     o_notes_melody: list[pretty_midi.Note] = []
     o_notes_harmony: list[pretty_midi.Note] = []
     if pm_o is not None:
@@ -354,9 +354,11 @@ def complete_midi(
             min_vel=int(config.OTHER_HARMONY_MIN_VEL),
         )
 
+    # Grids
     grid_mel = _build_subbeat_grid(beat_times, subdivisions=max(1, int(config.MELODY_GRID_SUBDIV)))
     grid_har = _build_subbeat_grid(beat_times, subdivisions=max(1, int(config.HARMONY_GRID_SUBDIV)))
 
+    # Bass gating
     total_bass_dur = sum(float(n.end) - float(n.start) for n in b_notes)
     if total_bass_dur < 0.6 or len(b_notes) < 6:
         b_notes = []
@@ -371,6 +373,52 @@ def complete_midi(
             hand_span_limit=int(config.LH_SPAN_LIMIT),
         )
 
+    # --- NEW: dense OTHER mode ---
+    if bool(getattr(config, "OTHER_DENSE_MODE", False)) and raw_o:
+        dense_grid = _build_subbeat_grid(beat_times, subdivisions=max(2, int(getattr(config, "OTHER_DENSE_GRID_SUBDIV", 8))))
+
+        right_dense = _limit_polyphony_on_grid(
+            o_notes_harmony if o_notes_harmony else raw_o,
+            times=dense_grid,
+            max_notes_per_slice=max(2, int(getattr(config, "OTHER_DENSE_MAX_NOTES", 6))),
+            prefer="max_velocity",
+            avoid_below_pitch=left_range.hi,
+            hand_span_limit=getattr(config, "OTHER_DENSE_HAND_SPAN", 18),
+        )
+
+        # Key-lock (optional)
+        if config.ENABLE_KEY_LOCK:
+            key_basis = right_dense + left_texture
+            key = _estimate_key_ks(key_basis)
+            right_dense = _soft_snap_notes_to_key(right_dense, key=key, max_shift=config.KEY_LOCK_MAX_SHIFT)
+            left_texture = _soft_snap_notes_to_key(left_texture, key=key, max_shift=config.KEY_LOCK_MAX_SHIFT)
+
+        out_pm = pretty_midi.PrettyMIDI()
+        piano_program = 0
+
+        right = pretty_midi.Instrument(program=piano_program, is_drum=False, name="Piano RH")
+        left = pretty_midi.Instrument(program=piano_program, is_drum=False, name="Piano LH")
+
+        right.notes.extend(right_dense)
+        left.notes.extend(left_texture)
+
+        right.notes.sort(key=lambda n: (float(n.start), int(n.pitch)))
+        left.notes.sort(key=lambda n: (float(n.start), int(n.pitch)))
+
+        right.notes = _merge_adjacent_same_pitch(right.notes, gap_tol=0.02)
+        right.notes = _remove_same_pitch_overlaps(right.notes)
+        left.notes = _merge_adjacent_same_pitch(left.notes, gap_tol=0.03)
+        left.notes = _remove_same_pitch_overlaps(left.notes)
+
+        if right.notes:
+            out_pm.instruments.append(right)
+        if left.notes:
+            out_pm.instruments.append(left)
+
+        out_pm.write(out_mid)
+        return
+
+    # --- Old melody+harmony mode (fallback) ---
     if o_notes_melody and (len(o_notes_melody) >= max(12, int(len(v_notes) * 1.1))):
         melody_src = o_notes_melody
         used_other_as_melody = True
@@ -390,9 +438,6 @@ def complete_midi(
     harmony: list[pretty_midi.Note] = []
     if o_notes_harmony:
         max_harmony = int(config.HARMONY_MAX_NOTES)
-        if used_other_as_melody:
-            max_harmony = max(1, max_harmony - 0)
-
         harmony = _limit_polyphony_on_grid(
             o_notes_harmony,
             times=grid_har,

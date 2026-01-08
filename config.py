@@ -30,6 +30,10 @@ OTHER_Q_START_MODE: str = "floor"   # safer for repeated notes
 OTHER_Q_MERGE_GAP: float = 0.0      # avoid merging repeated same-pitch notes
 OTHER_Q_KEEP_REPEATED_NOTES: bool = True
 
+# If True, build playable more directly from OTHER (dense texture) instead of
+# picking a single melody note per grid slice.
+OTHER_DENSE_MODE: bool = True
+
 # ---------------------------------------------------------------------------
 # Stem silence detection
 # ---------------------------------------------------------------------------
@@ -75,6 +79,11 @@ OTHER_MELODY_MIN_DUR: float = 0.015
 
 OTHER_HARMONY_MIN_VEL: int = 14
 OTHER_HARMONY_MIN_DUR: float = 0.02
+
+# Dense mode: more notes per slice for a fuller transcription.
+OTHER_DENSE_GRID_SUBDIV: int = 8      # 1/32-ish at 4/4
+OTHER_DENSE_MAX_NOTES: int = 6        # max simultaneous notes per slice
+OTHER_DENSE_HAND_SPAN: int | None = 18
 
 LH_MAX_NOTES: int = 4
 LH_SPAN_LIMIT: int = 19
