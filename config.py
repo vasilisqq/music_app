@@ -38,11 +38,17 @@ OTHER_DENSE_GRID_SUBDIV: int = 24
 OTHER_DENSE_MAX_NOTES: int = 24
 OTHER_DENSE_HAND_SPAN: int | None = 16
 
-# Longer hold => more short notes survive slicing
+# Longer hold => fewer gaps when sampling active notes on a dense time grid.
 OTHER_DENSE_HOLD_SEC: float = 0.5
 
 # Very low threshold; rely on later limiting instead of pre-filtering
 OTHER_DENSE_MIN_VEL: int = 1
+
+# NEW: In dense mode still drop ultra-short "dust" notes (helps reduce gaps after re-slicing)
+OTHER_DENSE_MIN_DUR_SEC: float = 0.03
+
+# NEW: probe inside each time slice (too-large eps can miss very short notes)
+OTHER_DENSE_PROBE_EPS_SEC: float = 1e-4
 
 # ---------------------------------------------------------------------------
 # Stem silence detection
