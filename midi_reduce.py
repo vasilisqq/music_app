@@ -6,7 +6,7 @@ from typing import Iterable, Literal
 import pretty_midi
 
 import config
-from midi_quantize import _build_subbeat_grid, _clamp, _merge_adjacent_same_pitch, _remove_same_pitch_overlaps
+from midi_quantize import _build_subbeat_grid, _clamp, _merge_adjacent_same_pitch, _remove_same_pitch_overlaps, _quantize_time
 
 
 @dataclass(frozen=True)
@@ -258,6 +258,120 @@ def _limit_polyphony_on_grid(
     return out
 
 
+def _quantize_note_starts_only(
+    notes: list[pretty_midi.Note],
+    *,
+    grid: list[float],
+    start_mode: Literal["nearest", "floor", "ceil"],
+    min_dur_sec: float,
+) -> list[pretty_midi.Note]:
+    """Quantize only note starts to the grid.
+
+    - Keeps note ends mostly intact.
+    - If end becomes <= start, pushes end forward by min_dur_sec.
+
+    This preserves attacks/rhythm while avoiding slicing artifacts.
+    """
+
+    out: list[pretty_midi.Note] = []
+
+    for n in notes:
+        s0 = float(n.start)
+        e0 = float(n.end)
+        if e0 <= s0:
+            continue
+
+        s = float(_quantize_time(s0, grid, mode=start_mode))
+        e = float(e0)
+        if e <= s + 1e-9:
+            e = s + float(min_dur_sec)
+
+        out.append(pretty_midi.Note(
+            velocity=int(n.velocity),
+            pitch=int(n.pitch),
+            start=float(s),
+            end=float(e),
+        ))
+
+    out.sort(key=lambda x: (float(x.start), int(x.pitch)))
+    out = _remove_same_pitch_overlaps(out)
+    return out
+
+
+def _limit_polyphony_event_based(
+    notes: list[pretty_midi.Note],
+    *,
+    grid: list[float],
+    max_poly: int,
+    prefer: Literal["max_velocity", "max_pitch"] = "max_velocity",
+) -> list[pretty_midi.Note]:
+    """Limit simultaneously active notes without probe slicing.
+
+    Assumption: note starts are already quantized onto `grid`.
+
+    Strategy:
+    - Walk note onsets in time order.
+    - Keep a list of currently active notes.
+    - If active exceeds max_poly, prune by `prefer`.
+
+    This keeps attacks (start events) while controlling density.
+    """
+
+    if not notes:
+        return []
+    max_poly = max(1, int(max_poly))
+
+    # Group starts by time
+    notes_sorted = sorted(notes, key=lambda n: (float(n.start), -int(n.velocity), -int(n.pitch)))
+
+    active: list[pretty_midi.Note] = []
+    out: list[pretty_midi.Note] = []
+
+    i = 0
+    while i < len(notes_sorted):
+        t = float(notes_sorted[i].start)
+
+        # Drop ended notes
+        active = [n for n in active if float(n.end) > t + 1e-9]
+
+        # Add all notes starting at t
+        batch: list[pretty_midi.Note] = []
+        while i < len(notes_sorted) and abs(float(notes_sorted[i].start) - t) <= 1e-9:
+            batch.append(notes_sorted[i])
+            i += 1
+
+        # Add batch, then prune
+        active.extend(batch)
+
+        if len(active) > max_poly:
+            if prefer == "max_velocity":
+                active.sort(key=lambda n: int(n.velocity), reverse=True)
+            elif prefer == "max_pitch":
+                active.sort(key=lambda n: int(n.pitch), reverse=True)
+            else:
+                raise ValueError(prefer)
+            active = active[:max_poly]
+
+        # Emit the batch that survived pruning and any previously-active survivors
+        # We can't emit continuously-finalized notes easily without full off-events;
+        # instead emit everything and rely on overlap cleanup downstream.
+        # De-dup by identity not needed because we emit only those that are in `active`.
+        for n in active:
+            out.append(n)
+
+    # Remove duplicates created by re-adding active each step
+    # Key by (pitch,start,end,velocity)
+    uniq: dict[tuple[int, float, float, int], pretty_midi.Note] = {}
+    for n in out:
+        key = (int(n.pitch), float(n.start), float(n.end), int(n.velocity))
+        uniq[key] = n
+
+    out2 = list(uniq.values())
+    out2.sort(key=lambda n: (float(n.start), int(n.pitch)))
+    out2 = _remove_same_pitch_overlaps(out2)
+    return out2
+
+
 def complete_midi(
     vocals_mid: str,
     bass_mid: str,
@@ -312,58 +426,96 @@ def complete_midi(
             keep_original_ends=False,
         )
 
-    # Dense OTHER
-    if bool(getattr(config, "OTHER_DENSE_MODE", False)) and raw_o:
-        dense_grid = _build_subbeat_grid(beat_times, subdivisions=max(2, int(getattr(config, "OTHER_DENSE_GRID_SUBDIV", 12))))
+    # RIGHT HAND from OTHER
+    right_dense: list[pretty_midi.Note] = []
 
-        src = o_notes_harmony if o_notes_harmony else raw_o
-        src = _add_hold(src, float(getattr(config, "OTHER_DENSE_HOLD_SEC", 0.18)))
+    if raw_o:
+        if bool(getattr(config, "OTHER_EVENT_MODE", False)):
+            # Event-based mode: quantize starts only + event polyphony cap
+            grid = _build_subbeat_grid(beat_times, subdivisions=max(2, int(getattr(config, "OTHER_EVENT_GRID_SUBDIV", 24))))
+            min_step_sec = min(
+                grid[i + 1] - grid[i]
+                for i in range(len(grid) - 1)
+                if (grid[i + 1] - grid[i]) > 1e-9
+            )
 
-        src = _clean_notes(
-            src,
-            pitch_range=harmony_range,
-            min_dur=float(getattr(config, "OTHER_DENSE_MIN_DUR_SEC", 0.0)),
-            min_vel=int(getattr(config, "OTHER_DENSE_MIN_VEL", 1)),
-        )
+            src = o_notes_harmony if o_notes_harmony else raw_o
+            src = _clean_notes(
+                src,
+                pitch_range=harmony_range,
+                min_dur=float(getattr(config, "OTHER_DENSE_MIN_DUR_SEC", 0.0)),
+                min_vel=int(getattr(config, "OTHER_DENSE_MIN_VEL", 1)),
+            )
 
-        right_dense = _limit_polyphony_on_grid(
-            src,
-            times=dense_grid,
-            max_notes_per_slice=max(2, int(getattr(config, "OTHER_DENSE_MAX_NOTES", 12))),
-            prefer="max_velocity",
-            avoid_below_pitch=None,
-            hand_span_limit=getattr(config, "OTHER_DENSE_HAND_SPAN", None),
-            probe_eps_sec=float(getattr(config, "OTHER_DENSE_PROBE_EPS_SEC", 1e-6)),
-            keep_original_ends=True,
-        )
+            q = _quantize_note_starts_only(
+                src,
+                grid=grid,
+                start_mode=str(getattr(config, "OTHER_EVENT_START_MODE", "floor")),
+                min_dur_sec=max(1e-3, float(min_step_sec)),
+            )
 
-        if config.ENABLE_KEY_LOCK:
-            key_basis = right_dense + left_texture
-            key = _estimate_key_ks(key_basis)
-            right_dense = _soft_snap_notes_to_key(right_dense, key=key, max_shift=config.KEY_LOCK_MAX_SHIFT)
-            left_texture = _soft_snap_notes_to_key(left_texture, key=key, max_shift=config.KEY_LOCK_MAX_SHIFT)
+            prefer = str(getattr(config, "OTHER_EVENT_PREFER", "max_velocity"))
+            right_dense = _limit_polyphony_event_based(
+                q,
+                grid=grid,
+                max_poly=int(getattr(config, "OTHER_EVENT_MAX_POLY", 10)),
+                prefer=prefer,  # type: ignore[arg-type]
+            )
 
-        out_pm = pretty_midi.PrettyMIDI()
-        right = pretty_midi.Instrument(program=0, is_drum=False, name="Piano RH")
-        left = pretty_midi.Instrument(program=0, is_drum=False, name="Piano LH")
+        elif bool(getattr(config, "OTHER_DENSE_MODE", False)):
+            # Legacy dense slicing
+            dense_grid = _build_subbeat_grid(beat_times, subdivisions=max(2, int(getattr(config, "OTHER_DENSE_GRID_SUBDIV", 12))))
 
-        right.notes.extend(right_dense)
-        left.notes.extend(left_texture)
+            src = o_notes_harmony if o_notes_harmony else raw_o
+            src = _add_hold(src, float(getattr(config, "OTHER_DENSE_HOLD_SEC", 0.18)))
 
-        right.notes.sort(key=lambda n: (float(n.start), int(n.pitch)))
-        left.notes.sort(key=lambda n: (float(n.start), int(n.pitch)))
+            src = _clean_notes(
+                src,
+                pitch_range=harmony_range,
+                min_dur=float(getattr(config, "OTHER_DENSE_MIN_DUR_SEC", 0.0)),
+                min_vel=int(getattr(config, "OTHER_DENSE_MIN_VEL", 1)),
+            )
 
+            right_dense = _limit_polyphony_on_grid(
+                src,
+                times=dense_grid,
+                max_notes_per_slice=max(2, int(getattr(config, "OTHER_DENSE_MAX_NOTES", 12))),
+                prefer="max_velocity",
+                avoid_below_pitch=None,
+                hand_span_limit=getattr(config, "OTHER_DENSE_HAND_SPAN", None),
+                probe_eps_sec=float(getattr(config, "OTHER_DENSE_PROBE_EPS_SEC", 1e-6)),
+                keep_original_ends=True,
+            )
+
+    if config.ENABLE_KEY_LOCK and right_dense:
+        key_basis = right_dense + left_texture
+        key = _estimate_key_ks(key_basis)
+        right_dense = _soft_snap_notes_to_key(right_dense, key=key, max_shift=config.KEY_LOCK_MAX_SHIFT)
+        left_texture = _soft_snap_notes_to_key(left_texture, key=key, max_shift=config.KEY_LOCK_MAX_SHIFT)
+
+    out_pm = pretty_midi.PrettyMIDI()
+    right = pretty_midi.Instrument(program=0, is_drum=False, name="Piano RH")
+    left = pretty_midi.Instrument(program=0, is_drum=False, name="Piano LH")
+
+    right.notes.extend(right_dense)
+    left.notes.extend(left_texture)
+
+    right.notes.sort(key=lambda n: (float(n.start), int(n.pitch)))
+    left.notes.sort(key=lambda n: (float(n.start), int(n.pitch)))
+
+    # For event-based mode, avoid aggressive merging that could kill repeated attacks.
+    if bool(getattr(config, "OTHER_EVENT_MODE", False)):
+        right.notes = _remove_same_pitch_overlaps(right.notes)
+    else:
         right.notes = _merge_adjacent_same_pitch(right.notes, gap_tol=0.02)
         right.notes = _remove_same_pitch_overlaps(right.notes)
-        left.notes = _merge_adjacent_same_pitch(left.notes, gap_tol=0.03)
-        left.notes = _remove_same_pitch_overlaps(left.notes)
 
-        if right.notes:
-            out_pm.instruments.append(right)
-        if left.notes:
-            out_pm.instruments.append(left)
+    left.notes = _merge_adjacent_same_pitch(left.notes, gap_tol=0.03)
+    left.notes = _remove_same_pitch_overlaps(left.notes)
 
-        out_pm.write(out_mid)
-        return
+    if right.notes:
+        out_pm.instruments.append(right)
+    if left.notes:
+        out_pm.instruments.append(left)
 
-    pretty_midi.PrettyMIDI().write(out_mid)
+    out_pm.write(out_mid)
