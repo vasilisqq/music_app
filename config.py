@@ -30,7 +30,32 @@ OTHER_Q_START_MODE: str = "floor"
 OTHER_Q_MERGE_GAP: float = 0.0
 OTHER_Q_KEEP_REPEATED_NOTES: bool = True
 
-# Dense playable from OTHER
+# ---------------------------------------------------------------------------
+# NEW: Event-based OTHER (attack-preserving)
+# ---------------------------------------------------------------------------
+
+# If True, OTHER in dense mode is produced by:
+# - quantizing note *starts* to the beat grid
+# - keeping note ends mostly intact (only fixed when end <= start)
+# - limiting polyphony using event-based pruning (no probe_t slicing)
+OTHER_EVENT_MODE: bool = True
+
+# Grid used to quantize starts for OTHER_EVENT_MODE
+OTHER_EVENT_GRID_SUBDIV: int = 24
+
+# How to quantize note starts to the grid
+OTHER_EVENT_START_MODE: str = "floor"  # 'nearest' | 'floor' | 'ceil'
+
+# Max simultaneously active notes (polyphony cap) for OTHER_EVENT_MODE
+OTHER_EVENT_MAX_POLY: int = 10
+
+# When pruning, prefer louder notes (default) or higher notes
+OTHER_EVENT_PREFER: str = "max_velocity"  # 'max_velocity' | 'max_pitch'
+
+# ---------------------------------------------------------------------------
+# Dense playable from OTHER (legacy slicing)
+# ---------------------------------------------------------------------------
+
 OTHER_DENSE_MODE: bool = True
 
 # Make texture denser (more notes kept)
@@ -44,10 +69,10 @@ OTHER_DENSE_HOLD_SEC: float = 0.5
 # Very low threshold; rely on later limiting instead of pre-filtering
 OTHER_DENSE_MIN_VEL: int = 1
 
-# NEW: In dense mode still drop ultra-short "dust" notes (helps reduce gaps after re-slicing)
+# In dense mode still drop ultra-short "dust" notes (helps reduce gaps after re-slicing)
 OTHER_DENSE_MIN_DUR_SEC: float = 0.03
 
-# NEW: probe inside each time slice (too-large eps can miss very short notes)
+# probe inside each time slice (too-large eps can miss very short notes)
 OTHER_DENSE_PROBE_EPS_SEC: float = 1e-4
 
 # ---------------------------------------------------------------------------
