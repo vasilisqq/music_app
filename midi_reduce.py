@@ -263,9 +263,9 @@ def complete_midi(
     beat_times: list[float],
     include_drums: bool = False,
 ) -> None:
-    right_range = Range(lo=52, hi=96)
-    left_range = Range(lo=28, hi=60)
-    harmony_range = Range(lo=45, hi=96)
+    right_range = Range(lo=48, hi=100)
+    left_range = Range(lo=24, hi=64)
+    harmony_range = Range(lo=36, hi=100)
 
     min_note_duration = 0.05
     min_vel_v = 25
@@ -325,7 +325,7 @@ def complete_midi(
             times=dense_grid,
             max_notes_per_slice=max(2, int(getattr(config, "OTHER_DENSE_MAX_NOTES", 12))),
             prefer="max_velocity",
-            avoid_below_pitch=left_range.hi,
+            avoid_below_pitch=None,
             hand_span_limit=getattr(config, "OTHER_DENSE_HAND_SPAN", None),
         )
 

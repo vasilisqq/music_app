@@ -39,7 +39,7 @@ OTHER_DENSE_MAX_NOTES: int = 24
 OTHER_DENSE_HAND_SPAN: int | None = 16
 
 # Longer hold => more short notes survive slicing
-OTHER_DENSE_HOLD_SEC: float = 0.35
+OTHER_DENSE_HOLD_SEC: float = 0.5
 
 # Very low threshold; rely on later limiting instead of pre-filtering
 OTHER_DENSE_MIN_VEL: int = 1
@@ -67,7 +67,7 @@ BP_OTHER_ONSET_THRESHOLD: float = 0.46
 BP_OTHER_FRAME_THRESHOLD: float = 0.25
 
 # Lower min note length to keep short notes that were previously dropped.
-BP_OTHER_MIN_NOTE_LENGTH: float = 20.0
+BP_OTHER_MIN_NOTE_LENGTH: float = 8.0
 
 # ---------------------------------------------------------------------------
 # Piano reduction / musicality knobs
