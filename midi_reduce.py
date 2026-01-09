@@ -209,6 +209,7 @@ def _limit_polyphony_on_grid(
     avoid_below_pitch: int | None = None,
     hand_span_limit: int | None = 12,
     probe_eps_sec: float = 1e-6,
+    keep_original_ends: bool = False,
 ) -> list[pretty_midi.Note]:
     if not notes or len(times) < 2:
         return []
@@ -218,7 +219,6 @@ def _limit_polyphony_on_grid(
     start_idx = 0
 
     for a, b in zip(times, times[1:]):
-        # Using too-large epsilon can miss very short notes that start at 'a'
         probe_t = float(a) + float(probe_eps_sec)
         active, start_idx = _active_notes_at(notes_sorted, probe_t, start_idx)
 
@@ -243,11 +243,14 @@ def _limit_polyphony_on_grid(
                 chosen = [top]
 
         for n in chosen:
+            end = float(b)
+            if keep_original_ends:
+                end = max(end, float(n.end))
             out.append(pretty_midi.Note(
                 velocity=int(n.velocity),
                 pitch=int(n.pitch),
                 start=float(a),
-                end=float(b),
+                end=float(end),
             ))
 
     out = _merge_adjacent_same_pitch(out, gap_tol=1e-6)
@@ -306,6 +309,7 @@ def complete_midi(
             prefer="max_velocity",
             hand_span_limit=int(config.LH_SPAN_LIMIT),
             probe_eps_sec=1e-6,
+            keep_original_ends=False,
         )
 
     # Dense OTHER
@@ -315,7 +319,6 @@ def complete_midi(
         src = o_notes_harmony if o_notes_harmony else raw_o
         src = _add_hold(src, float(getattr(config, "OTHER_DENSE_HOLD_SEC", 0.18)))
 
-        # minimal filtering here; rely on max_notes_per_slice
         src = _clean_notes(
             src,
             pitch_range=harmony_range,
@@ -331,9 +334,9 @@ def complete_midi(
             avoid_below_pitch=None,
             hand_span_limit=getattr(config, "OTHER_DENSE_HAND_SPAN", None),
             probe_eps_sec=float(getattr(config, "OTHER_DENSE_PROBE_EPS_SEC", 1e-6)),
+            keep_original_ends=True,
         )
 
-        # Keep key-lock off by default for dense mode
         if config.ENABLE_KEY_LOCK:
             key_basis = right_dense + left_texture
             key = _estimate_key_ks(key_basis)
@@ -363,5 +366,4 @@ def complete_midi(
         out_pm.write(out_mid)
         return
 
-    # fallback: empty
     pretty_midi.PrettyMIDI().write(out_mid)
