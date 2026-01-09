@@ -208,6 +208,7 @@ def _limit_polyphony_on_grid(
     prefer: Literal["max_velocity", "max_pitch"] = "max_velocity",
     avoid_below_pitch: int | None = None,
     hand_span_limit: int | None = 12,
+    probe_eps_sec: float = 1e-6,
 ) -> list[pretty_midi.Note]:
     if not notes or len(times) < 2:
         return []
@@ -217,7 +218,8 @@ def _limit_polyphony_on_grid(
     start_idx = 0
 
     for a, b in zip(times, times[1:]):
-        probe_t = a + 1e-6
+        # Using too-large epsilon can miss very short notes that start at 'a'
+        probe_t = float(a) + float(probe_eps_sec)
         active, start_idx = _active_notes_at(notes_sorted, probe_t, start_idx)
 
         if avoid_below_pitch is not None:
@@ -303,6 +305,7 @@ def complete_midi(
             max_notes_per_slice=max(1, int(config.LH_MAX_NOTES)),
             prefer="max_velocity",
             hand_span_limit=int(config.LH_SPAN_LIMIT),
+            probe_eps_sec=1e-6,
         )
 
     # Dense OTHER
@@ -316,7 +319,7 @@ def complete_midi(
         src = _clean_notes(
             src,
             pitch_range=harmony_range,
-            min_dur=0.0,
+            min_dur=float(getattr(config, "OTHER_DENSE_MIN_DUR_SEC", 0.0)),
             min_vel=int(getattr(config, "OTHER_DENSE_MIN_VEL", 1)),
         )
 
@@ -327,6 +330,7 @@ def complete_midi(
             prefer="max_velocity",
             avoid_below_pitch=None,
             hand_span_limit=getattr(config, "OTHER_DENSE_HAND_SPAN", None),
+            probe_eps_sec=float(getattr(config, "OTHER_DENSE_PROBE_EPS_SEC", 1e-6)),
         )
 
         # Keep key-lock off by default for dense mode
