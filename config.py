@@ -39,7 +39,7 @@ OTHER_Q_KEEP_REPEATED_NOTES: bool = True
 # - keeping note ends mostly intact (only fixed when end <= start)
 # - limiting polyphony using event-based pruning (no probe_t slicing)
 OTHER_EVENT_MODE: bool = True
-
+OTHER_EVENT_MIN_DUR_STEPS: int = 1
 # Grid used to quantize starts for OTHER_EVENT_MODE
 OTHER_EVENT_GRID_SUBDIV: int = 24
 
@@ -53,7 +53,7 @@ OTHER_EVENT_MAX_POLY: int = 10
 OTHER_EVENT_PREFER: str = "max_velocity"  # 'max_velocity' | 'max_pitch'
 
 # Event-mode cleaning: drop ultra-short notes early (seconds)
-OTHER_EVENT_MIN_DUR_SEC: float = 0.05
+OTHER_EVENT_MIN_DUR_SEC: float = 0.1
 
 # ---------------------------------------------------------------------------
 # Dense playable from OTHER (legacy slicing)

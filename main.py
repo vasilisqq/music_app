@@ -7,7 +7,7 @@ from pipeline import run_from_local_file
 
 def main() -> None:
     # Файл должен лежать рядом с этим main.py
-    run_from_local_file("kor.mp3", always_reseparate=True)
+    run_from_local_file("input.mp3", always_reseparate=True)
 
 
 if __name__ == "__main__":
