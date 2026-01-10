@@ -265,14 +265,6 @@ def _quantize_note_starts_only(
     start_mode: Literal["nearest", "floor", "ceil"],
     min_dur_sec: float,
 ) -> list[pretty_midi.Note]:
-    """Quantize only note starts to the grid.
-
-    - Keeps note ends mostly intact.
-    - If end becomes <= start, pushes end forward by min_dur_sec.
-
-    This preserves attacks/rhythm while avoiding slicing artifacts.
-    """
-
     out: list[pretty_midi.Note] = []
 
     for n in notes:
@@ -305,23 +297,10 @@ def _limit_polyphony_event_based(
     max_poly: int,
     prefer: Literal["max_velocity", "max_pitch"] = "max_velocity",
 ) -> list[pretty_midi.Note]:
-    """Limit simultaneously active notes without probe slicing.
-
-    Assumption: note starts are already quantized onto `grid`.
-
-    Strategy:
-    - Walk note onsets in time order.
-    - Keep a list of currently active notes.
-    - If active exceeds max_poly, prune by `prefer`.
-
-    This keeps attacks (start events) while controlling density.
-    """
-
     if not notes:
         return []
     max_poly = max(1, int(max_poly))
 
-    # Group starts by time
     notes_sorted = sorted(notes, key=lambda n: (float(n.start), -int(n.velocity), -int(n.pitch)))
 
     active: list[pretty_midi.Note] = []
@@ -331,16 +310,13 @@ def _limit_polyphony_event_based(
     while i < len(notes_sorted):
         t = float(notes_sorted[i].start)
 
-        # Drop ended notes
         active = [n for n in active if float(n.end) > t + 1e-9]
 
-        # Add all notes starting at t
         batch: list[pretty_midi.Note] = []
         while i < len(notes_sorted) and abs(float(notes_sorted[i].start) - t) <= 1e-9:
             batch.append(notes_sorted[i])
             i += 1
 
-        # Add batch, then prune
         active.extend(batch)
 
         if len(active) > max_poly:
@@ -352,15 +328,9 @@ def _limit_polyphony_event_based(
                 raise ValueError(prefer)
             active = active[:max_poly]
 
-        # Emit the batch that survived pruning and any previously-active survivors
-        # We can't emit continuously-finalized notes easily without full off-events;
-        # instead emit everything and rely on overlap cleanup downstream.
-        # De-dup by identity not needed because we emit only those that are in `active`.
         for n in active:
             out.append(n)
 
-    # Remove duplicates created by re-adding active each step
-    # Key by (pitch,start,end,velocity)
     uniq: dict[tuple[int, float, float, int], pretty_midi.Note] = {}
     for n in out:
         key = (int(n.pitch), float(n.start), float(n.end), int(n.velocity))
@@ -408,7 +378,6 @@ def complete_midi(
             min_vel=int(config.OTHER_HARMONY_MIN_VEL),
         )
 
-    # Left texture stays as-is
     total_bass_dur = sum(float(n.end) - float(n.start) for n in b_notes)
     if total_bass_dur < 0.6 or len(b_notes) < 6:
         b_notes = []
@@ -426,12 +395,10 @@ def complete_midi(
             keep_original_ends=False,
         )
 
-    # RIGHT HAND from OTHER
     right_dense: list[pretty_midi.Note] = []
 
     if raw_o:
         if bool(getattr(config, "OTHER_EVENT_MODE", False)):
-            # Event-based mode: quantize starts only + event polyphony cap
             grid = _build_subbeat_grid(beat_times, subdivisions=max(2, int(getattr(config, "OTHER_EVENT_GRID_SUBDIV", 24))))
             min_step_sec = min(
                 grid[i + 1] - grid[i]
@@ -443,7 +410,7 @@ def complete_midi(
             src = _clean_notes(
                 src,
                 pitch_range=harmony_range,
-                min_dur=float(getattr(config, "OTHER_DENSE_MIN_DUR_SEC", 0.0)),
+                min_dur=float(getattr(config, "OTHER_EVENT_MIN_DUR_SEC", 0.0)),
                 min_vel=int(getattr(config, "OTHER_DENSE_MIN_VEL", 1)),
             )
 
@@ -463,7 +430,6 @@ def complete_midi(
             )
 
         elif bool(getattr(config, "OTHER_DENSE_MODE", False)):
-            # Legacy dense slicing
             dense_grid = _build_subbeat_grid(beat_times, subdivisions=max(2, int(getattr(config, "OTHER_DENSE_GRID_SUBDIV", 12))))
 
             src = o_notes_harmony if o_notes_harmony else raw_o
@@ -503,7 +469,6 @@ def complete_midi(
     right.notes.sort(key=lambda n: (float(n.start), int(n.pitch)))
     left.notes.sort(key=lambda n: (float(n.start), int(n.pitch)))
 
-    # For event-based mode, avoid aggressive merging that could kill repeated attacks.
     if bool(getattr(config, "OTHER_EVENT_MODE", False)):
         right.notes = _remove_same_pitch_overlaps(right.notes)
     else:
