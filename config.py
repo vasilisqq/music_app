@@ -39,7 +39,7 @@ OTHER_Q_KEEP_REPEATED_NOTES: bool = True
 # - keeping note ends mostly intact (only fixed when end <= start)
 # - limiting polyphony using event-based pruning (no probe_t slicing)
 OTHER_EVENT_MODE: bool = True
-OTHER_EVENT_MIN_DUR_STEPS: int = 1
+OTHER_EVENT_MIN_DUR_STEPS: int = 15
 # Grid used to quantize starts for OTHER_EVENT_MODE
 OTHER_EVENT_GRID_SUBDIV: int = 24
 

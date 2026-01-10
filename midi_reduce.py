@@ -405,9 +405,11 @@ def complete_midi(
                 for i in range(len(grid) - 1)
                 if (grid[i + 1] - grid[i]) > 1e-9
             )
+            print(min_step_sec)
             min_dur_steps = int(getattr(config, "OTHER_EVENT_MIN_DUR_STEPS", 1))
             min_dur_steps = max(1, min_dur_steps)
             min_dur_sec = float(min_step_sec) * float(min_dur_steps)
+            print(min_dur_sec)
             src = o_notes_harmony if o_notes_harmony else raw_o
             src = _clean_notes(
                 src,
