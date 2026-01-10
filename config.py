@@ -52,6 +52,9 @@ OTHER_EVENT_MAX_POLY: int = 10
 # When pruning, prefer louder notes (default) or higher notes
 OTHER_EVENT_PREFER: str = "max_velocity"  # 'max_velocity' | 'max_pitch'
 
+# Event-mode cleaning: drop ultra-short notes early (seconds)
+OTHER_EVENT_MIN_DUR_SEC: float = 0.05
+
 # ---------------------------------------------------------------------------
 # Dense playable from OTHER (legacy slicing)
 # ---------------------------------------------------------------------------
