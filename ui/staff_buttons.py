@@ -14,14 +14,16 @@ from PyQt6.QtWidgets import (
     QSizePolicy
 )
 from staff import HighlightableLineItem, StaffLayout
-
+from musicpy import note, play, C, chord, concat, N, write
+from test import play_piano_note
+import sounddevice as sd
+import numpy as np
 
 class MainWindow(QWidget):
     """Главное окно приложения"""
     
     def __init__(self):
         super().__init__()
-        
         self.init_ui()
     
     def init_ui(self):
@@ -221,16 +223,20 @@ class MainWindow(QWidget):
         self.time_44_button.setStyleSheet(time_button_style)
         self.time_34_button.setStyleSheet(time_button_style)
     
+
+
     def on_start_clicked(self):
-        """Обработчик кнопки Старт"""
-        print("Начало тренировки")
-        # Добавляем ноты для демонстрации
-        # Пример размещения нот в разных тактах
-        self.add_quarter_note(self.scene, self.lay.x0 + 100, self.lay.y0 + 0 * self.lay.line_spacing)  # На первой линии
-        self.add_quarter_note(self.scene, self.lay.x0 + 150, self.lay.y0 + 0.5 * self.lay.line_spacing)  # В первом пространстве
-        self.add_quarter_note(self.scene, self.lay.x0 + 200, self.lay.y0 + 1 * self.lay.line_spacing)  # На второй линии
-        self.add_quarter_note(self.scene, self.lay.x0 + 250, self.lay.y0 + 1.5 * self.lay.line_spacing)  # Во втором пространстве
-    
+        for tact in self.lay.tacts:
+            for notes in tact.notes:
+                duration = 60/self.lay.bpm * notes.note_lenght
+                play_piano_note(notes.note_name, duration)
+
+
+
+
+        
+
+
     def on_pause_clicked(self):
         """Обработчик кнопки Пауза"""
         print("Пауза")

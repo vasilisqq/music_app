@@ -8,15 +8,17 @@ from PyQt6.QtWidgets import (
     QGraphicsRectItem,
     QGraphicsEllipseItem
 )
+from musicpy import note, play, C
 
 
 class NoteItem(QGraphicsEllipseItem):
     """Класс для отображения ноты"""
     
-    def __init__(self, x, y, note_type="quarter"):
+    def __init__(self, x, y, name):
         super().__init__()
-        self.note_type = note_type
-        
+        self.note_lenght = 1/4
+        self.note_name = name
+        self.x = x
         # Размеры ноты
         self.width = 12
         self.height = 9
@@ -38,7 +40,7 @@ class NoteItem(QGraphicsEllipseItem):
         stem_length = 32
         
         # Координаты штиля
-        if self.note_type == "quarter":
+        if self.note_lenght == 1/4:
             stem_x = x + self.width/2 - 1
             stem_y_top = y - stem_length
             stem_y_bottom = y
@@ -59,9 +61,10 @@ class NoteItem(QGraphicsEllipseItem):
 class HighlightableLineItem(QGraphicsLineItem):
     """Класс линии, которая подсвечивается при наведении"""
     
-    def __init__(self, line, tact, parent=None):
+    def __init__(self, line, tact, y, note_name, parent=None):
         super().__init__(line, parent)
         self.tact = tact
+        self.y = y
         # Стандартные параметры линии
         self.normal_pen = QPen(Qt.GlobalColor.black)
         self.normal_pen.setWidthF(1.2)
@@ -81,7 +84,8 @@ class HighlightableLineItem(QGraphicsLineItem):
         
         # Для отладки можно сохранить номер линии
         self.line_number = -1
-    
+        self.note_name = note_name
+
     def hoverEnterEvent(self, event):
         """Событие при наведении курсора"""
         self.is_hovered = True
@@ -123,7 +127,7 @@ class HighlightableLineItem(QGraphicsLineItem):
             y = self.tact.y0 + self.line_number * 12
             
             # Сообщаем такту, что нужно добавить ноту на этой линии
-            self.tact.add_note_at_position(scene_pos.x(), y)
+            self.tact.add_note_at_position(scene_pos.x(), self)
         
         super().mousePressEvent(event)
 
@@ -245,6 +249,7 @@ class BarLine:
 
 class Tact:
     def __init__(self, x0, y0, y_bottom, width=None):
+        self.tact_number = 1
         self.spaces = []
         self.x0 = x0
         self.y0 = y0
@@ -252,6 +257,7 @@ class Tact:
         self.lines = []
         self.bar_lines = []  # Храним вертикальные линии тактов
         self.width: float = width if width else 400
+        self.note_x = x0 + 40 if width else x0
         self.notes = []  # Список нот в такте
         self.scene = None
     
@@ -270,14 +276,16 @@ class Tact:
         """Возвращает 4 равноудаленные позиции для нот в такте"""
         # Вычисляем расстояния между нотами и от краев
         # Для 4 нот в такте: 5 промежутков (2 от краев + 3 между нотами)
-        interval = self.width / 5
-        
+        if self.tact_number == 1:
+            interval = (self.width - 40) / 5
+        else:
+            interval = self.width / 5
         # Позиции для 4 нот
         positions = []
         for i in range(4):
             # Первая нота на расстоянии interval от левого края,
             # каждая следующая еще +interval
-            x = self.x0 + interval * (i + 1)
+            x = self.note_x + interval * (i + 1)
             positions.append(x)
         
         return positions
@@ -292,40 +300,37 @@ class Tact:
         return closest_pos
 
 
-    def add_note_at_position(self, click_x, click_y):
+    def add_note_at_position(self, click_x, line):
         """Добавляет ноту на ближайшую доступную позицию"""
         # Находим ближайшую позицию по X
         note_x = self.find_closest_note_position(click_x)
         
         # Проверяем, есть ли уже нота на этой позиции
-        for note_info in self.notes:
-            note_x_pos, note_item, stem_item = note_info
-            if abs(note_x_pos - note_x) < 5:  # Если позиция уже занята (с небольшой погрешностью)
+        for note in self.notes:
+            if abs(note.x - note_x) < 5:  # Если позиция уже занята (с небольшой погрешностью)
                 # Удаляем существующую ноту
-                self.scene.removeItem(note_item)
-                if stem_item:
-                    self.scene.removeItem(stem_item)
+                self.scene.removeItem(note)
+                self.scene.removeItem(note._stem_item)
                 # Удаляем из списка
-                self.notes.remove(note_info)
+                self.notes.remove(note)
                 return
         
         # Проверяем, не превышено ли максимальное количество нот
-        if len(self.notes) >= self.max_notes:
-            # Можно добавить обработку - например, удалить самую старую ноту
-            # или показать сообщение
+        note_sum = 0
+        for note in self.notes:
+            note_sum += note.note_lenght
+        if note_sum == 1:
             return
         
         # Создаем ноту
-        note_item = NoteItem(note_x, click_y, "quarter")
+        note_item = NoteItem(note_x, line.y, line.note_name)
         self.scene.addItem(note_item)
         
         # Добавляем штиль отдельно (NoteItem создает его, но не добавляет на сцену)
-        if hasattr(note_item, '_stem_item'):
-            self.scene.addItem(note_item._stem_item)
+        self.scene.addItem(note_item._stem_item)
         
         # Сохраняем информацию о ноте
-        self.notes.append((note_x, note_item, 
-                          note_item._stem_item if hasattr(note_item, '_stem_item') else None))
+        self.notes.append(note_item)
     
 
 
@@ -338,6 +343,7 @@ class StaffLayout:
         self.line_spacing: float = 12
         self.time_signature = None  # Будет хранить объект размерности такта
         self.current_tact = None
+        self.bpm = 120
     
     @property
     def y_bottom(self) -> float:
@@ -366,9 +372,20 @@ class StaffLayout:
         # Затем создаем 5 линий стана
         for i in range(5):
             y = self.y0 + i * self.line_spacing
+            match i:
+                case 0:
+                    note_name = "F5"
+                case 1: 
+                    note_name = "D5"
+                case 2: 
+                    note_name = "B4"
+                case 3: 
+                    note_name = "G4"
+                case 4: 
+                    note_name = "E4"
             line_item = HighlightableLineItem(
                 QLineF(self.x0, y, self.x0 + 500, y),
-                self.current_tact
+                self.current_tact,y, note_name
             )
             line_item.line_number = i  # Сохраняем номер для отладки
             scene.addItem(line_item)
