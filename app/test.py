@@ -40,23 +40,3 @@ def play_piano_note(note_name, duration):
     sd.play(stereo, shifted_rate, blocking=True)
 
 
-
-
-
-
-
-
-
-import sounddevice as sd
-from scipy.io import wavfile
-
-# SAMPLE_RATE, PIANO_C4 = wavfile.read('./C4.wav')
-# audio_normalized = PIANO_C4.astype(np.float32) / 32768.0  # Ключевой фикс!
-
-# print(f"✅ Сэмпл загружен: {PIANO_C4.shape} сэмплов @ {SAMPLE_RATE}Hz")
-# print(f"Амплитуда после нормализации: min={np.min(audio_normalized):.3f}, max={np.max(audio_normalized):.3f}")
-
-# print("🎹 ИГРАЮ C4 нормализованный...")
-# sd.play(audio_normalized, samplerate=SAMPLE_RATE)
-# sd.wait()
-# print("✅ C4 чистый звук!")

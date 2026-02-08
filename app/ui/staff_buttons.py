@@ -14,10 +14,7 @@ from PyQt6.QtWidgets import (
     QSizePolicy
 )
 from staff import HighlightableLineItem, StaffLayout
-from musicpy import note, play, C, chord, concat, N, write
 from test import play_piano_note
-import sounddevice as sd
-import numpy as np
 
 class MainWindow(QWidget):
     """Главное окно приложения"""
@@ -77,24 +74,23 @@ class MainWindow(QWidget):
         self.scene = self.lay.init_staff()
         
         # Устанавливаем фон сцены
-        self.scene.setBackgroundBrush(QColor(255, 255, 240))  # Светло-кремовый фон
+        self.scene.setBackgroundBrush(QColor(255, 255, 0))  # Светло-кремовый фон
         
         # Простой QGraphicsView без масштабирования
         self.view = QGraphicsView(self.scene)
         self.view.setRenderHint(QPainter.RenderHint.Antialiasing, True)
-        
         # Устанавливаем для view политику размеров, чтобы он растягивался
-        self.view.setSizePolicy(
-            QSizePolicy.Policy.Expanding,  # По горизонтали - расширяющийся
-            QSizePolicy.Policy.Expanding   # По вертикали - расширяющийся
-        )
+        # self.view.setSizePolicy(
+        #     QSizePolicy.Policy.Expanding,  # По горизонтали - расширяющийся
+        #     QSizePolicy.Policy.Expanding   # По вертикали - расширяющийся
+        # )
         
         # Настраиваем view - ВАЖНО: убираем fitInView и центрирование!
-        self.view.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
-        self.view.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        # self.view.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        # self.view.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
         
         # Выравниваем содержимое в левом верхнем углу
-        self.view.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop)
+        self.view.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignHCenter)
         
         # Устанавливаем область сцены (важно для корректного отображения)
         self.view.setSceneRect(self.scene.sceneRect())

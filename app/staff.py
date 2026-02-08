@@ -61,7 +61,7 @@ class NoteItem(QGraphicsEllipseItem):
 class HighlightableLineItem(QGraphicsLineItem):
     """Класс линии, которая подсвечивается при наведении"""
     
-    def __init__(self, line, tact, y, note_name, parent=None):
+    def __init__(self, line, tact, y, note_name, transparent=False, parent=None):
         super().__init__(line, parent)
         self.tact = tact
         self.y = y
@@ -357,7 +357,8 @@ class StaffLayout:
         self.current_tact = Tact(self.x0, self.y0, self.y_bottom, 500)
         self.tacts.append(self.current_tact)
         # Создаем сцену с нужными размерами
-        scene = QGraphicsScene(0, 0, self.x0 + 500 + 40, self.y0 + self.line_spacing * 4 + 40)
+        scene = QGraphicsScene(0, 0, 1, 1)
+        
         self.current_tact.scene = scene
         # Сначала создаем пространства между линиями (4 пространства между 5 линиями)
         for i in range(4):
@@ -368,9 +369,10 @@ class StaffLayout:
             space_item = StaffSpaceItem(space_rect, i)
             scene.addItem(space_item)
             self.current_tact.spaces.append(space_item)
-        
+
+
         # Затем создаем 5 линий стана
-        for i in range(5):
+        for i in range(6):
             y = self.y0 + i * self.line_spacing
             match i:
                 case 0:
@@ -383,6 +385,8 @@ class StaffLayout:
                     note_name = "G4"
                 case 4: 
                     note_name = "E4"
+                case 5: 
+                    note_name = "C4"
             line_item = HighlightableLineItem(
                 QLineF(self.x0, y, self.x0 + 500, y),
                 self.current_tact,y, note_name
