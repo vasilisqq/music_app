@@ -10,23 +10,23 @@ from PyQt6 import QtCore, QtGui, QtWidgets
 
 
 class Ui_AuthWindow(object):
-    def setupUi(self, AuthWindow):
-        AuthWindow.setObjectName("AuthWindow")
-        AuthWindow.resize(550, 650)
+    def setupUi(self, MusicApp):
+        MusicApp.setObjectName("MusicApp")
+        MusicApp.setGeometry(QtCore.QRect(0, 0, 550, 750))
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Fixed, QtWidgets.QSizePolicy.Policy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(AuthWindow.sizePolicy().hasHeightForWidth())
-        AuthWindow.setSizePolicy(sizePolicy)
-        AuthWindow.setMinimumSize(QtCore.QSize(550, 650))
-        AuthWindow.setMaximumSize(QtCore.QSize(550, 650))
-        AuthWindow.setStyleSheet("QMainWindow {\n"
+        sizePolicy.setHeightForWidth(MusicApp.sizePolicy().hasHeightForWidth())
+        MusicApp.setSizePolicy(sizePolicy)
+        MusicApp.setMinimumSize(QtCore.QSize(550, 750))
+        MusicApp.setMaximumSize(QtCore.QSize(550, 750))
+        MusicApp.setStyleSheet("QMainWindow {\n"
 "  background: qlineargradient(x1:0, y1:0, x2:1, y2:1,\n"
 "    stop:0 #3a8dde, stop:0.5 #00c8d6, stop:1 #2faf5e);\n"
 "}\n"
 "\n"
 "/* Заголовок */\n"
-"QLabel#titleLabel {\n"
+"QLabel#titleLabel, QLabel#titleLabel1 {\n"
 "  color: rgb(255,255,255); font-size: 36pt; font-weight: 700;\n"
 "  background: rgba(255,255,255,0.2); border-radius: 20px; padding: 25px;\n"
 "}\n"
@@ -42,21 +42,21 @@ class Ui_AuthWindow(object):
 "  padding: 12px 17px; \n"
 "}\n"
 "\n"
-"/* БОЛЬШАЯ ЗЕЛЁНАЯ КНОПКА ВОЙТИ */\n"
-"QPushButton#authBtn {\n"
+"/* КНОПКА ВОЙТИ / РЕГИСТРАЦИИ */\n"
+"QPushButton#authBtn, QPushButton#regBtn {\n"
 "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #26af27, stop:1 #1a9f26);\n"
 "  color: white; padding: 20px; border-radius: 20px; font-size: 22px; font-weight: 700;\n"
 "  border: none;\n"
 "}\n"
-"QPushButton#authBtn:hover { \n"
+"QPushButton#authBtn:hover,QPushButton#regBtn:hover { \n"
 "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #1e8b1f, stop:1 #158015); \n"
 "}\n"
-"QPushButton#authBtn:pressed { \n"
+"QPushButton#authBtn:pressed, QPushButton#regBtn:pressed  { \n"
 "  background: rgb(9, 140, 12); \n"
 "}\n"
 "\n"
-"/* ПРОЗРАЧНАЯ КНОПКА РЕГИСТРАЦИИ */\n"
-"QPushButton#switch {\n"
+"/* ПРОЗРАЧНАЯ КНОПКА ПЕРЕКЛЮЧЕНИЯ */\n"
+"QPushButton#switch, QPushButton#switch_2 {\n"
 "  background: transparent; \n"
 "  color: rgb(255,255,255); \n"
 "  font-size: 16px; \n"
@@ -66,34 +66,43 @@ class Ui_AuthWindow(object):
 "  border-radius: 8px; \n"
 "  text-decoration: underline;\n"
 "}\n"
-"QPushButton#switch:hover { \n"
-"  background: rgba(255,255,255,0.2); \n"
-"  color: white; \n"
-"  text-decoration: none;\n"
+"QPushButton#switch:hover, QPushButton#switch_2:hover { \n"
+"  color: #4facfe;\n"
 "}\n"
 "\n"
-"/* ТЕКСТ \"Нет аккаунта?\" */\n"
-"QLabel#label {\n"
+"/* ТЕКСТ */\n"
+"QLabel#label, QLabel#label1 {\n"
 "  color: rgb(255,255,255); \n"
 "  font-size: 16px; \n"
 "  font-weight: 500;\n"
 "  padding: 0 10px;\n"
 "}\n"
 "\n"
-"/* Контейнеры без лишних отступов */\n"
+"/* Контейнеры */\n"
 "QWidget#widget, QWidget#widget_2 {\n"
 "  margin: 0; padding: 0;\n"
 "}\n"
 "QHBoxLayout, QVBoxLayout {\n"
 "  margin: 0; padding: 0;\n"
+"}\n"
+"QStackedWidget {\n"
+"  background: transparent;\n"
 "}")
-        self.centralwidget = QtWidgets.QWidget(parent=AuthWindow)
+        self.centralwidget = QtWidgets.QWidget(parent=MusicApp)
         self.centralwidget.setObjectName("centralwidget")
         self.verticalLayout = QtWidgets.QVBoxLayout(self.centralwidget)
-        self.verticalLayout.setContentsMargins(50, 60, 50, 60)
-        self.verticalLayout.setSpacing(25)
+        self.verticalLayout.setContentsMargins(0, 0, 0, 0)
+        self.verticalLayout.setSpacing(0)
         self.verticalLayout.setObjectName("verticalLayout")
-        self.titleLabel = QtWidgets.QLabel(parent=self.centralwidget)
+        self.stackedWidget = QtWidgets.QStackedWidget(parent=self.centralwidget)
+        self.stackedWidget.setObjectName("stackedWidget")
+        self.regPage = QtWidgets.QWidget()
+        self.regPage.setObjectName("regPage")
+        self.verticalLayout_auth = QtWidgets.QVBoxLayout(self.regPage)
+        self.verticalLayout_auth.setContentsMargins(50, 60, 50, 60)
+        self.verticalLayout_auth.setSpacing(25)
+        self.verticalLayout_auth.setObjectName("verticalLayout_auth")
+        self.titleLabel = QtWidgets.QLabel(parent=self.regPage)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -107,24 +116,104 @@ class Ui_AuthWindow(object):
         self.titleLabel.setFont(font)
         self.titleLabel.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
         self.titleLabel.setObjectName("titleLabel")
-        self.verticalLayout.addWidget(self.titleLabel)
-        self.emailInput = QtWidgets.QLineEdit(parent=self.centralwidget)
+        self.verticalLayout_auth.addWidget(self.titleLabel)
+        self.emailInput = QtWidgets.QLineEdit(parent=self.regPage)
         self.emailInput.setObjectName("emailInput")
-        self.verticalLayout.addWidget(self.emailInput)
-        self.usernameInput = QtWidgets.QLineEdit(parent=self.centralwidget)
+        self.verticalLayout_auth.addWidget(self.emailInput)
+        self.usernameInput = QtWidgets.QLineEdit(parent=self.regPage)
         self.usernameInput.setObjectName("usernameInput")
-        self.verticalLayout.addWidget(self.usernameInput)
-        self.passwordInput = QtWidgets.QLineEdit(parent=self.centralwidget)
+        self.verticalLayout_auth.addWidget(self.usernameInput)
+        self.passwordInput = QtWidgets.QLineEdit(parent=self.regPage)
         self.passwordInput.setEchoMode(QtWidgets.QLineEdit.EchoMode.Password)
         self.passwordInput.setObjectName("passwordInput")
-        self.verticalLayout.addWidget(self.passwordInput)
-        self.widget_2 = QtWidgets.QWidget(parent=self.centralwidget)
-        self.widget_2.setObjectName("widget_2")
-        self.verticalLayout_3 = QtWidgets.QVBoxLayout(self.widget_2)
-        self.verticalLayout_3.setContentsMargins(0, 0, 0, 0)
+        self.verticalLayout_auth.addWidget(self.passwordInput)
+        self.passwordConfirmInput = QtWidgets.QLineEdit(parent=self.regPage)
+        self.passwordConfirmInput.setEchoMode(QtWidgets.QLineEdit.EchoMode.Password)
+        self.passwordConfirmInput.setObjectName("passwordConfirmInput")
+        self.verticalLayout_auth.addWidget(self.passwordConfirmInput)
+        self.verticalLayout_3 = QtWidgets.QVBoxLayout()
         self.verticalLayout_3.setSpacing(10)
         self.verticalLayout_3.setObjectName("verticalLayout_3")
-        self.authBtn = QtWidgets.QPushButton(parent=self.widget_2)
+        self.regBtn = QtWidgets.QPushButton(parent=self.regPage)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.MinimumExpanding, QtWidgets.QSizePolicy.Policy.Fixed)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.regBtn.sizePolicy().hasHeightForWidth())
+        self.regBtn.setSizePolicy(sizePolicy)
+        font = QtGui.QFont()
+        font.setFamily("Segoe UI")
+        font.setPointSize(-1)
+        font.setBold(True)
+        self.regBtn.setFont(font)
+        self.regBtn.setObjectName("regBtn")
+        self.verticalLayout_3.addWidget(self.regBtn)
+        self.horizontalLayout = QtWidgets.QHBoxLayout()
+        self.horizontalLayout.setSpacing(5)
+        self.horizontalLayout.setObjectName("horizontalLayout")
+        spacerItem = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum)
+        self.horizontalLayout.addItem(spacerItem)
+        self.label = QtWidgets.QLabel(parent=self.regPage)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Maximum, QtWidgets.QSizePolicy.Policy.Maximum)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.label.sizePolicy().hasHeightForWidth())
+        self.label.setSizePolicy(sizePolicy)
+        font = QtGui.QFont()
+        font.setFamily("Segoe UI")
+        font.setPointSize(-1)
+        self.label.setFont(font)
+        self.label.setObjectName("label")
+        self.horizontalLayout.addWidget(self.label, 0, QtCore.Qt.AlignmentFlag.AlignHCenter|QtCore.Qt.AlignmentFlag.AlignVCenter)
+        self.switch = QtWidgets.QPushButton(parent=self.regPage)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Maximum, QtWidgets.QSizePolicy.Policy.Maximum)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.switch.sizePolicy().hasHeightForWidth())
+        self.switch.setSizePolicy(sizePolicy)
+        font = QtGui.QFont()
+        font.setFamily("Segoe UI")
+        font.setPointSize(-1)
+        font.setUnderline(True)
+        self.switch.setFont(font)
+        self.switch.setObjectName("switch")
+        self.horizontalLayout.addWidget(self.switch)
+        spacerItem1 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum)
+        self.horizontalLayout.addItem(spacerItem1)
+        self.verticalLayout_3.addLayout(self.horizontalLayout)
+        self.verticalLayout_auth.addLayout(self.verticalLayout_3)
+        self.stackedWidget.addWidget(self.regPage)
+        self.logPage = QtWidgets.QWidget()
+        self.logPage.setObjectName("logPage")
+        self.verticalLayout_auth1 = QtWidgets.QVBoxLayout(self.logPage)
+        self.verticalLayout_auth1.setContentsMargins(50, 60, 50, 60)
+        self.verticalLayout_auth1.setSpacing(25)
+        self.verticalLayout_auth1.setObjectName("verticalLayout_auth1")
+        self.titleLabel1 = QtWidgets.QLabel(parent=self.logPage)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Fixed)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.titleLabel1.sizePolicy().hasHeightForWidth())
+        self.titleLabel1.setSizePolicy(sizePolicy)
+        self.titleLabel1.setMinimumSize(QtCore.QSize(0, 80))
+        font = QtGui.QFont()
+        font.setFamily("Segoe UI")
+        font.setPointSize(36)
+        font.setBold(True)
+        self.titleLabel1.setFont(font)
+        self.titleLabel1.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
+        self.titleLabel1.setObjectName("titleLabel1")
+        self.verticalLayout_auth1.addWidget(self.titleLabel1)
+        self.emailInput1 = QtWidgets.QLineEdit(parent=self.logPage)
+        self.emailInput1.setObjectName("emailInput1")
+        self.verticalLayout_auth1.addWidget(self.emailInput1)
+        self.passwordInput1 = QtWidgets.QLineEdit(parent=self.logPage)
+        self.passwordInput1.setEchoMode(QtWidgets.QLineEdit.EchoMode.Password)
+        self.passwordInput1.setObjectName("passwordInput1")
+        self.verticalLayout_auth1.addWidget(self.passwordInput1)
+        self.verticalLayout_31 = QtWidgets.QVBoxLayout()
+        self.verticalLayout_31.setSpacing(10)
+        self.verticalLayout_31.setObjectName("verticalLayout_31")
+        self.authBtn = QtWidgets.QPushButton(parent=self.logPage)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.MinimumExpanding, QtWidgets.QSizePolicy.Policy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -132,57 +221,67 @@ class Ui_AuthWindow(object):
         self.authBtn.setSizePolicy(sizePolicy)
         font = QtGui.QFont()
         font.setFamily("Segoe UI")
-        font.setPointSize(22)
-        font.setWeight(75)
+        font.setPointSize(-1)
+        font.setBold(True)
         self.authBtn.setFont(font)
         self.authBtn.setObjectName("authBtn")
-        self.verticalLayout_3.addWidget(self.authBtn)
-        self.widget = QtWidgets.QWidget(parent=self.widget_2)
-        self.widget.setObjectName("widget")
-        self.horizontalLayout = QtWidgets.QHBoxLayout(self.widget)
-        self.horizontalLayout.setContentsMargins(0, 0, 0, 0)
-        self.horizontalLayout.setSpacing(5)
-        self.horizontalLayout.setObjectName("horizontalLayout")
-        self.label = QtWidgets.QLabel(parent=self.widget)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Preferred, QtWidgets.QSizePolicy.Policy.Maximum)
+        self.verticalLayout_31.addWidget(self.authBtn)
+        self.horizontalLayout1 = QtWidgets.QHBoxLayout()
+        self.horizontalLayout1.setSpacing(5)
+        self.horizontalLayout1.setObjectName("horizontalLayout1")
+        spacerItem2 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum)
+        self.horizontalLayout1.addItem(spacerItem2)
+        self.label1 = QtWidgets.QLabel(parent=self.logPage)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Maximum, QtWidgets.QSizePolicy.Policy.Maximum)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.label.sizePolicy().hasHeightForWidth())
-        self.label.setSizePolicy(sizePolicy)
+        sizePolicy.setHeightForWidth(self.label1.sizePolicy().hasHeightForWidth())
+        self.label1.setSizePolicy(sizePolicy)
         font = QtGui.QFont()
         font.setFamily("Segoe UI")
-        font.setPointSize(16)
-        font.setWeight(50)
-        self.label.setFont(font)
-        self.label.setObjectName("label")
-        self.horizontalLayout.addWidget(self.label)
-        self.switch = QtWidgets.QPushButton(parent=self.widget)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.MinimumExpanding, QtWidgets.QSizePolicy.Policy.Minimum)
+        font.setPointSize(-1)
+        self.label1.setFont(font)
+        self.label1.setObjectName("label1")
+        self.horizontalLayout1.addWidget(self.label1, 0, QtCore.Qt.AlignmentFlag.AlignHCenter|QtCore.Qt.AlignmentFlag.AlignVCenter)
+        self.switch_2 = QtWidgets.QPushButton(parent=self.logPage)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Maximum, QtWidgets.QSizePolicy.Policy.Maximum)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.switch.sizePolicy().hasHeightForWidth())
-        self.switch.setSizePolicy(sizePolicy)
+        sizePolicy.setHeightForWidth(self.switch_2.sizePolicy().hasHeightForWidth())
+        self.switch_2.setSizePolicy(sizePolicy)
         font = QtGui.QFont()
         font.setFamily("Segoe UI")
-        font.setPointSize(16)
-        font.setWeight(75)
-        self.switch.setFont(font)
-        self.switch.setObjectName("switch")
-        self.horizontalLayout.addWidget(self.switch)
-        self.verticalLayout_3.addWidget(self.widget)
-        self.verticalLayout.addWidget(self.widget_2)
-        AuthWindow.setCentralWidget(self.centralwidget)
+        font.setPointSize(-1)
+        font.setUnderline(True)
+        self.switch_2.setFont(font)
+        self.switch_2.setObjectName("switch_2")
+        self.horizontalLayout1.addWidget(self.switch_2)
+        spacerItem3 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum)
+        self.horizontalLayout1.addItem(spacerItem3)
+        self.verticalLayout_31.addLayout(self.horizontalLayout1)
+        self.verticalLayout_auth1.addLayout(self.verticalLayout_31)
+        self.stackedWidget.addWidget(self.logPage)
+        self.verticalLayout.addWidget(self.stackedWidget)
+        MusicApp.setCentralWidget(self.centralwidget)
 
-        self.retranslateUi(AuthWindow)
-        QtCore.QMetaObject.connectSlotsByName(AuthWindow)
+        self.retranslateUi(MusicApp)
+        self.stackedWidget.setCurrentIndex(0)
+        QtCore.QMetaObject.connectSlotsByName(MusicApp)
 
-    def retranslateUi(self, AuthWindow):
+    def retranslateUi(self, MusicApp):
         _translate = QtCore.QCoreApplication.translate
-        AuthWindow.setWindowTitle(_translate("AuthWindow", "Music App - Авторизация"))
-        self.titleLabel.setText(_translate("AuthWindow", "Music App"))
+        MusicApp.setWindowTitle(_translate("AuthWindow", "Music App"))
+        self.titleLabel.setText(_translate("AuthWindow", "🎵 Music App"))
         self.emailInput.setPlaceholderText(_translate("AuthWindow", "✉️ Email"))
         self.usernameInput.setPlaceholderText(_translate("AuthWindow", "👤 Логин"))
         self.passwordInput.setPlaceholderText(_translate("AuthWindow", "🔒 Пароль"))
-        self.authBtn.setText(_translate("AuthWindow", "🚀 Войти"))
-        self.label.setText(_translate("AuthWindow", "Нет аккаунта?"))
-        self.switch.setText(_translate("AuthWindow", "Зарегистрироваться"))
+        self.passwordConfirmInput.setPlaceholderText(_translate("AuthWindow", "🔒 Подтверждение пароля"))
+        self.regBtn.setText(_translate("AuthWindow", "Зарегистрироваться"))
+        self.label.setText(_translate("AuthWindow", "Уже есть аккаунт?"))
+        self.switch.setText(_translate("AuthWindow", "Войти"))
+        self.titleLabel1.setText(_translate("AuthWindow", "🎵 Music App"))
+        self.emailInput1.setPlaceholderText(_translate("AuthWindow", "✉️ Email"))
+        self.passwordInput1.setPlaceholderText(_translate("AuthWindow", "🔒 Пароль"))
+        self.authBtn.setText(_translate("AuthWindow", "Войти"))
+        self.label1.setText(_translate("AuthWindow", "Еще нет аккаунта?"))
+        self.switch_2.setText(_translate("AuthWindow", "Зарегистрироваться"))
