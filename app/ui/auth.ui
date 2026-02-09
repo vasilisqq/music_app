@@ -89,6 +89,12 @@ QLabel#label, QLabel#label1 {
   font-weight: 500;
   padding: 0 10px;
 }
+QLabel{
+  color: red; 
+  font-size: 16px; 
+  font-weight: 500;
+  padding: 0 10px;
+}
 
 /* Контейнеры */
 QWidget#widget, QWidget#widget_2 {
@@ -126,7 +132,7 @@ QStackedWidget {
       <widget class="QWidget" name="regPage">
        <layout class="QVBoxLayout" name="verticalLayout_auth">
         <property name="spacing">
-         <number>25</number>
+         <number>7</number>
         </property>
         <property name="leftMargin">
          <number>50</number>
@@ -170,6 +176,19 @@ QStackedWidget {
          </widget>
         </item>
         <item>
+         <spacer name="verticalSpacer">
+          <property name="orientation">
+           <enum>Qt::Orientation::Vertical</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>20</width>
+            <height>40</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+        <item>
          <widget class="QLineEdit" name="emailInput">
           <property name="placeholderText">
            <string>✉️ Email</string>
@@ -177,9 +196,23 @@ QStackedWidget {
          </widget>
         </item>
         <item>
+         <widget class="QLabel" name="emailErrors">
+          <property name="text">
+           <string/>
+          </property>
+         </widget>
+        </item>
+        <item>
          <widget class="QLineEdit" name="usernameInput">
           <property name="placeholderText">
            <string>👤 Логин</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="LoginErrors">
+          <property name="text">
+           <string/>
           </property>
          </widget>
         </item>
@@ -194,12 +227,26 @@ QStackedWidget {
          </widget>
         </item>
         <item>
+         <widget class="QLabel" name="passwordErrors">
+          <property name="text">
+           <string/>
+          </property>
+         </widget>
+        </item>
+        <item>
          <widget class="QLineEdit" name="passwordConfirmInput">
           <property name="echoMode">
            <enum>QLineEdit::EchoMode::Password</enum>
           </property>
           <property name="placeholderText">
            <string>🔒 Подтверждение пароля</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="passwordConfirmErrors">
+          <property name="text">
+           <string/>
           </property>
          </widget>
         </item>

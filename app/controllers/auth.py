@@ -5,6 +5,24 @@ from PyQt6.QtCore import QRegularExpression
 import re
 
 
+NORMAL_STYLE = """
+QLineEdit { 
+    padding: 15px 20px; border: none; border-radius: 15px; font-size: 18px; 
+    background: rgba(255,255,255,0.95); color: #333; 
+}
+QLineEdit:focus { 
+    background: rgba(255,255,255,1); border: 3px solid #4facfe; 
+    padding: 12px 17px; 
+}
+"""
+
+ERROR_STYLE = """
+QLineEdit { 
+    padding: 15px 20px; border: 3px solid #ff4444; border-radius: 15px; 
+    font-size: 18px; background: rgba(255,220,220,0.95); color: #333; 
+}
+"""
+
 class Auth(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -39,59 +57,45 @@ class Auth(QMainWindow):
         self.ui.regBtn.clicked.connect(self.register)
 
     def clear_errors(self, field=None):
-        """Очистка ошибок для поля или всех"""
-        
         if field == 'email':
-            self.ui.emailInput.setStyleSheet("QLineEdit { padding: 15px 20px; border: none; border-radius: 15px; font-size: 18px; background: rgba(255,255,255,0.95); color: #333; } QLineEdit:focus { background: rgba(255,255,255,1); border: 3px solid #4facfe; padding: 12px 17px; }")
-            if 'email' in self.errors: del self.errors['email']
+            self.ui.emailInput.setStyleSheet(NORMAL_STYLE)
+            self.ui.emailErrors.setText("")
+            self.errors.pop('email', None)
         elif field == 'username':
-            self.ui.usernameInput.setStyleSheet("QLineEdit { padding: 15px 20px; border: none; border-radius: 15px; font-size: 18px; background: rgba(255,255,255,0.95); color: #333; } QLineEdit:focus { background: rgba(255,255,255,1); border: 3px solid #4facfe; padding: 12px 17px; }")
-            if 'username' in self.errors: del self.errors['username']
+            self.ui.usernameInput.setStyleSheet(NORMAL_STYLE)
+            self.ui.LoginErrors.setText("")
+            self.errors.pop('username', None)
         elif field == 'password':
-            self.ui.passwordInput.setStyleSheet("QLineEdit { padding: 15px 20px; border: none; border-radius: 15px; font-size: 18px; background: rgba(255,255,255,0.95); color: #333; } QLineEdit:focus { background: rgba(255,255,255,1); border: 3px solid #4facfe; padding: 12px 17px; }")
-            if 'password' in self.errors: del self.errors['password']
+            self.ui.passwordInput.setStyleSheet(NORMAL_STYLE)
+            self.ui.passwordErrors.setText("")
+            self.errors.pop('password', None)
         elif field == 'confirm':
-            self.ui.passwordConfirmInput.setStyleSheet("QLineEdit { padding: 15px 20px; border: none; border-radius: 15px; font-size: 18px; background: rgba(255,255,255,0.95); color: #333; } QLineEdit:focus { background: rgba(255,255,255,1); border: 3px solid #4facfe; padding: 12px 17px; }")
-            if 'confirm' in self.errors: del self.errors['confirm']
+            self.ui.passwordConfirmInput.setStyleSheet(NORMAL_STYLE)
+            self.ui.passwordConfirmErrors.setText("")
+            self.errors.pop('confirm', None)
         else:
-            # Очистить все
             self.clear_errors('email')
             self.clear_errors('username')
             self.clear_errors('password')
             self.clear_errors('confirm')
+
     
     def show_error(self, field, message):
-        """Показать ошибку и подсветить поле красным"""
         self.errors[field] = message
-        
+
         if field == 'email':
-            self.ui.emailInput.setStyleSheet("""
-                QLineEdit { 
-                    padding: 15px 20px; border: 3px solid #ff4444; border-radius: 15px; 
-                    font-size: 18px; background: rgba(255,220,220,0.95); color: #333; 
-                }
-            """)
+            self.ui.emailInput.setStyleSheet(ERROR_STYLE)
+            self.ui.emailErrors.setText(message)
         elif field == 'username':
-            self.ui.usernameInput.setStyleSheet("""
-                QLineEdit { 
-                    padding: 15px 20px; border: 3px solid #ff4444; border-radius: 15px; 
-                    font-size: 18px; background: rgba(255,220,220,0.95); color: #333; 
-                }
-            """)
+            self.ui.usernameInput.setStyleSheet(ERROR_STYLE)
+            self.ui.LoginErrors.setText(message)
         elif field == 'password':
-            self.ui.passwordInput.setStyleSheet("""
-                QLineEdit { 
-                    padding: 15px 20px; border: 3px solid #ff4444; border-radius: 15px; 
-                    font-size: 18px; background: rgba(255,220,220,0.95); color: #333; 
-                }
-            """)
+            self.ui.passwordInput.setStyleSheet(ERROR_STYLE)
+            self.ui.passwordErrors.setText(message)
         elif field == 'confirm':
-            self.ui.passwordConfirmInput.setStyleSheet("""
-                QLineEdit { 
-                    padding: 15px 20px; border: 3px solid #ff4444; border-radius: 15px; 
-                    font-size: 18px; background: rgba(255,220,220,0.95); color: #333; 
-                }
-            """)
+            self.ui.passwordConfirmInput.setStyleSheet(ERROR_STYLE)
+            self.ui.passwordConfirmErrors.setText(message)
+
     
     def validate_email(self):
         email = self.ui.emailInput.text().strip()
@@ -169,14 +173,11 @@ class Auth(QMainWindow):
             
         
         # Полная валидация
-        if not self.is_valid():
-            QMessageBox.warning(self, "Ошибка", "Исправьте ошибки!")
-            return
-        email = self.ui.emailInput_2.text().strip()
-        username = self.ui.usernameInput_2.text().strip()
-        
-        QMessageBox.information(self, "Успех", 
-            f"Пользователь {username} зарегистрирован!\nEmail: {email}")
-        
-        # Переход на логин
-        self.ui.stackedWidget.setCurrentIndex(1)
+        if self.is_valid():  
+            email = self.ui.emailInput.text().strip()
+            username = self.ui.usernameInput.text().strip()
+            QMessageBox.information(self, "Успех", 
+                f"Пользователь {username} зарегистрирован!\nEmail: {email}")
+            
+            # Переход на логин
+            self.ui.stackedWidget.setCurrentIndex(1)
