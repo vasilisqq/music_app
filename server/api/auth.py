@@ -5,8 +5,9 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from schemas.auth import UserCreate, UserLogin, UserResponse
 from services.user_service import UserService
+from services.auth_service import AuthService
 # from app.services.auth_service import AuthService
-from core.dependencies import get_user_service
+from core.dependencies import get_user_service, get_auth_service
 
 
 router = APIRouter(tags=["authentication"])
@@ -40,60 +41,21 @@ async def register(
     
     return UserResponse.model_validate(user)
 
-# @router.post("/login", response_model=TokenResponse)
-# async def login(
-#     user_data: UserLogin,
-#     response: Response,
-#     auth_service: AuthService = Depends(get_auth_service)
-# ):
-#     """Вход пользователя"""
-#     tokens = await auth_service.login_user(user_data)
-    
-#     if not tokens:
-#         raise HTTPException(
-#             status_code=status.HTTP_401_UNAUTHORIZED,
-#             detail="Неверный email или пароль",
-#         )
+@router.post("/login", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+async def login(
+    user_data: UserLogin,
+    response: Response,
+    auth_service: AuthService = Depends(get_auth_service)
+):
+    """Вход пользователя"""
+    user = await auth_service.login_user(user_data)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Неверный email или пароль",
+        )
+    return UserResponse.model_validate(user)
 
-#     response.set_cookie(
-#         key="access_token",
-#         value=tokens["access_token"],
-#         httponly=True,
-#         max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60, # в секундах
-#         expires=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60, # в секундах
-#         samesite="lax", # Или "strict" / "none" в зависимости от требований
-#         secure=True, # Только для HTTPS
-#         # domain="yourdomain.com", # Укажите ваш домен в продакшене
-#         # path="/", # Путь, для которого доступен cookie
-#     )
-#     return TokenResponse()
-
-# @router.post("/refresh", response_model=TokenResponse)
-# async def refresh_token(
-#     token_data: TokenRefresh,
-#     response: Response, # Добавляем Response для установки cookie
-#     auth_service: AuthService = Depends(get_auth_service)
-# ):
-#     """Обновление access токена"""
-#     access_token = await auth_service.reload_token(token_data.refresh_token)
-#     if not access_token:
-#         raise HTTPException(
-#             status_code=status.HTTP_401_UNAUTHORIZED,
-#             detail="Недействительный или истекший refresh токен",
-#             headers={"WWW-Authenticate": "Bearer"},
-#         )
-    
-#     # Устанавливаем новый access_token в HTTP-only cookie
-#     response.set_cookie(
-#         key="access_token",
-#         value=access_token,
-#         httponly=True,
-#         max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60, # в секундах
-#         expires=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60, # в секундах
-#         samesite="lax",
-#         secure=True,
-#     )
-#     return TokenResponse()
 
 # @router.post("/logout")
 # async def logout(

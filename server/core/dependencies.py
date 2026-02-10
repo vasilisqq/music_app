@@ -3,6 +3,7 @@ from fastapi.security import HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 from db import get_db
 from services.user_service import UserService
+from services.auth_service import AuthService
 # from app.utils.jwt import verify_token
 # from app.models.user import User
 # from app.services.auth_service import AuthService
@@ -70,6 +71,6 @@ async def get_user_service(db: AsyncSession = Depends(get_db)) -> UserService:
     """Зависимость, предоставляющая UserService."""
     return UserService(db)
 
-# async def get_auth_service(db: AsyncSession = Depends(get_db)) -> AuthService:
-#     """Зависимость, предоставляющая AuthService."""
-#     return AuthService(db)
+async def get_auth_service(db: AsyncSession = Depends(get_db)) -> AuthService:
+    """Зависимость, предоставляющая AuthService."""
+    return AuthService(db)
