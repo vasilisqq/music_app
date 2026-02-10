@@ -5,7 +5,7 @@ import uvicorn
 # from app.core.config import settings
 # from app.core.redis import redis_client
 # from app.core.middleware import LoggingMiddleware, ErrorHandlingMiddleware
-# from app.api.v1.router import api_router
+from api import api_router
 
 #Декоратор для создания асинхронного контекстного менеджера жизненного цикла приложения
 # @asynccontextmanager
@@ -36,7 +36,7 @@ app.add_middleware(
 )
 
 # Подключение роутеров
-# app.include_router(api_router, prefix="/api/v1")
+app.include_router(api_router)
 
 @app.get("/")
 async def root():

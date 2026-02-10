@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey
 from sqlalchemy.sql import func
-from server.db import Base
+from db import Base
 
 
 class Role(Base):
@@ -22,7 +22,7 @@ class User(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     
     def __repr__(self):
-        return f"<User(id={self.id}, email={self.email}, username={self.username})>"
+        return f"<User(id={self.id}, email={self.email}, username={self.username}, password={self.hashed_password}, is_active={self.is_active}, role={self.role})>"
     
 
 

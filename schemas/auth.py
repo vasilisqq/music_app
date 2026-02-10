@@ -1,16 +1,17 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr,ConfigDict
 from typing import Optional
 
-class UserCreate(BaseModel):
-    """Схема для создания пользователя"""
-    email: EmailStr
-    username: str
-    password: str
 
 class UserLogin(BaseModel):
     """Схема для входа пользователя"""
     email: EmailStr
     password: str
+
+
+class UserCreate(UserLogin):
+    """Схема для создания пользователя"""
+    username: str
+
 
 class UserResponse(BaseModel):
     """Схема для ответа с данными пользователя"""
@@ -18,4 +19,6 @@ class UserResponse(BaseModel):
     email: str
     username: str
     is_active: bool
-    is_superuser: bool
+    role: int
+
+    model_config = ConfigDict(from_attributes=True)

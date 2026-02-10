@@ -2,8 +2,13 @@ from PyQt6.QtWidgets import QMainWindow,QMessageBox
 from GUI.auth import Ui_AuthWindow
 from PyQt6.QtGui import QRegularExpressionValidator
 from PyQt6.QtCore import QRegularExpression
+from APIworker import ApiWorker
 import re
-
+import sys
+import os
+from typing import TypeVar
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+from schemas.auth import UserCreate, UserLogin, UserResponse
 
 NORMAL_STYLE = """
 QLineEdit { 
@@ -30,7 +35,9 @@ class Auth(QMainWindow):
         self.ui.setupUi(self)
         self.ui.switch.clicked.connect(lambda: self.ui.stackedWidget.setCurrentIndex(1))
         self.ui.switch_2.clicked.connect(lambda: self.ui.stackedWidget.setCurrentIndex(0))
-
+        self.api = ApiWorker()
+        self.api.user_received.connect(self.on_user_recieved)
+        self.api.error_occurred.connect(self.on_error)
         self.setup_validation()
         
         # Состояние ошибок
@@ -170,14 +177,23 @@ class Auth(QMainWindow):
         """Обработка регистрации"""
         if self.ui.stackedWidget.currentIndex() != 0:
             return
-            
-        
         # Полная валидация
         if self.is_valid():  
-            email = self.ui.emailInput.text().strip()
-            username = self.ui.usernameInput.text().strip()
-            QMessageBox.information(self, "Успех", 
-                f"Пользователь {username} зарегистрирован!\nEmail: {email}")
+            user_reg = UserCreate(
+                email=self.ui.emailInput.text().strip(),
+                username = self.ui.usernameInput.text().strip(),
+                password = self.ui.passwordConfirmInput.text().strip()
+            )
+            self.api.create_user(user_reg)
+            # QMessageBox.information(self, "Успех", 
+            #     f"Пользователь {username} зарегистрирован!\nEmail: {email}")
             
             # Переход на логин
             self.ui.stackedWidget.setCurrentIndex(1)
+
+
+    def on_user_recieved(self, user: UserResponse):
+        print(user.email)
+
+    def on_error(self, error:str):
+        print(error)
