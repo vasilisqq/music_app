@@ -80,17 +80,17 @@ class MainWindow(QWidget):
         self.view = QGraphicsView(self.scene)
         self.view.setRenderHint(QPainter.RenderHint.Antialiasing, True)
         # Устанавливаем для view политику размеров, чтобы он растягивался
-        # self.view.setSizePolicy(
-        #     QSizePolicy.Policy.Expanding,  # По горизонтали - расширяющийся
-        #     QSizePolicy.Policy.Expanding   # По вертикали - расширяющийся
-        # )
+        self.view.setSizePolicy(
+            QSizePolicy.Policy.Expanding,  # По горизонтали - расширяющийся
+            QSizePolicy.Policy.Expanding   # По вертикали - расширяющийся
+        )
         
         # Настраиваем view - ВАЖНО: убираем fitInView и центрирование!
-        # self.view.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
-        # self.view.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        self.view.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        self.view.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
         
         # Выравниваем содержимое в левом верхнем углу
-        self.view.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignHCenter)
+        self.view.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop)
         
         # Устанавливаем область сцены (важно для корректного отображения)
         self.view.setSceneRect(self.scene.sceneRect())

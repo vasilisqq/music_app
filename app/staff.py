@@ -33,6 +33,8 @@ class NoteItem(QGraphicsEllipseItem):
         
         # Добавляем штиль
         self.add_stem(x, y)
+        if self.note_name == ["C4"]:
+            self.add_cross()
     
     def add_stem(self, x, y):
         """Добавляет штиль к ноте"""
@@ -57,6 +59,10 @@ class NoteItem(QGraphicsEllipseItem):
         # Сохраняем родительскую сцену для добавления штиля
         self._stem_item = self.stem
 
+    def add_cross(self):
+        self.stem = QGraphicsLineItem(stem_x, stem_y_bottom, stem_x, stem_y_top)
+
+
 
 class HighlightableLineItem(QGraphicsLineItem):
     """Класс линии, которая подсвечивается при наведении"""
@@ -66,7 +72,7 @@ class HighlightableLineItem(QGraphicsLineItem):
         self.tact = tact
         self.y = y
         # Стандартные параметры линии
-        self.normal_pen = QPen(Qt.GlobalColor.black)
+        self.normal_pen = QPen(Qt.GlobalColor.white) if transparent else  QPen(Qt.GlobalColor.black)
         self.normal_pen.setWidthF(1.2)
         
         # Параметры при наведении
@@ -387,10 +393,15 @@ class StaffLayout:
                     note_name = "E4"
                 case 5: 
                     note_name = "C4"
-            line_item = HighlightableLineItem(
-                QLineF(self.x0, y, self.x0 + 500, y),
-                self.current_tact,y, note_name
-            )
+                    line_item = HighlightableLineItem(
+                    QLineF(self.x0, y, self.x0 + 500, y),
+                    self.current_tact,y, note_name, transparent=True
+                )
+            if i != 5:
+                line_item = HighlightableLineItem(
+                    QLineF(self.x0, y, self.x0 + 500, y),
+                    self.current_tact,y, note_name
+                )
             line_item.line_number = i  # Сохраняем номер для отладки
             scene.addItem(line_item)
             self.current_tact.lines.append(line_item)
@@ -414,7 +425,7 @@ class StaffLayout:
         """Добавляет изображение скрипичного ключа на нотный стан"""
         try:
             # Загружаем изображение скрипичного ключа
-            pixmap = QPixmap("photos/scrip.png")
+            pixmap = QPixmap("app/photos/scrip.png")
             # Уменьшаем масштаб изображения, чтобы оно не было слишком большим
             target_height = self.line_spacing * 7  # Высота в 4.5 интервала (меньше чем было)
             
