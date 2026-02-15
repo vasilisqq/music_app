@@ -3,7 +3,7 @@ import sys
 import os
 # from app.core.config import settings
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-from schemas.auth import UserCreate, UserLogin, UserResponse
+from schemas.auth import UserCreate, UserLogin
 from services.user_service import UserService
 from services.auth_service import AuthService
 # from app.services.auth_service import AuthService
@@ -13,7 +13,7 @@ from core.dependencies import get_user_service, get_auth_service
 router = APIRouter(tags=["authentication"])
 
 #роутер регистрации
-@router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/register", status_code=status.HTTP_201_CREATED)
 async def register(
     user_data: UserCreate,
     user_service: UserService = Depends(get_user_service)
@@ -32,29 +32,29 @@ async def register(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="такой username уже занят"
         )
-    user = await user_service.create_user(user_data)
-    if not user:
+    token = await user_service.create_user(user_data)
+    if not token:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Не удалось создать пользователя"
         )
     
-    return UserResponse.model_validate(user)
+    return token
 
-@router.post("/login", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/login", status_code=status.HTTP_201_CREATED)
 async def login(
     user_data: UserLogin,
     response: Response,
     auth_service: AuthService = Depends(get_auth_service)
 ):
     """Вход пользователя"""
-    user = await auth_service.login_user(user_data)
-    if not user:
+    token = await auth_service.login_user(user_data)
+    if not token:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Неверный email или пароль",
         )
-    return UserResponse.model_validate(user)
+    return token
 
 
 # @router.post("/logout")

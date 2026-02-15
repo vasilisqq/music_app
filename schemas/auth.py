@@ -13,12 +13,12 @@ class UserCreate(UserLogin):
     username: str
 
 
-class UserResponse(BaseModel):
-    """Схема для ответа с данными пользователя"""
-    id: int
-    email: str
-    username: str
-    is_active: bool
-    role: int
+# class UserResponse(BaseModel):
+#     """Схема для ответа с данными пользователя"""
+#     id: int
+#     email: str
+#     username: str
+#     is_active: bool
+#     role: int
 
-    model_config = ConfigDict(from_attributes=True)
+#     model_config = ConfigDict(from_attributes=True)

@@ -3,8 +3,8 @@ from typing import Optional, Dict
 from schemas.auth import UserLogin
 from models import User
 from services.user_service import UserService
-from config import settings
-
+from server.core.config import settings
+from utils.jwt import create_access_token
 
 class AuthService:
     def __init__(self, db: AsyncSession):
@@ -18,7 +18,7 @@ class AuthService:
         if not user or not user.is_active:
             return None
 
-        return user
+        return create_access_token(data = {"user_id": str(user.id)})
 
     #async def logout_user(self, refresh_token: str) -> bool:
     #    """Выход пользователя (удаление refresh токена)."""

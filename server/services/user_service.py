@@ -5,6 +5,7 @@ from typing import Optional
 from models import User, Role
 from schemas.auth import UserCreate
 from utils.security import get_password_hash, verify_password
+from utils.jwt import create_access_token
 
 class UserService:
     def __init__(self, db: AsyncSession):
@@ -27,7 +28,7 @@ class UserService:
             self.db.add(db_user)
             await self.db.commit()
             await self.db.refresh(db_user)
-            return db_user
+            return create_access_token(data = {"user_id": str(db_user.id)})
         except IntegrityError:
             await self.db.rollback()
             return None

@@ -3,7 +3,7 @@ from typing import Optional, Dict
 from schemas.lesson import LessonCreate
 from models import Lesson
 from services.user_service import UserService
-from config import settings
+from server.core.config import settings
 from sqlalchemy import select, insert
 
 class LessonService:

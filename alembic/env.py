@@ -6,7 +6,7 @@ from sqlalchemy import pool
 from alembic import context
 import os
 import sys
-from server.config import settings
+from server.core.config import settings
 
 # Добавляем корневую директорию в путь
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
