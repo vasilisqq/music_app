@@ -8,13 +8,16 @@ from PyQt6.QtWidgets import (
     QGraphicsRectItem,
     QGraphicsEllipseItem
 )
-from musicpy import note, play, C
-
+from config import *
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+from schemas.lesson import LessonCreate
 
 class NoteItem(QGraphicsEllipseItem):
     """Класс для отображения ноты"""
     
-    def __init__(self, x, y, name):
+    def __init__(self, x, y, name, pred_note=None):
         super().__init__()
         self.note_lenght = 1/4
         self.note_name = name
@@ -22,7 +25,7 @@ class NoteItem(QGraphicsEllipseItem):
         # Размеры ноты
         self.width = 12
         self.height = 9
-        
+        self.pred_note = pred_note
         # Устанавливаем позицию и размер
         self.setRect(QRectF(x - self.width/2, y - self.height/2, 
                            self.width, self.height))
@@ -33,8 +36,9 @@ class NoteItem(QGraphicsEllipseItem):
         
         # Добавляем штиль
         self.add_stem(x, y)
-        if self.note_name == ["C4"]:
-            self.add_cross()
+        if self.note_name in ["C4"]:
+            print("A")
+            self.add_cross(y)
     
     def add_stem(self, x, y):
         """Добавляет штиль к ноте"""
@@ -53,31 +57,36 @@ class NoteItem(QGraphicsEllipseItem):
         # Создаем линию штиля
         self.stem = QGraphicsLineItem(stem_x, stem_y_bottom, stem_x, stem_y_top)
         pen = QPen(Qt.GlobalColor.black)
-        pen.setWidthF(1.2)
+        pen.setWidthF(LINE_WIDTH)
         self.stem.setPen(pen)
         
         # Сохраняем родительскую сцену для добавления штиля
         self._stem_item = self.stem
 
-    def add_cross(self):
-        self.stem = QGraphicsLineItem(stem_x, stem_y_bottom, stem_x, stem_y_top)
+    def add_cross(self, y):
+        self.crossline = QGraphicsLineItem(self.x-self.width, y, self.x+self.width, y)
+        pen = QPen(Qt.GlobalColor.black)
+        pen.setWidthF(LINE_WIDTH)
+        self.crossline.setPen(pen)
+
 
 
 
 class HighlightableLineItem(QGraphicsLineItem):
     """Класс линии, которая подсвечивается при наведении"""
     
-    def __init__(self, line, tact, y, note_name, transparent=False, parent=None):
+    def __init__(self, line:QLineF, tact, y, note_name, transparent=False, parent=None):
         super().__init__(line, parent)
+        self.line_obj = line   
         self.tact = tact
         self.y = y
         # Стандартные параметры линии
-        self.normal_pen = QPen(Qt.GlobalColor.white) if transparent else  QPen(Qt.GlobalColor.black)
-        self.normal_pen.setWidthF(1.2)
+        self.normal_pen = QPen(Qt.GlobalColor.transparent) if transparent else  QPen(Qt.GlobalColor.black)
+        self.normal_pen.setWidthF(LINE_WIDTH)
         
         # Параметры при наведении
         self.hover_pen = QPen(QColor(255, 0, 0))  # Красный цвет
-        self.hover_pen.setWidthF(2.0)  # Толще обычной линии
+        self.hover_pen.setWidthF(LINE_WIDTH*1.5)  # Толще обычной линии
         
         # Устанавливаем стандартное перо
         self.setPen(self.normal_pen)
@@ -96,6 +105,8 @@ class HighlightableLineItem(QGraphicsLineItem):
         """Событие при наведении курсора"""
         self.is_hovered = True
         self.setPen(self.hover_pen)
+        # line = self.line_obj
+        # self.setLine(line.x1(), line.y1(), line.x2()+200, line.y2())
         self.setCursor(Qt.CursorShape.PointingHandCursor)
         self.update()  # Принудительное обновление
         super().hoverEnterEvent(event)
@@ -104,34 +115,17 @@ class HighlightableLineItem(QGraphicsLineItem):
         """Событие при уходе курсора"""
         self.is_hovered = False
         self.setPen(self.normal_pen)
+        # self.setLine(self.line_obj)
         self.unsetCursor()
         self.update()  # Принудительное обновление
         super().hoverLeaveEvent(event)
-    
-    def paint(self, painter, option, widget=None):
-        """Переопределяем отрисовку для лучшего визуального эффекта"""
-        # Если линия подсвечена, можно добавить дополнительный эффект
-        if self.is_hovered:
-            # Рисуем немного более толстую линию на заднем плане для эффекта свечения
-            glow_pen = QPen(QColor(255, 100, 100, 50))  # Полупрозрачный красный
-            glow_pen.setWidthF(5.0)
-            painter.setPen(glow_pen)
-            painter.drawLine(self.line())
-        
-        # Рисуем основную линию
-        super().paint(painter, option, widget)
-
 
     def mousePressEvent(self, event):
         """Обработка клика на линии"""
-        if event.button() == Qt.MouseButton.LeftButton:
+        if event.button() == Qt.MouseButton.LeftButton and self.is_hovered:
             # Получаем позицию клика
             pos = event.pos()
             scene_pos = self.mapToScene(pos)
-            
-            # Определяем y-координату линии
-            y = self.tact.y0 + self.line_number * 12
-            
             # Сообщаем такту, что нужно добавить ноту на этой линии
             self.tact.add_note_at_position(scene_pos.x(), self)
         
@@ -141,9 +135,11 @@ class HighlightableLineItem(QGraphicsLineItem):
 class StaffSpaceItem(QGraphicsRectItem):
     """Класс для пространства между линиями нотного стана"""
     
-    def __init__(self, rect, space_number, parent=None):
+    def __init__(self, rect, space_number, tact, note_name, y, parent=None):
         super().__init__(rect, parent)
-        
+        self.tact = tact
+        self.note_name = note_name
+        self.y = y
         # Сохраняем номер пространства (0-3 для 4 промежутков между 5 линиями)
         self.space_number = space_number
         
@@ -189,29 +185,39 @@ class StaffSpaceItem(QGraphicsRectItem):
         self.update()
         super().hoverLeaveEvent(event)
 
+    def mousePressEvent(self, event):
+        """Обработка клика на линии"""
+        if event.button() == Qt.MouseButton.LeftButton and self.is_hovered:
+            # Получаем позицию клика
+            pos = event.pos()
+            scene_pos = self.mapToScene(pos)
+            # Сообщаем такту, что нужно добавить ноту на этой линии
+            self.tact.add_note_at_position(scene_pos.x(), self)
+        
+        super().mousePressEvent(event)
+
 
 class TimeSignature:
     """Класс для отображения размерности такта"""
-    
     def __init__(self, scene, x, y, numerator=4, denominator=4):
         self.scene = scene
         self.x = x
         self.y = y
         self.numerator = numerator
         self.denominator = denominator
-        
+
         self.render()
     
     def render(self):
         """Отображает размерность такта на сцене"""
         # Создаем элемент текста для числителя
         numerator_text = QGraphicsTextItem(str(self.numerator))
-        font = QFont("Arial", 24)
+        font = QFont("Arial", 26)
         font.setBold(True)
         numerator_text.setFont(font)
         
         # Позиционируем числитель
-        numerator_text.setPos(self.x, self.y-10)
+        numerator_text.setPos(self.x, self.y-12)
         self.scene.addItem(numerator_text)
         
         # Создаем элемент текста для знаменателя
@@ -219,7 +225,7 @@ class TimeSignature:
         denominator_text.setFont(font)
         
         # Позиционируем знаменатель под числителем
-        denominator_text.setPos(self.x, self.y+14)
+        denominator_text.setPos(self.x, self.y+12)
         self.scene.addItem(denominator_text)
     
     def update_signature(self, numerator, denominator):
@@ -244,7 +250,7 @@ class BarLine:
     def render(self):
         """Отображает вертикальную линию такта на сцене"""
         # Создаем вертикальную линию
-        line = QGraphicsLineItem(self.x, self.y_top, self.x, self.y_bottom)
+        line = QGraphicsLineItem(self.x, self.y_top+0.6, self.x, self.y_bottom-0.6)
         
         # Настраиваем перо для линии такта (толще обычных линий)
         pen = QPen(Qt.GlobalColor.black)
@@ -254,132 +260,44 @@ class BarLine:
         self.scene.addItem(line)
 
 class Tact:
-    def __init__(self, x0, y0, y_bottom, width=None):
-        self.tact_number = 1
+    def __init__(self,y_bottom,scene,number):
+        self.tact_number = number
+        self.x0 = X0*(number+1)
         self.spaces = []
-        self.x0 = x0
-        self.y0 = y0
+        self.width = WIDTH if number > 0 else WIDTH + 100
         self.y_bottom = y_bottom
         self.lines = []
         self.bar_lines = []  # Храним вертикальные линии тактов
-        self.width: float = width if width else 400
-        self.note_x = x0 + 40 if width else x0
+        self.note_x = X0 + 40
         self.notes = []  # Список нот в такте
-        self.scene = None
+        self.scene = scene
+        self.blocks = [(self.width - 90)/4*i+self.x0+90 if number == 0 else (self.width - 20)/4*i+self.x0 for i in range(4)]
+        self.current_block = 0
+        print(self.blocks)
+        self.init_tact()
     
-    def add_bar_lines(self, scene):
-        """Добавляет вертикальные линии тактов"""
-        # Добавляем левую тактовую черту (сразу после размерности такта)
-        left_bar = BarLine(scene, self.x0 , self.y0, self.y_bottom)
-        self.bar_lines.append(left_bar)
-        
-        # Добавляем правую тактовую черту (конечную)
-        right_bar_x = self.x0 + self.width
-        right_bar = BarLine(scene, right_bar_x, self.y0, self.y_bottom)
-        self.bar_lines.append(right_bar)
-
-    def get_note_positions(self):
-        """Возвращает 4 равноудаленные позиции для нот в такте"""
-        # Вычисляем расстояния между нотами и от краев
-        # Для 4 нот в такте: 5 промежутков (2 от краев + 3 между нотами)
-        if self.tact_number == 1:
-            interval = (self.width - 40) / 5
-        else:
-            interval = self.width / 5
-        # Позиции для 4 нот
-        positions = []
-        for i in range(4):
-            # Первая нота на расстоянии interval от левого края,
-            # каждая следующая еще +interval
-            x = self.note_x + interval * (i + 1)
-            positions.append(x)
-        
-        return positions
-    
-    def find_closest_note_position(self, click_x):
-        """Находит ближайшую позицию для ноты из возможных 4"""
-        note_positions = self.get_note_positions()
-        
-        # Находим ближайшую позицию
-        closest_pos = min(note_positions, key=lambda x: abs(x - click_x))
-        
-        return closest_pos
-
-
-    def add_note_at_position(self, click_x, line):
-        """Добавляет ноту на ближайшую доступную позицию"""
-        # Находим ближайшую позицию по X
-        note_x = self.find_closest_note_position(click_x)
-        
-        # Проверяем, есть ли уже нота на этой позиции
-        for note in self.notes:
-            if abs(note.x - note_x) < 5:  # Если позиция уже занята (с небольшой погрешностью)
-                # Удаляем существующую ноту
-                self.scene.removeItem(note)
-                self.scene.removeItem(note._stem_item)
-                # Удаляем из списка
-                self.notes.remove(note)
-                return
-        
-        # Проверяем, не превышено ли максимальное количество нот
-        note_sum = 0
-        for note in self.notes:
-            note_sum += note.note_lenght
-        if note_sum == 1:
-            return
-        
-        # Создаем ноту
-        note_item = NoteItem(note_x, line.y, line.note_name)
-        self.scene.addItem(note_item)
-        
-        # Добавляем штиль отдельно (NoteItem создает его, но не добавляет на сцену)
-        self.scene.addItem(note_item._stem_item)
-        
-        # Сохраняем информацию о ноте
-        self.notes.append(note_item)
-    
-
-
-class StaffLayout:
-    def __init__(self):
-        self.left_hand = False
-        self.tacts = [] 
-        self.x0: float = 60  # Отступ слева
-        self.y0: float = 118  # Отступ сверху
-        self.line_spacing: float = 12
-        self.time_signature = None  # Будет хранить объект размерности такта
-        self.current_tact = None
-        self.bpm = 120
-    
-    @property
-    def y_bottom(self) -> float:
-        return self.y0 + 4 * self.line_spacing
-    
-    @property
-    def staff_height(self) -> float:
-        return 4 * self.line_spacing
-    
-    def init_staff(self):
-        self.current_tact = Tact(self.x0, self.y0, self.y_bottom, 500)
-        self.tacts.append(self.current_tact)
-        # Создаем сцену с нужными размерами
-        scene = QGraphicsScene(0, 0, 1, 1)
-        
-        self.current_tact.scene = scene
-        # Сначала создаем пространства между линиями (4 пространства между 5 линиями)
-        for i in range(4):
-            # Рассчитываем координаты для пространства между линиями i и i+1
-            y_top = self.y0 + i * self.line_spacing
-            # Создаем прямоугольник для пространства
-            space_rect = QRectF(self.x0, y_top, 500, self.line_spacing)
-            space_item = StaffSpaceItem(space_rect, i)
-            scene.addItem(space_item)
-            self.current_tact.spaces.append(space_item)
-
-
+    def init_tact(self):
+    # Сначала создаем пространства между линиями (4 пространства между 5 линиями)
+        for i in range(5):
+            y_top = Y0 + i * LINE_SPACING
+            space_rect = QRectF(X0, y_top, self.width, LINE_SPACING)
+            match i:
+                case 0:
+                    note_name = "E5"
+                case 1:
+                    note_name = "C5"
+                case 2:
+                    note_name = "A4"
+                case 3:
+                    note_name = "F4"
+                case 4:
+                    note_name = "D4"
+            space_item = StaffSpaceItem(space_rect, i, self, note_name, y_top+LINE_SPACING/2)
+            self.scene.addItem(space_item)
+            self.spaces.append(space_item)
         # Затем создаем 5 линий стана
         for i in range(6):
-            y = self.y0 + i * self.line_spacing
+            y = Y0 + i * LINE_SPACING
             match i:
                 case 0:
                     note_name = "F5"
@@ -394,61 +312,119 @@ class StaffLayout:
                 case 5: 
                     note_name = "C4"
                     line_item = HighlightableLineItem(
-                    QLineF(self.x0, y, self.x0 + 500, y),
-                    self.current_tact,y, note_name, transparent=True
+                    QLineF(X0, y, X0 + self.width, y),
+                    self,y, note_name, transparent=True
                 )
             if i != 5:
                 line_item = HighlightableLineItem(
-                    QLineF(self.x0, y, self.x0 + 500, y),
-                    self.current_tact,y, note_name
+                    QLineF(X0, y, X0 + self.width, y),
+                    self,y, note_name
                 )
-            line_item.line_number = i  # Сохраняем номер для отладки
-            scene.addItem(line_item)
-            self.current_tact.lines.append(line_item)
+            line_item.line_number = i
+            self.scene.addItem(line_item)
+            self.lines.append(line_item)
+            self.add_bar_lines()
+
+
+
+    def add_bar_lines(self):
+        """Добавляет вертикальные линии тактов"""
+        # Добавляем левую тактовую черту (сразу после размерности такта)
+        scene = self.scene
+        left_bar = BarLine(scene, X0 , Y0, self.y_bottom)
+        self.bar_lines.append(left_bar)
+        # Добавляем правую тактовую черту (конечную)
+        right_bar_x = X0 + self.width
+        right_bar = BarLine(scene, right_bar_x, Y0, self.y_bottom)
+        self.bar_lines.append(right_bar)
+
+
+
+    def add_note_at_position(self, click_x, line):
+        """Добавляет ноту на ближайшую доступную позицию"""
+        note_sum = 0
+        for note in self.notes:
+            note_sum += note.note_lenght
+        if note_sum == 1:
+            return
+        if self.current_block == 0:
+            note_item = NoteItem(self.blocks[0]+5, line.y, line.note_name)
+        else:
+            note_item = NoteItem(self.blocks[self.current_block]+5, line.y, line.note_name, self.notes[-1])
+        self.current_block += 1
+        self.scene.addItem(note_item)
+        # Добавляем штиль отдельно (NoteItem создает его, но не добавляет на сцену)
+        self.scene.addItem(note_item._stem_item)
+        if hasattr(note_item, "crossline"):
+            self.scene.addItem(note_item.crossline)
+        # Сохраняем информацию о ноте
+        self.notes.append(note_item)
         
+    
+
+
+class StaffLayout:
+    def __init__(self, scene):
+        self.left_hand = False
+        self.tacts = []
+        self.time_signature = None  # Будет хранить объект размерности такта
+        self.current_tact = None
+        self.bpm = 120
+        self.scene = scene
+        self.init_staff(scene)
+    
+    @property
+    def y_bottom(self) -> float:
+        return Y0 + 4 * LINE_SPACING
+    
+    @property
+    def staff_height(self) -> float:
+        return 4 * LINE_SPACING
+    
+    def init_staff(self, scene):
+        self.current_tact = Tact(self.y_bottom, scene, len(self.tacts))
+        self.tacts.append(self.current_tact)
         # Добавляем скрипичный ключ
         self.add_treble_clef(scene)
-        
         # Добавляем размерность такта (4/4) после скрипичного ключа
         self.time_signature = TimeSignature(
             scene, 
-            self.x0 + 50,  # Отступ от левого края после скрипичного ключа
-            self.y0,   # Немного выше первой линии
+            X0 + 50,  # Отступ от левого края после скрипичного ключа
+            Y0,   # Немного выше первой линии
             4, 4           # Размерность 4/4
         )
-        
-        # Добавляем вертикальные линии тактов
-        self.current_tact.add_bar_lines(scene)
-        return scene
 
     def add_treble_clef(self, scene):
         """Добавляет изображение скрипичного ключа на нотный стан"""
-        try:
-            # Загружаем изображение скрипичного ключа
-            pixmap = QPixmap("app/photos/scrip.png")
-            # Уменьшаем масштаб изображения, чтобы оно не было слишком большим
-            target_height = self.line_spacing * 7  # Высота в 4.5 интервала (меньше чем было)
-            
-            # Масштабируем изображение
-            scaled_pixmap = pixmap.scaledToHeight(
-                int(target_height), 
-                Qt.TransformationMode.SmoothTransformation
-            )
-            
-            # Создаем элемент изображения
-            clef_item = QGraphicsPixmapItem(scaled_pixmap)
-            
-            # Корректируем позицию для лучшего размещения
-            x_pos = self.x0 + 5  # Сдвигаем чуть левее начала линий
-            y_pos = self.y0 + 1.5 * self.line_spacing - target_height / 2.5
-            
-            clef_item.setPos(x_pos, y_pos)
-            
-            # Делаем скрипичный ключ неинтерактивным, чтобы не мешал наведению
-            clef_item.setAcceptHoverEvents(False)
-            
-            # Добавляем на сцену
-            scene.addItem(clef_item)
-            
-        except Exception as e:
-            print(f"Ошибка при загрузке изображения скрипичного ключа: {e}")
+        pixmap = QPixmap("app/photos/output.png")
+        target_height = LINE_SPACING * 7  # Высота в 4.5 интервала (меньше чем было)
+        scaled_pixmap = pixmap.scaledToHeight(
+            int(target_height), 
+            Qt.TransformationMode.SmoothTransformation
+        )
+
+        clef_item = QGraphicsPixmapItem(scaled_pixmap)
+        # Корректируем позицию для лучшего размещения
+        x_pos = X0 + 5  # Сдвигаем чуть левее начала линий
+        y_pos = Y0 + 1.5 * LINE_SPACING - target_height / 2.5
+        clef_item.setPos(x_pos, y_pos)
+        # Делаем скрипичный ключ неинтерактивным, чтобы не мешал наведению
+        clef_item.setAcceptHoverEvents(False)
+        # Добавляем на сцену
+        scene.addItem(clef_item)
+
+    def save_lesson(self):
+        lesson = LessonCreate(
+            name="Первый тестовый урок111",
+            difficult="легко",
+            rhythm=4/4,
+            notes = {"right_hand": []},
+            topic=1
+        )
+        for tact in self.tacts:
+            notes = []
+            for note in tact.notes:
+                notes.append({"name":note.note_name, "duration":note.note_lenght})
+            lesson.notes["right_hand"].append(notes)
+        return lesson
+

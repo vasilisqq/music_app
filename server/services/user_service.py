@@ -24,7 +24,6 @@ class UserService:
                 hashed_password=hashed_password,
                 role=role_id
             )
-            
             self.db.add(db_user)
             await self.db.commit()
             await self.db.refresh(db_user)

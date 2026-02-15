@@ -1,6 +1,7 @@
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, DECIMAL
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.sql import func
-from db import Base
+from server.db import Base
 
 
 class Role(Base):
@@ -23,6 +24,16 @@ class User(Base):
     
     def __repr__(self):
         return f"<User(id={self.id}, email={self.email}, username={self.username}, password={self.hashed_password}, is_active={self.is_active}, role={self.role})>"
+    
+
+class Lesson(Base):
+    __tablename__ = "lesson"
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, nullable=False)
+    difficult = Column(String, nullable=False, index=True)
+    rhythm = Column(DECIMAL(), nullable=False)
+    notes = Column(JSONB(), nullable=False)
+    topic = Column(Integer, nullable=False)
     
 
 

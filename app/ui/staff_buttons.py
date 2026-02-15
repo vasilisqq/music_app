@@ -11,10 +11,26 @@ from PyQt6.QtWidgets import (
     QHBoxLayout,
     QPushButton,
     QLabel,
-    QSizePolicy
+    QSizePolicy,
+    QMessageBox
 )
 from staff import HighlightableLineItem, StaffLayout
 from test import play_piano_note
+from config import BACKGROUND_SCENE_COLOR
+from APIworker import ApiWorker
+
+class ScalableGraphicsView(QGraphicsView):
+    def __init__(self, scene):
+        super().__init__(scene)
+        self.setResizeAnchor(QGraphicsView.ViewportAnchor.AnchorViewCenter)
+        self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+    def resizeEvent(self, event):
+        # Масштабируем всю сцену под новый размер viewport
+        self.fitInView(self.scene().sceneRect(), 
+                      Qt.AspectRatioMode.KeepAspectRatio)
+        super().resizeEvent(event)
+
 
 class MainWindow(QWidget):
     """Главное окно приложения"""
@@ -22,6 +38,9 @@ class MainWindow(QWidget):
     def __init__(self):
         super().__init__()
         self.init_ui()
+        self.api = ApiWorker()
+        self.api.lesson_created.connect(self.on_lesson_created)
+        self.api.lesson_error.connect(self.on_lesson_error)
     
     def init_ui(self):
         # Настройка главного окна
@@ -46,7 +65,7 @@ class MainWindow(QWidget):
         
         # Создаем кнопки
         self.start_button = QPushButton("Старт")
-        self.pause_button = QPushButton("Пауза")
+        self.save_button = QPushButton("Сохранить")
         self.reset_button = QPushButton("Сброс")
         self.settings_button = QPushButton("Настройки")
         
@@ -56,7 +75,7 @@ class MainWindow(QWidget):
         
         # Добавляем кнопки на панель
         button_layout.addWidget(self.start_button)
-        button_layout.addWidget(self.pause_button)
+        button_layout.addWidget(self.save_button)
         button_layout.addWidget(self.reset_button)
         button_layout.addWidget(QLabel("Размерность:"))  # Метка для кнопок размерности
         button_layout.addWidget(self.time_44_button)
@@ -68,32 +87,31 @@ class MainWindow(QWidget):
         title_label = QLabel("Rhythm Trainer - Отработка ритма")
         title_label.setStyleSheet("font-size: 16px; font-weight: bold; padding: 5px;")
         button_layout.insertWidget(0, title_label)
-        
+        self.scene = QGraphicsScene(0,0,1000,500)
         # Создаем графическую сцену и представление
-        self.lay = StaffLayout()
-        self.scene = self.lay.init_staff()
+        self.lay = StaffLayout(self.scene)
         
         # Устанавливаем фон сцены
-        self.scene.setBackgroundBrush(QColor(255, 255, 0))  # Светло-кремовый фон
+        self.scene.setBackgroundBrush(BACKGROUND_SCENE_COLOR)  # Светло-кремовый фон
         
         # Простой QGraphicsView без масштабирования
-        self.view = QGraphicsView(self.scene)
+        self.view = ScalableGraphicsView(self.scene)
         self.view.setRenderHint(QPainter.RenderHint.Antialiasing, True)
         # Устанавливаем для view политику размеров, чтобы он растягивался
-        self.view.setSizePolicy(
-            QSizePolicy.Policy.Expanding,  # По горизонтали - расширяющийся
-            QSizePolicy.Policy.Expanding   # По вертикали - расширяющийся
-        )
+        # self.view.setSizePolicy(
+        #     QSizePolicy.Policy.Expanding,  # По горизонтали - расширяющийся
+        #     QSizePolicy.Policy.Expanding   # По вертикали - расширяющийся
+        # )
         
         # Настраиваем view - ВАЖНО: убираем fitInView и центрирование!
-        self.view.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
-        self.view.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
-        
+        # self.view.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        # self.view.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        # self.view.fitInView(self.scene.itemsBoundingRect(), Qt.AspectRatioMode.KeepAspectRatio)
         # Выравниваем содержимое в левом верхнем углу
         self.view.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop)
         
         # Устанавливаем область сцены (важно для корректного отображения)
-        self.view.setSceneRect(self.scene.sceneRect())
+        # self.view.setSceneRect(self.scene.sceneRect())
         
         # Чтобы изображение не было пиксельным, устанавливаем режим сглаживания для изображений
         self.view.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform, True)
@@ -101,10 +119,11 @@ class MainWindow(QWidget):
         # Добавляем виджеты в главный layout
         main_layout.addWidget(button_panel)  # Панель с кнопками (фиксированная высота)
         main_layout.addWidget(self.view, 1)  # Графическая сцена (растягивается)
-        
+        rect = self.scene.sceneRect()
+        print(rect.width())
         # Подключаем кнопки к функциям
         self.start_button.clicked.connect(self.on_start_clicked)
-        self.pause_button.clicked.connect(self.on_pause_clicked)
+        self.save_button.clicked.connect(self.on_save_clicked)
         self.reset_button.clicked.connect(self.on_reset_clicked)
         self.settings_button.clicked.connect(self.on_settings_clicked)
         self.time_44_button.clicked.connect(lambda: self.on_time_signature_changed(4, 4))
@@ -151,7 +170,7 @@ class MainWindow(QWidget):
         self.settings_button.setStyleSheet(button_style)
         
         # Изменяем цвет кнопки паузы для разнообразия
-        self.pause_button.setStyleSheet("""
+        self.save_button.setStyleSheet("""
             QPushButton {
                 background-color: #f0ad4e;
                 color: white;
@@ -224,7 +243,7 @@ class MainWindow(QWidget):
     def on_start_clicked(self):
         for tact in self.lay.tacts:
             for notes in tact.notes:
-                duration = 60/self.lay.bpm * notes.note_lenght
+                duration = 60/self.lay.bpm * notes.note_lenght*4
                 play_piano_note(notes.note_name, duration)
 
 
@@ -233,9 +252,19 @@ class MainWindow(QWidget):
         
 
 
-    def on_pause_clicked(self):
+    def on_save_clicked(self):
         """Обработчик кнопки Пауза"""
-        print("Пауза")
+        note_sum = 0
+        for tact in self.lay.tacts:
+            note_sum = 0
+            for notes in tact.notes:
+                note_sum += notes.note_lenght
+            if note_sum != 1:
+                QMessageBox.warning(self, "Ошибка", "Не все такты заполнены полностью")
+                return
+        lesson = self.lay.save_lesson()
+        self.api.create_lesson(lesson)
+        
     
     def on_reset_clicked(self):
         """Обработчик кнопки Сброс"""
@@ -279,3 +308,11 @@ class MainWindow(QWidget):
         pen.setWidthF(1.2)
         stem.setPen(pen)
         scene.addItem(stem)
+
+
+    def on_lesson_created(self):
+        QMessageBox.information(self, "Успех", "Упражнение создано")
+
+    def on_lesson_error(self,error):
+        QMessageBox.warning(self, "Ошибка", error)
+
