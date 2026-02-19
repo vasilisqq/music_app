@@ -15,59 +15,42 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(
 from schemas.lesson import LessonCreate
 
 class NoteItem(QGraphicsEllipseItem):
-    """Класс для отображения ноты"""
-    
     def __init__(self, x, y, name, pred_note=None):
         super().__init__()
         self.note_lenght = 1/4
         self.note_name = name
         self.x = x
-        # Размеры ноты
+        self.y = y
         self.width = 12
         self.height = 9
         self.pred_note = pred_note
-        # Устанавливаем позицию и размер
+        
+        # Устанавливаем rect овала
         self.setRect(QRectF(x - self.width/2, y - self.height/2, 
                            self.width, self.height))
-        
-        # Настройка внешнего вида
         self.setBrush(QBrush(Qt.GlobalColor.black))
         self.setPen(QPen(Qt.GlobalColor.black))
-        
-        # Добавляем штиль
-        self.add_stem(x, y)
-        if self.note_name in ["C4"]:
-            print("A")
-            self.add_cross(y)
-    
-    def add_stem(self, x, y):
-        """Добавляет штиль к ноте"""
-        # Для четвертных нот штиль вверх длиной 32px
-        stem_length = 32
-        
-        # Координаты штиля
-        if self.note_lenght == 1/4:
-            stem_x = x + self.width/2 - 1
-            stem_y_top = y - stem_length
-            stem_y_bottom = y
-        else:
-            # Для других типов нот можно настроить по-другому
-            ...
-        
-        # Создаем линию штиля
-        self.stem = QGraphicsLineItem(stem_x, stem_y_bottom, stem_x, stem_y_top)
-        pen = QPen(Qt.GlobalColor.black)
-        pen.setWidthF(LINE_WIDTH)
-        self.stem.setPen(pen)
-        
-        # Сохраняем родительскую сцену для добавления штиля
-        self._stem_item = self.stem
 
-    def add_cross(self, y):
-        self.crossline = QGraphicsLineItem(self.x-self.width, y, self.x+self.width, y)
-        pen = QPen(Qt.GlobalColor.black)
-        pen.setWidthF(LINE_WIDTH)
-        self.crossline.setPen(pen)
+    def boundingRect(self):
+        # Учитываем штиль (выше овала на 32px) и крест (по ширине овала)
+        rect = super().boundingRect()
+        return rect.adjusted(-self.width/2, -32, self.width/2, self.height/2)
+
+    def paint(self, painter: QPainter, option, widget):
+        # Рисуем овал (автоматически от super())
+        super().paint(painter, option, widget)
+        
+        # Штиль
+        painter.setPen(QPen(Qt.GlobalColor.black, LINE_WIDTH, Qt.PenStyle.SolidLine))
+        stem_x = int(self.x + self.width/2 - 1)
+        stem_y_top = self.y - 32
+        painter.drawLine(stem_x, self.y, stem_x, stem_y_top)
+        
+        # Крест (для C4)
+        if self.note_name in ["C4"]:
+            cross_y = self.y
+            painter.drawLine(self.x - self.width, cross_y, self.x + self.width, cross_y)
+
 
 
 
@@ -140,7 +123,7 @@ class StaffSpaceItem(QGraphicsRectItem):
         self.tact = tact
         self.note_name = note_name
         self.y = y
-        # Сохраняем номер пространства (0-3 для 4 промежутков между 5 линиями)
+        # Сохраняем номер пространства 
         self.space_number = space_number
         
         # Прозрачная заливка по умолчанию
@@ -300,7 +283,7 @@ class Tact:
                     note_name = "F4"
                 case 4:
                     note_name = "D4"
-            space_item = StaffSpaceItem(space_rect, i, self, note_name, y_top+LINE_SPACING/2)
+            space_item = StaffSpaceItem(space_rect, i, self, note_name, int(y_top+LINE_SPACING/2))
             self.scene.addItem(space_item)
             self.spaces.append(space_item)
         # Затем создаем 5 линий стана
@@ -364,12 +347,10 @@ class Tact:
             if int(click_x) in range(bit.x0, item.x0):
                 break
             bit = item
+            print(type(line.y))
         note_item = NoteItem(bit.x0+5, line.y, line.note_name)
         self.scene.addItem(note_item)
         # Добавляем штиль отдельно (NoteItem создает его, но не добавляет на сцену)
-        self.scene.addItem(note_item._stem_item)
-        if hasattr(note_item, "crossline"):
-            self.scene.addItem(note_item.crossline)
         # Сохраняем информацию о ноте
         self.notes.append(note_item)
         
