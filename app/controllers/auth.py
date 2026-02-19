@@ -10,6 +10,9 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from schemas.auth import UserCreate, UserLogin
 
+from loader import settings
+
+
 NORMAL_STYLE = """
 QLineEdit { 
     padding: 15px 20px; border: none; border-radius: 15px; font-size: 18px; 
@@ -272,7 +275,8 @@ class Auth(QMainWindow):
 
             
     def on_user_recieved(self, token):
-        self.settings.setValue("token",token)
+        settings.setValue("token",token)
+        print(token)
         QMessageBox.information(self, "Успех", 
                 f"Добро пожаловать!")
         self.main_window = Main()     # сохраняем ссылку как атрибут объекта

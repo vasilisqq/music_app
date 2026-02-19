@@ -1,7 +1,6 @@
 import sys
 from PyQt6.QtCore import QUrl, pyqtSignal, QObject
 from PyQt6.QtNetwork import QNetworkAccessManager, QNetworkRequest, QNetworkReply
-from PyQt6.QtCore import QJsonDocument, QSettings
 import json
 import sys
 import os
@@ -11,6 +10,8 @@ from schemas.auth import UserCreate, UserLogin
 from schemas.lesson import LessonCreate
 from pydantic import BaseModel, ValidationError
 
+from loader import settings
+
 T = TypeVar('T', bound=BaseModel)
 
 class ApiWorker(QObject):
@@ -19,8 +20,7 @@ class ApiWorker(QObject):
     error_occurred = pyqtSignal(str)
     lesson_created = pyqtSignal()
     lesson_error = pyqtSignal(str)
-    
-    settings = QSettings()
+
     def __init__(self):
         super().__init__()
         self.manager = QNetworkAccessManager()    
@@ -60,9 +60,8 @@ class ApiWorker(QObject):
     def create_lesson(self, lesson_data:LessonCreate) -> None:
         url = QUrl("http://localhost:8000/lesson/create")
         request = QNetworkRequest(url)
-        token =  self.settings.value("token")
-        request.setHeader(QNetworkRequest.KnownHeaders.AuthorizationHeader, 
-                         f"Bearer {token}")
+        token =  settings.value("token")
+        request.setRawHeader(b"Authorization", f"Bearer {token}".encode('utf-8'))
         request.setHeader(QNetworkRequest.KnownHeaders.ContentTypeHeader, 
                          "application/json")
         # Pydantic → JSON bytes автоматически

@@ -15,9 +15,15 @@ from PyQt6.QtWidgets import (
     QMessageBox
 )
 from staff import HighlightableLineItem, StaffLayout
-from test import play_piano_note
+from test import NOTE_FREQ
 from config import BACKGROUND_SCENE_COLOR
 from APIworker import ApiWorker
+import asyncio
+import sounddevice as sd
+from scipy.io import wavfile
+import numpy as np
+
+SAMPLE_RATE, PIANO_C4 = wavfile.read('C4.wav')
 
 class ScalableGraphicsView(QGraphicsView):
     def __init__(self, scene):
@@ -241,29 +247,61 @@ class MainWindow(QWidget):
 
 
     def on_start_clicked(self):
-        for tact in self.lay.tacts:
+        max_time = 0
+        
+        # Генерируем все ноты
+        all_audio = []  # Список (start_time, stereo_samples, sample_rate)
+        for tact_idx, tact in enumerate(self.lay.tacts):
+            print(tact_idx, tact)
+            tact_start = tact_idx * (60/self.lay.bpm)  # Начало такта
+            print(tact_start)
             for notes in tact.notes:
+                print(notes)
                 duration = 60/self.lay.bpm * notes.note_lenght*4
-                play_piano_note(notes.note_name, duration)
+                start_time = tact_start
+                
+                audio = self.generate_note_audio(notes.note_name, duration)
+                all_audio.append((start_time, audio, audio.shape[1]/SAMPLE_RATE))
+                max_time = max(max_time, start_time + duration)
+        
+        # Микшируем в финальный трек
+        final_audio = self.mix_audio(all_audio, max_time)
+        sd.play(final_audio, SAMPLE_RATE, blocking=True)
 
+    def generate_note_audio(self, note_name, duration):
+        """Генерирует стерео аудио для одной ноты"""
+        freq_ratio = NOTE_FREQ[note_name] / 261.63
+        shifted_rate = SAMPLE_RATE * freq_ratio
+        samples_needed = int(shifted_rate * duration)
+        
+        source = PIANO_C4[:, 0] if PIANO_C4.ndim == 2 else PIANO_C4
+        repeats = (samples_needed // len(source)) + 1
+        sample = np.tile(source, repeats)[:samples_needed]
+        
+        stereo = np.stack([sample * 0.65, sample * 0.58], axis=1)
+        return stereo / np.max(np.abs(stereo)) * 1.1
 
+    def mix_audio(self, audio_clips, total_duration):
+        """Микширует все клипы"""
+        total_samples = int(SAMPLE_RATE * total_duration)
+        mixed = np.zeros((total_samples, 2))
+        
+        for start_time, clip, _ in audio_clips:
+            start_sample = int(start_time * SAMPLE_RATE)
+            end_sample = start_sample + len(clip)
+            end_total = min(end_sample, total_samples)
+            
+            if end_total > start_sample:
+                mixed[start_sample:end_total] += clip[:end_total-start_sample] * 0.3  # Громкость
+        
+        return mixed / np.max(np.abs(mixed)) * 0.9  # Нормализация
 
 
         
 
 
     def on_save_clicked(self):
-        """Обработчик кнопки Пауза"""
-        note_sum = 0
-        for tact in self.lay.tacts:
-            note_sum = 0
-            for notes in tact.notes:
-                note_sum += notes.note_lenght
-            if note_sum != 1:
-                QMessageBox.warning(self, "Ошибка", "Не все такты заполнены полностью")
-                return
-        lesson = self.lay.save_lesson()
-        self.api.create_lesson(lesson)
+        ...
         
     
     def on_reset_clicked(self):

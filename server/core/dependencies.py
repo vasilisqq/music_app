@@ -41,16 +41,14 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
     payload = verify_token(credentials.credentials)
     if payload is None:
         raise credentials_exception
-    user = user_service.get_user_by_id(payload)
+    user = await user_service.get_user_by_id(payload)
     if user is None:
         raise credentials_exception
     return user
 
-async def get_current_active_user(
-    current_user = Depends(get_current_user)
-) -> User:
+async def get_current_active_user(current_user = Depends(get_current_user)):
     """Получение текущего активного пользователя"""
-    if not current_user.is_active:
+    if not current_user[0].is_active:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, 
             detail="Неактивный пользователь"
@@ -58,21 +56,25 @@ async def get_current_active_user(
     return current_user
 
 async def is_admin(
-    current_user_id: int = Depends(get_current_active_user),
+    current_user = Depends(get_current_active_user),
     user_service = Depends(get_user_service)        
 ):
-    ...
+    if current_user[1] == "пользователь":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, 
+            detail="Пользователь не является администратором"
+        )
     
 
 
-async def get_current_admin(
-    current_user: User = Depends(get_current_user)
-) -> User:
-    """Получение текущего суперпользователя"""
-    if not current_user.is_superuser:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Недостаточно прав доступа"
-        )
-     return current_user
+# async def get_current_admin(
+#     current_user: User = Depends(get_current_user)
+# ) -> User:
+#     """Получение текущего суперпользователя"""
+#     if not current_user.is_superuser:
+#         raise HTTPException(
+#             status_code=status.HTTP_403_FORBIDDEN,
+#             detail="Недостаточно прав доступа"
+#         )
+#      return current_user
 

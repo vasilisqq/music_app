@@ -259,6 +259,14 @@ class BarLine:
         
         self.scene.addItem(line)
 
+
+class Bits:
+
+    def __init__(self, x0):
+        self.note_layer = []
+        self.x0 = x0
+
+
 class Tact:
     def __init__(self,y_bottom,scene,number):
         self.tact_number = number
@@ -266,16 +274,16 @@ class Tact:
         self.spaces = []
         self.width = WIDTH if number > 0 else WIDTH + 100
         self.y_bottom = y_bottom
+        self.note_x = X0 if number > 0 else X0 + 100
         self.lines = []
         self.bar_lines = []  # Храним вертикальные линии тактов
-        self.note_x = X0 + 40
         self.notes = []  # Список нот в такте
         self.scene = scene
-        self.blocks = [(self.width - 90)/4*i+self.x0+90 if number == 0 else (self.width - 20)/4*i+self.x0 for i in range(4)]
-        self.current_block = 0
-        print(self.blocks)
+        self.bits = [Bits(int((self.width - 100)/4*i+self.x0+100)) if number == 0 else Bits(int(self.width/4*i+self.x0)) for i in range(4)]
+        self.current_bit = 0
         self.init_tact()
     
+
     def init_tact(self):
     # Сначала создаем пространства между линиями (4 пространства между 5 линиями)
         for i in range(5):
@@ -342,16 +350,21 @@ class Tact:
 
     def add_note_at_position(self, click_x, line):
         """Добавляет ноту на ближайшую доступную позицию"""
-        note_sum = 0
-        for note in self.notes:
-            note_sum += note.note_lenght
-        if note_sum == 1:
+        # print(self.note_x, "left_line")
+        # print(self.note_x+self.width, "right_line")
+        # print(click_x, "click_x")
+        if not int(click_x) in range(self.note_x, self.note_x+self.width):
+            # print("SKLDFH")
             return
-        if self.current_block == 0:
-            note_item = NoteItem(self.blocks[0]+5, line.y, line.note_name)
-        else:
-            note_item = NoteItem(self.blocks[self.current_block]+5, line.y, line.note_name, self.notes[-1])
-        self.current_block += 1
+        bit = self.bits[0]
+        # print(bit.x0, "x0")
+        for i in range (1, len(self.bits)):
+            item = self.bits[i]
+            # print(item.x0 , "item x0")
+            if int(click_x) in range(bit.x0, item.x0):
+                break
+            bit = item
+        note_item = NoteItem(bit.x0+5, line.y, line.note_name)
         self.scene.addItem(note_item)
         # Добавляем штиль отдельно (NoteItem создает его, но не добавляет на сцену)
         self.scene.addItem(note_item._stem_item)
@@ -360,7 +373,6 @@ class Tact:
         # Сохраняем информацию о ноте
         self.notes.append(note_item)
         
-    
 
 
 class StaffLayout:
@@ -415,7 +427,7 @@ class StaffLayout:
 
     def save_lesson(self):
         lesson = LessonCreate(
-            name="Первый тестовый урок111",
+            name="Первый тестовый урок111111111",
             difficult="легко",
             rhythm=4/4,
             notes = {"right_hand": []},
@@ -427,4 +439,8 @@ class StaffLayout:
                 notes.append({"name":note.note_name, "duration":note.note_lenght})
             lesson.notes["right_hand"].append(notes)
         return lesson
+    
+
+    def check_full(self):
+        ...
 

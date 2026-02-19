@@ -47,12 +47,12 @@ class UserService:
         )
         return result.scalar_one_or_none()
     
-    async def get_user_by_id(self, user_id: int) -> Optional[User]:
+    async def get_user_by_id(self, user_id: int):
         """Получение пользователя по ID"""
         result = await self.db.execute(
-            select(User).join(Role).where(and_(User.id == user_id, User.role == Role.id))
+            select(User, Role.name).join(Role, User.role == Role.id).where(User.id == user_id)
         )
-        return result.scalar_one_or_none()
+        return result.one_or_none()
     
     async def authenticate_user(self, email: str, password: str) -> Optional[User]:
         """Аутентификация пользователя"""

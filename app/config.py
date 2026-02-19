@@ -3,6 +3,6 @@ from PyQt6.QtGui import QPen, QBrush, QPainter, QColor
 LINE_SPACING = 12
 X0 = 40
 Y0 = 118
-WIDTH=300
+WIDTH=400
 BACKGROUND_SCENE_COLOR = QColor(255, 255, 0)
 LINE_WIDTH = 1.2

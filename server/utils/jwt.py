@@ -18,9 +18,9 @@ def verify_token(token: str, token_type: str = "access") -> Optional[Dict[str, A
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
         # Проверяем срок действия
         exp = payload.get("exp")
-        if exp is None or datetime.now(timezone.utc) > datetime.fromtimestamp(exp):
+        if exp is None or datetime.now(timezone.utc) > datetime.fromtimestamp(exp, tz=timezone.utc):
             return None
-        return payload.get("user_id")
+        return int(payload.get("user_id"))
     except JWTError:
         return None
 
