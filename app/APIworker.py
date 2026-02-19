@@ -1,7 +1,7 @@
 import sys
 from PyQt6.QtCore import QUrl, pyqtSignal, QObject
 from PyQt6.QtNetwork import QNetworkAccessManager, QNetworkRequest, QNetworkReply
-from PyQt6.QtCore import QJsonDocument
+from PyQt6.QtCore import QJsonDocument, QSettings
 import json
 import sys
 import os
@@ -20,15 +20,16 @@ class ApiWorker(QObject):
     lesson_created = pyqtSignal()
     lesson_error = pyqtSignal(str)
     
+    settings = QSettings()
     def __init__(self):
         super().__init__()
-        self.manager = QNetworkAccessManager()
+        self.manager = QNetworkAccessManager()    
+
     
     def get_user(self, user_id: int) -> None:
         """GET /users/{id} → UserResponse"""
         url = QUrl(f"http://localhost:8000/users/{user_id}")
         request = QNetworkRequest(url)
-        request.setHeader(QNetworkRequest.ContentTypeHeader, "application/json")
         
         reply = self.manager.get(request)
         reply.finished.connect(lambda: self._handle_reply(reply))
@@ -59,8 +60,11 @@ class ApiWorker(QObject):
     def create_lesson(self, lesson_data:LessonCreate) -> None:
         url = QUrl("http://localhost:8000/lesson/create")
         request = QNetworkRequest(url)
-        request.setHeader(QNetworkRequest.KnownHeaders.ContentTypeHeader, "application/json")
-        
+        token =  self.settings.value("token")
+        request.setHeader(QNetworkRequest.KnownHeaders.AuthorizationHeader, 
+                         f"Bearer {token}")
+        request.setHeader(QNetworkRequest.KnownHeaders.ContentTypeHeader, 
+                         "application/json")
         # Pydantic → JSON bytes автоматически
         json_bytes = json.dumps(lesson_data.model_dump()).encode('utf-8')
         reply = self.manager.post(request, json_bytes)

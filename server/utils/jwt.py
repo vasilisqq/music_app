@@ -20,7 +20,7 @@ def verify_token(token: str, token_type: str = "access") -> Optional[Dict[str, A
         exp = payload.get("exp")
         if exp is None or datetime.now(timezone.utc) > datetime.fromtimestamp(exp):
             return None
-        return payload
+        return payload.get("user_id")
     except JWTError:
         return None
 

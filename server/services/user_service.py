@@ -1,5 +1,5 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, and_
 from sqlalchemy.exc import IntegrityError
 from typing import Optional
 from models import User, Role
@@ -50,7 +50,7 @@ class UserService:
     async def get_user_by_id(self, user_id: int) -> Optional[User]:
         """Получение пользователя по ID"""
         result = await self.db.execute(
-            select(User).where(User.id == user_id)
+            select(User).join(Role).where(and_(User.id == user_id, User.role == Role.id))
         )
         return result.scalar_one_or_none()
     
