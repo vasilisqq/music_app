@@ -15,15 +15,16 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(
 from schemas.lesson import LessonCreate
 
 class NoteItem(QGraphicsEllipseItem):
-    def __init__(self, x, y, name, pred_note=None):
+    def __init__(self, x, y, name, has_shtil=True, reversing=False):
         super().__init__()
         self.note_lenght = 1/4
         self.note_name = name
         self.x = x
         self.y = y
         self.width = 12
-        self.height = 9
-        self.pred_note = pred_note
+        self.height = 10
+        self.shtil = has_shtil
+        self.reversing = reversing
         
         # Устанавливаем rect овала
         self.setRect(QRectF(x - self.width/2, y - self.height/2, 
@@ -39,12 +40,12 @@ class NoteItem(QGraphicsEllipseItem):
     def paint(self, painter: QPainter, option, widget):
         # Рисуем овал (автоматически от super())
         super().paint(painter, option, widget)
-        
-        # Штиль
-        painter.setPen(QPen(Qt.GlobalColor.black, LINE_WIDTH, Qt.PenStyle.SolidLine))
-        stem_x = int(self.x + self.width/2 - 1)
-        stem_y_top = self.y - 32
-        painter.drawLine(stem_x, self.y, stem_x, stem_y_top)
+        if self.shtil:
+            # Штиль
+            painter.setPen(QPen(Qt.GlobalColor.black, LINE_WIDTH, Qt.PenStyle.SolidLine))
+            stem_x = int(self.x + self.width/2 - 1)
+            stem_y_top = self.y - 32
+            painter.drawLine(stem_x, self.y, stem_x, stem_y_top)
         
         # Крест (для C4)
         if self.note_name in ["C4"]:
@@ -243,16 +244,54 @@ class BarLine:
         self.scene.addItem(line)
 
 
-class Bits:
+class Bits(QGraphicsRectItem):
 
-    def __init__(self, x0):
-        self.note_layer = []
+    def __init__(self, rect, x0, x1,parent=None):
+        super().__init__(rect, parent)
+        self.notes = []
         self.x0 = x0
+        self.x1 = x1
+        self.weigth = 0
+        self.max_weigth = 1/4
+        self.full = False
+        # self.y0 = Y0
+        # self.y1 = y1
+
+        self.normal_brush = QBrush(Qt.GlobalColor.transparent)
+        self.normal_pen = QPen(QColor(100, 100, 100, 50),1.5, Qt.PenStyle.SolidLine)
+        # self.normal_pen.width()
+
+        self.setBrush(self.normal_brush)
+        self.setPen(self.normal_pen)
+
+    def isExist_note(self, line: StaffSpaceItem | HighlightableLineItem):
+        for note in self.notes:
+            if note.note_name == line.note_name:
+                return True
+        return False
+
+
+    def has_upper_or_lower(self, line):
+        for note in self.notes:
+            if abs(note.y - line.y) <= 6:
+                print(note.y, "note", line.y, "line")
+                return 0 if note.reversing else 8
+        return None
+
+    def add_note(self, note):
+        if note.note_lenght > self.max_weigth:
+            return False
+        self.notes.append(note)
+        return True
+
+
+
 
 
 class Tact:
     def __init__(self,y_bottom,scene,number):
         self.tact_number = number
+        self.bits_count = 4
         self.x0 = X0*(number+1)
         self.spaces = []
         self.width = WIDTH if number > 0 else WIDTH + 100
@@ -262,8 +301,9 @@ class Tact:
         self.bar_lines = []  # Храним вертикальные линии тактов
         self.notes = []  # Список нот в такте
         self.scene = scene
-        self.bits = [Bits(int((self.width - 100)/4*i+self.x0+100)) if number == 0 else Bits(int(self.width/4*i+self.x0)) for i in range(4)]
+        self.bits = []
         self.current_bit = 0
+        self.init_bits()
         self.init_tact()
     
 
@@ -317,6 +357,22 @@ class Tact:
             self.add_bar_lines()
 
 
+    def init_bits(self):
+        count_bits = self.bits_count
+        if self.tact_number == 0:
+            x_left = self.x0+100
+        else:
+            x_left = self.x0
+        for i in range(1, count_bits+1):
+            if self.tact_number == 0:
+                x1 = int((self.width - 100)/count_bits*i+self.x0+100)
+            else:
+                x1 = int(self.width/count_bits*i+self.x0)
+            bit = Bits(QRectF(x_left, Y0, x1-x_left, self.y_bottom-Y0), x_left, x1)
+            x_left = x1
+            self.bits.append(bit)
+            self.scene.addItem(bit)
+
 
     def add_bar_lines(self):
         """Добавляет вертикальные линии тактов"""
@@ -333,26 +389,18 @@ class Tact:
 
     def add_note_at_position(self, click_x, line):
         """Добавляет ноту на ближайшую доступную позицию"""
-        # print(self.note_x, "left_line")
-        # print(self.note_x+self.width, "right_line")
-        # print(click_x, "click_x")
         if not int(click_x) in range(self.note_x, self.note_x+self.width):
-            # print("SKLDFH")
             return
-        bit = self.bits[0]
-        # print(bit.x0, "x0")
-        for i in range (1, len(self.bits)):
-            item = self.bits[i]
-            # print(item.x0 , "item x0")
-            if int(click_x) in range(bit.x0, item.x0):
-                break
-            bit = item
-            print(type(line.y))
-        note_item = NoteItem(bit.x0+5, line.y, line.note_name)
-        self.scene.addItem(note_item)
-        # Добавляем штиль отдельно (NoteItem создает его, но не добавляет на сцену)
-        # Сохраняем информацию о ноте
-        self.notes.append(note_item)
+        for bit in self.bits:
+            if int(click_x) in range(bit.x0, bit.x1):
+                item = bit
+        if not item.isExist_note(line):
+            if (rev:=item.has_upper_or_lower(line)) is None:
+                note_item = NoteItem(item.x0+15, line.y, line.note_name) 
+            else:
+                note_item = NoteItem(item.x0+15+rev, line.y, line.note_name, False, True if rev>0 else False)
+            if item.add_note(note_item):
+                self.scene.addItem(note_item)
         
 
 
