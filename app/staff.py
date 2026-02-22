@@ -12,10 +12,13 @@ from config import *
 import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-from schemas.lesson import LessonCreate
+from schemas.lesson import LessonCreate, LessonResponse
+
+
+
 
 class NoteItem(QGraphicsEllipseItem):
-    def __init__(self, x, y, name, has_shtil=True, reversing=False):
+    def __init__(self, x, y, name, scene, has_shtil=True, reversing=False, bit=None):
         super().__init__()
         self.note_lenght = 1/4
         self.note_name = name
@@ -25,33 +28,41 @@ class NoteItem(QGraphicsEllipseItem):
         self.height = 10
         self.shtil = has_shtil
         self.reversing = reversing
-        
-        # Устанавливаем rect овала
+        self.scene = scene
+        self.bit = bit
         self.setRect(QRectF(x - self.width/2, y - self.height/2, 
                            self.width, self.height))
         self.setBrush(QBrush(Qt.GlobalColor.black))
         self.setPen(QPen(Qt.GlobalColor.black))
 
+
     def boundingRect(self):
-        # Учитываем штиль (выше овала на 32px) и крест (по ширине овала)
         rect = super().boundingRect()
         return rect.adjusted(-self.width/2, -32, self.width/2, self.height/2)
 
+
     def paint(self, painter: QPainter, option, widget):
-        # Рисуем овал (автоматически от super())
         super().paint(painter, option, widget)
+
         if self.shtil:
-            # Штиль
             painter.setPen(QPen(Qt.GlobalColor.black, LINE_WIDTH, Qt.PenStyle.SolidLine))
             stem_x = int(self.x + self.width/2 - 1)
             stem_y_top = self.y - 32
             painter.drawLine(stem_x, self.y, stem_x, stem_y_top)
         
-        # Крест (для C4)
         if self.note_name in ["C4"]:
             cross_y = self.y
             painter.drawLine(self.x - self.width, cross_y, self.x + self.width, cross_y)
 
+
+    def mousePressEvent(self, event) -> None:
+        event.accept()
+        self.bit.notes.remove(self)
+        self.scene.removeItem(self)
+        del self
+
+        # если хочешь, чтобы работало стандартное поведение (выделение/перетаскивание)
+        # super().mousePressEvent(event)
 
 
 
@@ -264,6 +275,7 @@ class Bits(QGraphicsRectItem):
         self.setBrush(self.normal_brush)
         self.setPen(self.normal_pen)
 
+
     def isExist_note(self, line: StaffSpaceItem | HighlightableLineItem):
         for note in self.notes:
             if note.note_name == line.note_name:
@@ -278,9 +290,11 @@ class Bits(QGraphicsRectItem):
                 return 0 if note.reversing else 8
         return None
 
+
     def add_note(self, note):
         if note.note_lenght > self.max_weigth:
             return False
+        note.bit = self
         self.notes.append(note)
         return True
 
@@ -396,9 +410,9 @@ class Tact:
                 item = bit
         if not item.isExist_note(line):
             if (rev:=item.has_upper_or_lower(line)) is None:
-                note_item = NoteItem(item.x0+15, line.y, line.note_name) 
+                note_item = NoteItem(item.x0+15, line.y, line.note_name, self.scene) 
             else:
-                note_item = NoteItem(item.x0+15+rev, line.y, line.note_name, False, True if rev>0 else False)
+                note_item = NoteItem(item.x0+15+rev, line.y, line.note_name,self.scene, False, True if rev>0 else False)
             if item.add_note(note_item):
                 self.scene.addItem(note_item)
         
@@ -456,19 +470,42 @@ class StaffLayout:
 
     def save_lesson(self):
         lesson = LessonCreate(
-            name="Первый тестовый урок111111111",
+            name="ыдловрап",
             difficult="легко",
             rhythm=4/4,
             notes = {"right_hand": []},
             topic=1
         )
         for tact in self.tacts:
-            notes = []
-            for note in tact.notes:
-                notes.append({"name":note.note_name, "duration":note.note_lenght})
-            lesson.notes["right_hand"].append(notes)
+            all_notes = []
+            for bit in tact.bits:
+                validate_notes=[]
+                for notes in bit.notes:
+                    # for note in notes:
+                        validate_notes.append({"name":notes.note_name, "duration":notes.note_lenght})
+                all_notes.append(validate_notes)
+            lesson.notes["right_hand"] = all_notes
         return lesson
     
+
+    def display_lesson(self, lesson: LessonResponse):
+        tacts = lesson.notes["right_hand"]
+        for item in self.tacts[0].lines + self.tacts[0].spaces:
+            for i, bit in enumerate(tacts):
+                for note in bit:
+                    if note["name"] == item.note_name:
+                        self.tacts[0].add_note_at_position(self.tacts[0].bits[i].x0+10, item)
+
+
+        # print(tacts)
+        # for bit, bit_self in tacts, self.tacts.bits:
+        #     for note in bit:
+        #         self.tact.add_note_at_position(bit_self.x0+10)
+
+
+
+
+
 
     def check_full(self):
         ...

@@ -5,42 +5,31 @@ import json
 import sys
 import os
 from typing import TypeVar
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from schemas.auth import UserCreate, UserLogin
-from schemas.lesson import LessonCreate
-from pydantic import BaseModel, ValidationError
+from schemas.lesson import LessonCreate, LessonResponse
+from pydantic import BaseModel
 
 from loader import settings
 
 T = TypeVar('T', bound=BaseModel)
 
-class ApiWorker(QObject):
+class AuthWorker(QObject):
     """Типизированный API клиент с Pydantic моделями"""
-    user_received = pyqtSignal(str)
-    error_occurred = pyqtSignal(str)
-    lesson_created = pyqtSignal()
-    lesson_error = pyqtSignal(str)
+    user_received_signal = pyqtSignal(str)
+    error_occurred_signal = pyqtSignal(str)
+
 
     def __init__(self):
         super().__init__()
         self.manager = QNetworkAccessManager()    
+    
 
-    
-    def get_user(self, user_id: int) -> None:
-        """GET /users/{id} → UserResponse"""
-        url = QUrl(f"http://localhost:8000/users/{user_id}")
-        request = QNetworkRequest(url)
-        
-        reply = self.manager.get(request)
-        reply.finished.connect(lambda: self._handle_reply(reply))
-    
     def create_user(self, user_data: UserCreate) -> None:
         """POST /users/ → UserResponse"""
         url = QUrl("http://localhost:8000/register/")
         request = QNetworkRequest(url)
         request.setHeader(QNetworkRequest.KnownHeaders.ContentTypeHeader, "application/json")
-        
-        # Pydantic → JSON bytes автоматически
         json_bytes = json.dumps(user_data.model_dump()).encode('utf-8')
         reply = self.manager.post(request, json_bytes)
         reply.finished.connect(lambda: self._user_reply(reply))
@@ -48,26 +37,12 @@ class ApiWorker(QObject):
 
     def login_user(self, user_data: UserLogin) -> None:
         """POST /auth/login → UserResponse (или TokenResponse)"""
-        print("a")
         url = QUrl("http://localhost:8000/login")
         request = QNetworkRequest(url)
         request.setHeader(QNetworkRequest.KnownHeaders.ContentTypeHeader, "application/json")
-        
         json_bytes = json.dumps(user_data.model_dump()).encode('utf-8')
         reply = self.manager.post(request, json_bytes)
         reply.finished.connect(lambda: self._user_reply(reply))
-
-    def create_lesson(self, lesson_data:LessonCreate) -> None:
-        url = QUrl("http://localhost:8000/lesson/create")
-        request = QNetworkRequest(url)
-        token =  settings.value("token")
-        request.setRawHeader(b"Authorization", f"Bearer {token}".encode('utf-8'))
-        request.setHeader(QNetworkRequest.KnownHeaders.ContentTypeHeader, 
-                         "application/json")
-        # Pydantic → JSON bytes автоматически
-        json_bytes = json.dumps(lesson_data.model_dump()).encode('utf-8')
-        reply = self.manager.post(request, json_bytes)
-        reply.finished.connect(lambda: self._lesson_reply(reply))
     
 
     def _user_reply(self, reply: QNetworkReply) -> None:
@@ -77,14 +52,4 @@ class ApiWorker(QObject):
             self.user_received.emit(data) 
         else:
             self.error_occurred.emit(data["detail"])
-        reply.deleteLater()
-
-
-    def _lesson_reply(self, reply: QNetworkReply) -> None:
-        data = json.loads(reply.readAll().data().decode("utf-8"))
-        """Универсальная обработка ответа с валидацией"""
-        if reply.error() == QNetworkReply.NetworkError.NoError:
-            self.lesson_created.emit()  # UserResponse!
-        else:
-            self.lesson_error.emit(data["detail"])
         reply.deleteLater()

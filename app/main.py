@@ -1,12 +1,12 @@
 import sys
 from PyQt6.QtWidgets import QApplication
 from controllers.auth import Auth
-from ui.staff_buttons import MainWindow
+from app.controllers.creator import CreatorController
 from PyQt6.QtCore import QSysInfo, QStorageInfo
 
 def main() -> None:
     app = QApplication(sys.argv)
-    window = MainWindow()
+    window = CreatorController()
     window.show()
     # Создаем и отображаем главное окно
     # auth = Auth()

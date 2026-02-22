@@ -1,0 +1,283 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QWidget" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1200</width>
+    <height>800</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Rhythm Trainer</string>
+  </property>
+  <property name="windowIcon">
+   <iconset>
+    <normaloff>.</normaloff>.</iconset>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout">
+   <property name="spacing">
+    <number>10</number>
+   </property>
+   <property name="leftMargin">
+    <number>10</number>
+   </property>
+   <property name="topMargin">
+    <number>10</number>
+   </property>
+   <property name="rightMargin">
+    <number>10</number>
+   </property>
+   <property name="bottomMargin">
+    <number>10</number>
+   </property>
+   <item>
+    <layout class="QHBoxLayout" name="horizontalLayout">
+     <property name="leftMargin">
+      <number>0</number>
+     </property>
+     <property name="topMargin">
+      <number>0</number>
+     </property>
+     <property name="rightMargin">
+      <number>0</number>
+     </property>
+     <property name="bottomMargin">
+      <number>0</number>
+     </property>
+     <item>
+      <widget class="QLabel" name="title_label">
+       <property name="styleSheet">
+        <string notr="true">font-size: 16px; font-weight: bold; padding: 5px;</string>
+       </property>
+       <property name="text">
+        <string>Rhythm Trainer - Отработка ритма</string>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignmentFlag::AlignCenter</set>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="start_button">
+       <property name="styleSheet">
+        <string notr="true">QPushButton {
+ background-color: #4CAF50;
+ color: white;
+ border: none;
+ padding: 10px 20px;
+ text-align: center;
+ font-size: 16px;
+ margin: 4px 2px;
+ border-radius: 8px;
+ min-width: 80px;
+}
+QPushButton:hover {
+ background-color: #45a049;
+}
+QPushButton:pressed {
+ background-color: #3e8e41;
+}</string>
+       </property>
+       <property name="text">
+        <string>Старт</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="save_button">
+       <property name="styleSheet">
+        <string notr="true">QPushButton {
+ background-color: #f0ad4e;
+ color: white;
+ border: none;
+ padding: 10px 20px;
+ text-align: center;
+ font-size: 16px;
+ margin: 4px 2px;
+ border-radius: 8px;
+ min-width: 80px;
+}
+QPushButton:hover {
+ background-color: #ec971f;
+}
+QPushButton:pressed {
+ background-color: #d58512;
+}</string>
+       </property>
+       <property name="text">
+        <string>Сохранить</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="reset_button">
+       <property name="styleSheet">
+        <string notr="true">QPushButton {
+ background-color: #d9534f;
+ color: white;
+ border: none;
+ padding: 10px 20px;
+ text-align: center;
+ font-size: 16px;
+ margin: 4px 2px;
+ border-radius: 8px;
+ min-width: 80px;
+}
+QPushButton:hover {
+ background-color: #c9302c;
+}
+QPushButton:pressed {
+ background-color: #ac2925;
+}</string>
+       </property>
+       <property name="text">
+        <string>Сброс</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLabel" name="label_time_signature">
+       <property name="text">
+        <string>Размерность:</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="quarter_btn">
+       <property name="styleSheet">
+        <string notr="true">QPushButton {
+ background-color: #5bc0de;
+ color: white;
+ border: none;
+ padding: 10px 20px;
+ font-size: 16px;
+ margin: 4px 2px;
+ border-radius: 8px;
+ min-width: 60px;
+}
+QPushButton:hover {
+ background-color: #31b0d5;
+}
+QPushButton:pressed {
+ background-color: #269abc;
+}</string>
+       </property>
+       <property name="text">
+        <string/>
+       </property>
+       <property name="icon">
+        <iconset>
+         <normaloff>app/photos/quarter.png</normaloff>app/photos/quarter.png</iconset>
+       </property>
+       <property name="iconSize">
+        <size>
+         <width>16</width>
+         <height>22</height>
+        </size>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="time_34_button">
+       <property name="styleSheet">
+        <string notr="true">QPushButton {
+ background-color: #5bc0de;
+ color: white;
+ border: none;
+ padding: 10px 20px;
+ font-size: 16px;
+ margin: 4px 2px;
+ border-radius: 8px;
+ min-width: 60px;
+}
+QPushButton:hover {
+ background-color: #31b0d5;
+}
+QPushButton:pressed {
+ background-color: #269abc;
+}</string>
+       </property>
+       <property name="text">
+        <string>3/4</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <spacer name="horizontalSpacer">
+       <property name="orientation">
+        <enum>Qt::Orientation::Horizontal</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>40</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+     <item>
+      <widget class="QPushButton" name="settings_button">
+       <property name="styleSheet">
+        <string notr="true">QPushButton {
+ background-color: #4CAF50;
+ color: white;
+ border: none;
+ padding: 10px 20px;
+ text-align: center;
+ font-size: 16px;
+ margin: 4px 2px;
+ border-radius: 8px;
+ min-width: 80px;
+}
+QPushButton:hover {
+ background-color: #45a049;
+}
+QPushButton:pressed {
+ background-color: #3e8e41;
+}</string>
+       </property>
+       <property name="text">
+        <string>Настройки</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <widget class="QLabel" name="info_label">
+     <property name="styleSheet">
+      <string notr="true">color: #666; font-style: italic; padding: 5px;</string>
+     </property>
+     <property name="text">
+      <string>Подсказка: Наведите курсор на линии и пространства между ними</string>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="ScalableGraphicsView" name="graphicsView">
+     <property name="minimumSize">
+      <size>
+       <width>0</width>
+       <height>400</height>
+      </size>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">background-color: #f5f5dc;</string>
+     </property>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <customwidgets>
+  <customwidget>
+   <class>ScalableGraphicsView</class>
+   <extends>QGraphicsView</extends>
+   <header>helpful.h</header>
+  </customwidget>
+ </customwidgets>
+ <resources/>
+ <connections/>
+</ui>

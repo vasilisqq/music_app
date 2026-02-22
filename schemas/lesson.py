@@ -9,3 +9,9 @@ class LessonCreate(BaseModel):
     topic:int
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class LessonResponse(LessonCreate):
+    id:int
+
+    model_config = ConfigDict(from_attributes=True)

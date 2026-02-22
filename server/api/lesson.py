@@ -1,24 +1,24 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Response
+from fastapi import APIRouter, Depends, HTTPException, status
+
+from services.lesson_services import LessonService
+
+from core.dependencies import get_lesson_service, is_admin, get_current_active_user
+
 import sys
 import os
-# from app.core.config import settings
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-from schemas.lesson import LessonCreate
-from services.lesson_services import LessonService
-from services.auth_service import AuthService
-# from app.services.auth_service import AuthService
-from core.dependencies import get_lesson_service
-from core.dependencies import is_admin
+from schemas.lesson import LessonCreate, LessonResponse
+
 
 router = APIRouter(tags=["lessons"],prefix="/lesson")
 
+
 @router.post("/create", status_code=status.HTTP_201_CREATED)
-async def register(
+async def create_lesson(
     lesson_data: LessonCreate,
     lesson_service: LessonService = Depends(get_lesson_service),
     is_admin = Depends(is_admin)
 ):
-    """Регистрация нового пользователя"""
     existing_lesson = await lesson_service.get_lesson_by_name(lesson_data.name)
     if existing_lesson:
         raise HTTPException(
@@ -37,4 +37,19 @@ async def register(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Не удалось создать упражнение"
         )
+    
+
+@router.get("/get", status_code=status.HTTP_201_CREATED)
+async def get_lesson(
+    # lesson_data: LessonCreate,
+    lesson_service: LessonService = Depends(get_lesson_service),
+    current_user = Depends(get_current_active_user)
+):
+    lesson =  await lesson_service.get_lesson_by_name("ыдловрап")
+    if not lesson:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Такого упражнения не существует"
+        )
+    return LessonResponse.model_validate(lesson)
 

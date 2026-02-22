@@ -12,7 +12,7 @@ class LessonService:
 
     async def get_lesson_by_name(self, name:str):
         result = await self.db.execute(
-            select(Lesson.id).where(Lesson.name == name)
+            select(Lesson).where(Lesson.name == name)
             )
         return result.scalar_one_or_none()
     

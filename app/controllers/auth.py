@@ -3,7 +3,7 @@ from GUI.auth import Ui_AuthWindow
 from controllers.main_window import Main
 from PyQt6.QtGui import QRegularExpressionValidator
 from PyQt6.QtCore import QRegularExpression, QSettings
-from APIworker import ApiWorker
+from workers.auth_worker import AuthWorker
 import re
 import sys
 import os
@@ -42,10 +42,10 @@ class Auth(QMainWindow):
         self.ui.regBtn.clicked.connect(self.register)
         self.ui.authBtn.clicked.connect(self.auth)
 
-        self.api = ApiWorker()
+        self.api = AuthWorker()
 
-        self.api.user_received.connect(self.on_user_recieved)
-        self.api.error_occurred.connect(self.on_error)
+        self.api.user_received_signal.connect(self.on_user_recieved)
+        self.api.error_occurred_signal.connect(self.on_error)
         
         self.errors = {}
         self.prev_login = []
@@ -152,13 +152,13 @@ class Auth(QMainWindow):
             return False
         return True
     
+
     def validate_email_auth(self):
         email = self.ui.emailInput1.text().strip()
         self.clear_errors('email_auth')
         if not email:
             self.show_error('email_auth', 'Email обязателен')
             return False
-        
         if not re.match(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$', email):
             self.show_error('email_auth', 'Неверный формат email')
             return False
@@ -167,19 +167,16 @@ class Auth(QMainWindow):
             return False
         return True
     
+
     def validate_username(self):
         username = self.ui.usernameInput.text().strip()
-        
         self.clear_errors('username')
-        
         if not username:
             self.show_error('username', 'Логин обязателен')
             return False
-        
         if len(username) < 3:
             self.show_error('username', 'Логин минимум 3 символа')
             return False
-        
         if not re.match(r'^[a-zA-Z0-9_]{3,20}$', username):
             self.show_error('username', 'Только буквы, цифры, подчёркивание')
             return False
@@ -188,71 +185,64 @@ class Auth(QMainWindow):
             return False
         return True
     
+
     def validate_password(self):
         password = self.ui.passwordInput.text()
-        
         self.clear_errors('password')
-        
         if not password:
             self.show_error('password', 'Пароль обязателен')
             return False
-        
         if len(password) < 6:
             self.show_error('password', 'Пароль минимум 6 символов')
             return False
-        
         if not re.match(r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)', password):
             self.show_error('password', '1 заглавная, 1 строчная, 1 цифра')
             return False
         return True
     
+
     def validate_password_auth(self):
         password = self.ui.passwordInput1.text()
         self.clear_errors('password_auth')
-        
         if not password:
             self.show_error('password_auth', 'Пароль обязателен')
             return False
-        
         if len(password) < 6:
             self.show_error('password_auth', 'Пароль минимум 6 символов')
             return False
-        
         if not re.match(r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)', password):
             self.show_error('password_auth', '1 заглавная, 1 строчная, 1 цифра')
             return False
         return True
     
+
     def validate_password_confirm(self):
         password = self.ui.passwordInput.text()
         confirm = self.ui.passwordConfirmInput.text()
-        
         self.clear_errors('confirm')
-        
         if confirm and password != confirm:
             self.show_error('confirm', 'Пароли не совпадают')
             return False
         return True
     
+
     def is_valid(self):
-        """Полная проверка всех полей"""
         valid = (self.validate_email() and 
                 self.validate_username() and 
                 self.validate_password() and 
                 self.validate_password_confirm())
         return len(self.errors) == 0 and valid
     
+
     def is_valid_auth(self):
-        """Полная проверка всех полей"""
         valid = (self.validate_email_auth() and 
                 self.validate_password_auth())
         return len(self.errors) == 0 and valid
     
+
     def register(self):
-        """Обработка регистрации"""
         if self.ui.stackedWidget.currentIndex() != 0:
             return
-        # Полная валидация
         if self.is_valid():  
             user_reg = UserCreate(
                 email=self.ui.emailInput.text().strip(),
@@ -261,11 +251,10 @@ class Auth(QMainWindow):
             )
             self.api.create_user(user_reg)
 
+
     def auth(self):
-        """Обработка регистрации"""
         if self.ui.stackedWidget.currentIndex() != 1:
             return
-        # Полная валидация
         if self.is_valid_auth():
             user = UserLogin(
                 email=self.ui.emailInput1.text().strip(),
@@ -279,12 +268,10 @@ class Auth(QMainWindow):
         print(token)
         QMessageBox.information(self, "Успех", 
                 f"Добро пожаловать!")
-        self.main_window = Main()     # сохраняем ссылку как атрибут объекта
+        self.main_window = Main()
         self.main_window.show()
         self.close()
         
-
-
 
     def on_error(self, error:str):
         if error.find("username") != -1:
