@@ -53,9 +53,9 @@ class LessonWorker(QObject):
         data = json.loads(reply.readAll().data().decode("utf-8"))
         """Универсальная обработка ответа с валидацией"""
         if reply.error() == QNetworkReply.NetworkError.NoError:
-            self.lesson_created.emit()
+            self.lesson_created_sygnal.emit()
         else:
-            self.lesson_error.emit(data["detail"])
+            self.lesson_error_sygnal.emit(data["detail"])
         reply.deleteLater()
 
 
@@ -65,5 +65,5 @@ class LessonWorker(QObject):
             lesson = LessonResponse.model_validate(data)
             self.lesson_get_signal.emit(lesson)
         else:
-            self.lesson_error.emit(data["detail"])
+            self.lesson_error_sygnal.emit(data["detail"])
         reply.deleteLater()

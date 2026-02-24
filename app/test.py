@@ -149,16 +149,27 @@ class PianoPlayer:
     def __init__(self, note_cache, sample_rate):
         self.note_cache = note_cache
         self.sample_rate = sample_rate
-        self.active_notes = []          # список активных нот
-        self.lock = threading.Lock()    # для потокобезопасности
+        self.active_notes = []
+        self.lock = threading.Lock()
+        self.last_press_time = 0  # 🔥 Debounce таймер
+        self.press_cooldown = 0.2 
+        self.current_note_name = None  # 🔥 НОВОЕ: текущая ожидаемая нота
+        self.on_note_correct = None    # 🔥 НОВОЕ: callback для правильного нажатия
+        self.on_note_wrong = None      # 🔥 НОВОЕ: callback для неправильного
+        
         self.stream = sd.OutputStream(
             samplerate=sample_rate,
-            channels=1,                  # моно (потом можно сделать стерео)
+            channels=1,
             callback=self.audio_callback,
             blocksize=512,
             dtype='float32'
         )
         self.stream.start()
+
+    def set_note_handlers(self, on_correct, on_wrong):
+        """🔥 НОВОЕ: Устанавливает колбэки для проверки нот"""
+        self.on_note_correct = on_correct
+        self.on_note_wrong = on_wrong
 
     def audio_callback(self, outdata, frames, time_info, status):
         outdata.fill(0)
@@ -178,54 +189,79 @@ class PianoPlayer:
                     note['pos'] += take
                 if note['pos'] >= len(data):
                     to_remove.append(note)
-            # Удаляем по индексу, чтобы избежать сравнения массивов
+            
+            # 🔥 НОВОЕ: Устанавливаем текущую ноту при старте воспроизведения
+            if self.active_notes and not self.current_note_name:
+                self.current_note_name = self.active_notes[0].get('note_name')
+            
+            # Удаляем закончившиеся ноты
             for note in to_remove:
-                try:
-                    idx = self.active_notes.index(note)  # index тоже сравнивает, но мы можем использовать is
-                    # Но index тоже использует ==. Поэтому лучше использовать удаление по ссылке:
-                    self.active_notes = [n for n in self.active_notes if n is not note]
-                except ValueError:
-                    pass
+                self.active_notes = [n for n in self.active_notes if n is not note]
+                
+            # 🔥 НОВОЕ: Сбрасываем current_note_name когда все ноты закончились
+            if not self.active_notes:
+                self.current_note_name = None
 
     def play_note(self, note_name, duration, volume=0.7):
-        """
-        Запускает ноту с заданной длительностью (в секундах) и громкостью.
-        """
+        """🔥 ДОПОЛНЕНО: Устанавливает текущую ноту для проверки"""
         if note_name not in self.note_cache:
             print(f"Нота {note_name} не найдена")
             return
+        
         base = self.note_cache[note_name]
         base = base.ravel()
-        print(f"play_note: {note_name}, base shape {base.shape}, ndim {base.ndim}")
+        print(f"play_note: {note_name}, base shape {base.shape}")
+        
         target_len = int(self.sample_rate * duration)
-
-        # Формируем аудиоданные нужной длины
+        
         if target_len <= len(base):
             note_data = base[:target_len].copy()
         else:
             repeats = target_len // len(base) + 1
             note_data = np.tile(base, repeats)[:target_len]
-            # Добавляем затухание, чтобы скрыть повторы
             t = np.arange(target_len)
             envelope = np.exp(-t / (self.sample_rate * duration * 0.3))
             note_data *= envelope
-
-        # Нормализуем с учётом громкости
+        
         max_val = np.max(np.abs(note_data))
         if max_val > 0:
             note_data = note_data / max_val * volume
-
+        
         with self.lock:
             self.active_notes.append({
                 'data': note_data,
                 'pos': 0,
-                'vel': 1.0   # громкость уже встроена в данные
+                'vel': 1.0,
+                'note_name': note_name  # 🔥 НОВОЕ: сохраняем имя ноты
             })
+            
+            # 🔥 НОВОЕ: Устанавливаем текущую ожидаемую ноту
+            self.current_note_name = note_name
+            print(f"🎵 Ожидаем ноту: {note_name}")
+
+    def check_space_press(self):
+        """Проверяет нажатие пробела с debounce"""
+        import time
+        current_time = time.time()
+        
+        with self.lock:
+            # 🔥 Проверяем cooldown
+            if current_time - self.last_press_time < self.press_cooldown:
+                return False
+                
+            if self.current_note_name and self.on_note_correct:
+                self.on_note_correct(self.current_note_name)
+                self.current_note_name = None
+                self.last_press_time = current_time  # Обновляем таймер
+                return True
+        return False
 
     def stop(self):
+        with self.lock:
+            self.active_notes.clear()
+            self.current_note_name = None
         self.stream.stop()
         self.stream.close()
-
 
 
 player = PianoPlayer(note_cache, SAMPLE_RATE)

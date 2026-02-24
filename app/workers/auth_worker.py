@@ -7,7 +7,6 @@ import os
 from typing import TypeVar
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from schemas.auth import UserCreate, UserLogin
-from schemas.lesson import LessonCreate, LessonResponse
 from pydantic import BaseModel
 
 from loader import settings
@@ -49,7 +48,7 @@ class AuthWorker(QObject):
         data = json.loads(reply.readAll().data().decode("utf-8"))
         """Универсальная обработка ответа с валидацией"""
         if reply.error() == QNetworkReply.NetworkError.NoError:
-            self.user_received.emit(data) 
+            self.user_received_signal.emit(data) 
         else:
-            self.error_occurred.emit(data["detail"])
+            self.error_occurred_signal.emit(data["detail"])
         reply.deleteLater()
