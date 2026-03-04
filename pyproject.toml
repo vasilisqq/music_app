@@ -24,6 +24,8 @@ dependencies = [
     "python-jose>=3.5.0",
     "keyrings-alt>=5.0.2",
     "librosa>=0.11.0",
+    "allpairs>=2.0.1",
+    "allpairspy>=2.5.1",
 ]
 
 [tool.uv.sources]

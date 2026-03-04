@@ -13,8 +13,9 @@ import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from schemas.lesson import LessonCreate, LessonResponse
-
-
+import time
+from test import player
+import threading
 
 
 class NoteItem(QGraphicsEllipseItem):
@@ -424,7 +425,7 @@ class StaffLayout:
         self.tacts = []
         self.time_signature = None  # Будет хранить объект размерности такта
         self.current_tact = None
-        self.bpm = 120
+        self.bpm = 60
         self.scene = scene
         self.init_staff(scene)
     
@@ -502,11 +503,27 @@ class StaffLayout:
         #     for note in bit:
         #         self.tact.add_note_at_position(bit_self.x0+10)
 
+    def touch_thread(self):
+        for tact in self.tacts:
+            for bit in tact.bits:
+                if bit.notes:
+                    # Берём первую ноту в бите (для простоты)
+                    note_item = bit.notes[0]
+                    player.start_waiting_for_note(note_item.note_name, note_item)
+                    duration = 60 / self.bpm   # длительность четверти (одна бита)
+                    time.sleep(duration)
 
+    def sound_thread(self):
+            time.sleep(0.4)
+            for tact in self.tacts:
+                for bit in tact.bits:
+                    if bit.notes:
+                        duration = 60/self.bpm * 1/4 * 4
+                        chord_notes = [note.note_name for note in bit.notes]
+                        player.play_chord(chord_notes, duration)
+                    time.sleep(duration)
 
-
-
-
-    def check_full(self):
-        ...
+    def start_lesson(self):
+        threading.Thread(target=self.touch_thread, daemon=True).start()
+        threading.Thread(target=self.sound_thread, daemon=True).start()
 

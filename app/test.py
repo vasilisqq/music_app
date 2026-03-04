@@ -5,8 +5,17 @@ from scipy.ndimage import zoom
 import os
 import threading
 import time
+from PyQt6.QtCore import QTimer, QThread, pyqtSignal, QObject, Qt
+from PyQt6.QtGui import QPen, QColor
+from PyQt6.QtWidgets import QWidget
+import time
+import threading
+from typing import Optional
+
+
 # Загружаем ОДИН реальный сэмпл пианино C4
 SAMPLE_RATE, PIANO_C4 = wavfile.read('single-piano-note-c4_100bpm_C_major.wav')
+
 if PIANO_C4.ndim == 2:
     base_note = PIANO_C4[:, 0].astype(np.float32) / 32768.0
 else:
@@ -58,6 +67,7 @@ def load_cache(filename="piano_cache.npz"):
         cache[key] = arr.ravel().copy()
     return cache
 
+
 def precompute_all():
     for name, freq in NOTE_FREQ.items():
         ratio = freq / 261.63  # частота относительно C4
@@ -71,92 +81,29 @@ def precompute_all():
 precompute_all()
 # save_cache()
 
-def _get_note_audio(note_name, duration, apply_envelope=True):
-    """
-    Возвращает массив (моно) для заданной ноты и длительности.
-    Если apply_envelope=True и массив повторяется, накладывается затухающая огибающая.
-    """
-    if note_name not in note_cache:
-        return np.zeros(0, dtype=np.float32)
-    
-    base = note_cache[note_name]
-    target_len = int(SAMPLE_RATE * duration)
-    
-    if target_len <= len(base):
-        audio = base[:target_len].copy()
-    else:
-        repeats = target_len // len(base) + 1
-        audio = np.tile(base, repeats)[:target_len]
-        if apply_envelope:
-            t = np.arange(target_len)
-            envelope = np.exp(-t / (SAMPLE_RATE * duration * 0.3))
-            audio *= envelope
-    
-    return audio
 
-def play_note(note_name, duration, volume=0.7):
-    """Воспроизводит одну ноту заданной длительности."""
-    audio = _get_note_audio(note_name, duration, apply_envelope=True)
-    if len(audio) == 0:
-        return
-    
-    # Нормализация
-    max_val = np.max(np.abs(audio))
-    if max_val > 0:
-        audio = audio / max_val * volume
-    
-    # Стерео
-    stereo = np.stack([audio, audio], axis=1)
-    sd.play(stereo, SAMPLE_RATE, blocking=True)
+class PianoPlayer(QObject):
 
-def play_chord(notes, duration, volumes=None):
-    """
-    Воспроизводит аккорд из списка нот.
-    notes: список названий нот (например, ['C4', 'E4', 'G4'])
-    duration: длительность в секундах
-    volumes: список громкостей для каждой ноты (0..1), если None, то все 0.7
-    """
-    if volumes is None:
-        volumes = [0.7] * len(notes)
-    
-    # Собираем массивы для всех нот
-    arrays = []
-    for note, vol in zip(notes, volumes):
-        audio = _get_note_audio(note, duration, apply_envelope=True)
-        if len(audio) > 0:
-            arrays.append(audio * vol)
-    
-    if not arrays:
-        return
-    
-    # Суммируем (все массивы одной длины, т.к. _get_note_audio возвращает ровно target_len)
-    mixed = np.sum(arrays, axis=0)
-    
-    # Нормализация
-    max_val = np.max(np.abs(mixed))
-    if max_val > 0:
-        mixed = mixed / max_val * 0.9  # небольшой запас
-    
-    # Стерео
-    stereo = np.stack([mixed, mixed], axis=1)
-    sd.play(stereo, SAMPLE_RATE, blocking=True)
+    note_correct = pyqtSignal(object, str)   # передаёт объект ноты и её имя
+    note_wrong = pyqtSignal(object, str)
 
-
-
-
-
-class PianoPlayer:
     def __init__(self, note_cache, sample_rate):
+        super().__init__()
         self.note_cache = note_cache
         self.sample_rate = sample_rate
-        self.active_notes = []
+        self.active_audio_notes = []
         self.lock = threading.Lock()
-        self.last_press_time = 0  # 🔥 Debounce таймер
-        self.press_cooldown = 0.2 
-        self.current_note_name = None  # 🔥 НОВОЕ: текущая ожидаемая нота
-        self.on_note_correct = None    # 🔥 НОВОЕ: callback для правильного нажатия
-        self.on_note_wrong = None      # 🔥 НОВОЕ: callback для неправильного
-        
+        self.current_note_plays = None
+        self.current_note_await = None         
+        self.current_note_await_time = None    # время старта ожидания
+        self.hit_window = 0.8
+        self.pre_start_active = False
+        self.current_note_item = None 
+        self.on_note_correct = None
+        self.on_note_wrong = None
+
+        self.space_pressed_in_window = False   # флаг: был ли пробел в окне
+
         self.stream = sd.OutputStream(
             samplerate=sample_rate,
             channels=1,
@@ -166,16 +113,60 @@ class PianoPlayer:
         )
         self.stream.start()
 
+
+    def _get_note_audio(self, note_name, duration, apply_envelope=True):
+        base = self.note_cache[note_name]
+        target_len = int(SAMPLE_RATE * duration)
+        
+        if target_len <= len(base):
+            audio = base[:target_len].copy()
+        else:
+            repeats = target_len // len(base) + 1
+            audio = np.tile(base, repeats)[:target_len]
+            if apply_envelope:
+                t = np.arange(target_len)
+                envelope = np.exp(-t / (SAMPLE_RATE * duration * 0.3))
+                audio *= envelope
+        
+        return audio
+
+
+    def play_chord(self, notes, duration, volumes=None):
+        if volumes is None:
+            volumes = [0.7] * len(notes)
+        # Собираем массивы для всех нот
+        active_notes = []
+        for note, vol in zip(notes, volumes):
+            audio = self._get_note_audio(note, duration, apply_envelope=True)  # используем глобальную функцию
+            if len(audio) > 0:
+                max_val = np.max(np.abs(audio))
+                if max_val > 0:
+                    audio = audio / max_val * vol
+                # Добавляем в активные ноты для одновременного воспроизведения
+                active_notes.append({
+                    'data': audio,
+                    'pos': 0,
+                    'vel': 1.0,
+                    'note_name': note
+                })
+        # Добавляем все ноты аккорда одновременно
+        with self.lock:
+            self.active_audio_notes.extend(active_notes)
+        
+        print(f"🎸 Аккорд: {notes}")
+
+
     def set_note_handlers(self, on_correct, on_wrong):
         """🔥 НОВОЕ: Устанавливает колбэки для проверки нот"""
         self.on_note_correct = on_correct
         self.on_note_wrong = on_wrong
 
+
     def audio_callback(self, outdata, frames, time_info, status):
         outdata.fill(0)
         with self.lock:
             to_remove = []
-            for note in self.active_notes:
+            for note in self.active_audio_notes:
                 data = note['data']
                 if data.ndim != 1:
                     data = data.ravel()
@@ -189,31 +180,44 @@ class PianoPlayer:
                     note['pos'] += take
                 if note['pos'] >= len(data):
                     to_remove.append(note)
-            
-            # 🔥 НОВОЕ: Устанавливаем текущую ноту при старте воспроизведения
-            if self.active_notes and not self.current_note_name:
-                self.current_note_name = self.active_notes[0].get('note_name')
-            
-            # Удаляем закончившиеся ноты
             for note in to_remove:
-                self.active_notes = [n for n in self.active_notes if n is not note]
-                
-            # 🔥 НОВОЕ: Сбрасываем current_note_name когда все ноты закончились
-            if not self.active_notes:
-                self.current_note_name = None
+                self.active_audio_notes = [n for n in self.active_audio_notes if n is not note]
+
+
+    def check_space_press(self):
+        """Вызывается при нажатии пробела извне"""
+        if self.current_note_await_time is None:
+            self.note_wrong.emit(self.current_note_item, self.current_note_await)
+            return False
+        now = time.time()
+        dt = now - self.current_note_await_time
+        if dt <= self.hit_window and not self.space_pressed_in_window:
+            self.space_pressed_in_window = True
+            self.note_correct.emit(self.current_note_item, self.current_note_await)
+            return True
+        self.note_wrong.emit(self.current_note_item, self.current_note_await)
+        return False
+
+
+    def _check_window_timeout(self):
+        time.sleep(self.hit_window)
+        with self.lock:
+            if not self.space_pressed_in_window:
+                # Если пробел не был нажат, генерируем сигнал wrong
+                self.note_wrong.emit(self.current_note_item, self.current_note_await)
+            self.current_note_await_time = None
+            self.space_pressed_in_window = False
+            self.current_note_item = None
+
 
     def play_note(self, note_name, duration, volume=0.7):
-        """🔥 ДОПОЛНЕНО: Устанавливает текущую ноту для проверки"""
         if note_name not in self.note_cache:
             print(f"Нота {note_name} не найдена")
             return
         
-        base = self.note_cache[note_name]
-        base = base.ravel()
-        print(f"play_note: {note_name}, base shape {base.shape}")
-        
+        base = self.note_cache[note_name].ravel()
         target_len = int(self.sample_rate * duration)
-        
+
         if target_len <= len(base):
             note_data = base[:target_len].copy()
         else:
@@ -222,64 +226,47 @@ class PianoPlayer:
             t = np.arange(target_len)
             envelope = np.exp(-t / (self.sample_rate * duration * 0.3))
             note_data *= envelope
-        
+
         max_val = np.max(np.abs(note_data))
         if max_val > 0:
             note_data = note_data / max_val * volume
-        
-        with self.lock:
-            self.active_notes.append({
+
+
+        self.active_audio_notes.append({
                 'data': note_data,
                 'pos': 0,
                 'vel': 1.0,
-                'note_name': note_name  # 🔥 НОВОЕ: сохраняем имя ноты
+                'note_name': note_name
             })
-            
-            # 🔥 НОВОЕ: Устанавливаем текущую ожидаемую ноту
-            self.current_note_name = note_name
-            print(f"🎵 Ожидаем ноту: {note_name}")
 
-    def check_space_press(self):
-        """Проверяет нажатие пробела с debounce"""
-        import time
-        current_time = time.time()
+            # 🔥 устанавливаем ожидание нажатия
+        self.current_note_name = note_name
+        self.current_note_start_time = time.time()
+        self.space_pressed_in_window = False
+        self.pre_start_active = True  # 🔥 НОВОЕ: ж
         
-        with self.lock:
-            # 🔥 Проверяем cooldown
-            if current_time - self.last_press_time < self.press_cooldown:
-                return False
-                
-            if self.current_note_name and self.on_note_correct:
-                self.on_note_correct(self.current_note_name)
-                self.current_note_name = None
-                self.last_press_time = current_time  # Обновляем таймер
-                return True
-        return False
+        print(f"🎵 Ожидаем ноту: {note_name} (окно 3 с)")
+        # 🔥 запускаем проверку по истечении окна
+        threading.Thread(
+            target=self._check_window_timeout,
+            daemon=True
+        ).start()
+
+
+    def start_waiting_for_note(self, note_name, note_item=None):
+        """Запускает ожидание нажатия для конкретной ноты"""
+        self.current_note_await = note_name
+        self.current_note_item = note_item      # сохраняем объект ноты
+        self.current_note_await_time = time.time()
+        self.space_pressed_in_window = False
+        threading.Thread(target=self._check_window_timeout, daemon=True).start()
 
     def stop(self):
         with self.lock:
-            self.active_notes.clear()
+            self.active_audio_notes.clear()
             self.current_note_name = None
         self.stream.stop()
         self.stream.close()
 
 
 player = PianoPlayer(note_cache, SAMPLE_RATE)
-
-
-
-
-# Пример использования
-if __name__ == "__main__":
-    player = PianoPlayer(note_cache, SAMPLE_RATE)
-
-    # Играем длинную ноту C4 (1 секунда)
-    player.play_note('C4', 1.0, volume=0.7)
-    # time.sleep(0.3)          # через 0.3 секунды добавляем E4 на 0.5 секунд
-    player.play_note('E4', 0.5, volume=0.6)
-    time.sleep(0.5)          # ещё через 0.2 секунды добавляем G4 на 0.5 секунд
-    player.play_note('G4', 0.5, volume=0.6)
-
-    # Ждём окончания всех нот
-    time.sleep(1.0)
-    player.stop()

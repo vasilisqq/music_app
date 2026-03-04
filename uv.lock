@@ -28,6 +28,21 @@ wheels = [
 ]
 
 [[package]]
+name = "allpairs"
+version = "2.0.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/04/44/cb85d029b33ddfa7b5a27ae523434c2230f11a89d1f0c73203e9007a6eb0/AllPairs-2.0.1.tar.gz", hash = "sha256:34c64e74e415cc68cc00c6f58582f7278b39d443a5da89498e6179b2a972cb17", size = 7057, upload-time = "2009-04-06T00:58:58.21Z" }
+
+[[package]]
+name = "allpairspy"
+version = "2.5.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/ea/9e/a5a536c22f56cdbbb0236889cff33915e20fb93a0526887367b38e91122e/allpairspy-2.5.1.tar.gz", hash = "sha256:f69d31a3b56eee119d1ec6063e9c732dd44fbba352ef738cb22d9699fc4009fe", size = 14281, upload-time = "2023-07-08T09:08:54.049Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/5a/1a/fedf0f2ff77ec65e599112b2d5402fee5c166d9378b51760b696bd8cde1d/allpairspy-2.5.1-py3-none-any.whl", hash = "sha256:3f97cbac2bbee86f4bfceffd0fd91dca740a120c78e9368af2bad81a2b3426e2", size = 8965, upload-time = "2023-07-08T09:08:51.994Z" },
+]
+
+[[package]]
 name = "annotated-doc"
 version = "0.0.4"
 source = { registry = "https://pypi.org/simple" }
@@ -763,6 +778,8 @@ version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
     { name = "alembic" },
+    { name = "allpairs" },
+    { name = "allpairspy" },
     { name = "asyncpg" },
     { name = "fastapi" },
     { name = "keyring" },
@@ -786,6 +803,8 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "alembic", specifier = ">=1.18.3" },
+    { name = "allpairs", specifier = ">=2.0.1" },
+    { name = "allpairspy", specifier = ">=2.5.1" },
     { name = "asyncpg", specifier = ">=0.31.0" },
     { name = "fastapi", specifier = ">=0.128.4" },
     { name = "keyring", specifier = ">=25.7.0" },
