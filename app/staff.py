@@ -1,5 +1,5 @@
-from PyQt6.QtCore import Qt, QRectF, QLineF
-from PyQt6.QtGui import QPen, QBrush, QFont, QPixmap,QColor
+from PyQt6.QtCore import Qt, QRectF, QLineF, QPointF
+from PyQt6.QtGui import QPen, QBrush, QFont, QPixmap,QColor, QPainterPath
 from PyQt6.QtWidgets import (
     QGraphicsLineItem,
     QGraphicsScene,
@@ -19,9 +19,9 @@ import threading
 
 
 class NoteItem(QGraphicsEllipseItem):
-    def __init__(self, x, y, name, scene, has_shtil=True, reversing=False, bit=None):
+    def __init__(self, x, y, name, scene, duration, has_shtil=True, reversing=False, bit=None):
         super().__init__()
-        self.note_lenght = 1/4
+        self.note_lenght = duration
         self.note_name = name
         self.x = x
         self.y = y
@@ -44,16 +44,22 @@ class NoteItem(QGraphicsEllipseItem):
 
     def paint(self, painter: QPainter, option, widget):
         super().paint(painter, option, widget)
-
-        if self.shtil:
-            painter.setPen(QPen(Qt.GlobalColor.black, LINE_WIDTH, Qt.PenStyle.SolidLine))
-            stem_x = int(self.x + self.width/2 - 1)
-            stem_y_top = self.y - 32
-            painter.drawLine(stem_x, self.y, stem_x, stem_y_top)
-        
-        if self.note_name in ["C4"]:
-            cross_y = self.y
-            painter.drawLine(self.x - self.width, cross_y, self.x + self.width, cross_y)
+        # if self.shtil:
+        painter.setPen(QPen(Qt.GlobalColor.black, LINE_WIDTH, Qt.PenStyle.SolidLine))
+        stem_x = int(self.x + self.width/2 - 1) if not self.reversing else int(self.x - self.width/2 - 1)
+        stem_y_top = self.y - 32
+        painter.drawLine(stem_x, self.y, stem_x, stem_y_top)
+        match self.note_lenght:
+            case 0.125:
+                stem_x = int(self.x + self.width/2 - 1)
+                stem_y_top = self.y - 32
+                path = QPainterPath()
+                path.moveTo(stem_x, stem_y_top)
+                # Кривая Безье: от конца штиля вправо и вниз (больший Y)
+                path.cubicTo(stem_x + 12, stem_y_top + 4,
+                             stem_x + 16, stem_y_top + 12,
+                             stem_x + 8,  stem_y_top + 20)
+                painter.drawPath(path)
 
 
     def mousePressEvent(self, event) -> None:
@@ -288,7 +294,7 @@ class Bits(QGraphicsRectItem):
         for note in self.notes:
             if abs(note.y - line.y) <= 6:
                 print(note.y, "note", line.y, "line")
-                return 0 if note.reversing else 8
+                return 0 if note.reversing else 12
         return None
 
 
@@ -298,9 +304,6 @@ class Bits(QGraphicsRectItem):
         note.bit = self
         self.notes.append(note)
         return True
-
-
-
 
 
 class Tact:
@@ -318,6 +321,7 @@ class Tact:
         self.scene = scene
         self.bits = []
         self.current_bit = 0
+        self.duration = 0.25
         self.init_bits()
         self.init_tact()
     
@@ -411,9 +415,9 @@ class Tact:
                 item = bit
         if not item.isExist_note(line):
             if (rev:=item.has_upper_or_lower(line)) is None:
-                note_item = NoteItem(item.x0+15, line.y, line.note_name, self.scene) 
+                note_item = NoteItem(item.x0+15, line.y, line.note_name, self.scene, self.duration) 
             else:
-                note_item = NoteItem(item.x0+15+rev, line.y, line.note_name,self.scene, False, True if rev>0 else False)
+                note_item = NoteItem(item.x0+15+rev, line.y, line.note_name,self.scene, self.duration, False, True if rev>0 else False)
             if item.add_note(note_item):
                 self.scene.addItem(note_item)
         
@@ -427,6 +431,7 @@ class StaffLayout:
         self.current_tact = None
         self.bpm = 60
         self.scene = scene
+        self.current_duration = 0.25
         self.init_staff(scene)
     
     @property
@@ -437,6 +442,30 @@ class StaffLayout:
     def staff_height(self) -> float:
         return 4 * LINE_SPACING
     
+    def set_duration(self, duration):
+        for tact in self.tacts:
+            tact.duration = duration
+            new_bits = []
+            for bit in tact.bits:
+                if duration < self.current_duration:
+                    if not bit.notes:
+                        width = int((bit.x1-bit.x0)/2)
+                        new_bits.extend([
+                            Bits(QRectF(bit.x0, Y0, width, self.y_bottom-Y0), bit.x0, bit.x0+width),
+                            Bits(QRectF(bit.x0+width, Y0, width, self.y_bottom-Y0), bit.x0+width+1, bit.x1)]
+                            )
+                        self.scene.removeItem(bit)
+                    else:
+                        new_bits.append(bit)
+            del bit
+            tact.bits = new_bits
+            for item in new_bits:
+                self.scene.addItem(item)
+        self.current_duration = duration
+                        
+
+
+
     def init_staff(self, scene):
         self.current_tact = Tact(self.y_bottom, scene, len(self.tacts))
         self.tacts.append(self.current_tact)
@@ -525,5 +554,4 @@ class StaffLayout:
 
     def start_lesson(self):
         threading.Thread(target=self.touch_thread, daemon=True).start()
-        threading.Thread(target=self.sound_thread, daemon=True).start()
-
+        # threading.Thread(target=self.sound_thread, daemon=True).start()

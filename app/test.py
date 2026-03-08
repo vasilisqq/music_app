@@ -85,7 +85,7 @@ precompute_all()
 class PianoPlayer(QObject):
 
     note_correct = pyqtSignal(object, str)   # передаёт объект ноты и её имя
-    note_wrong = pyqtSignal(object, str)
+    note_wrong = pyqtSignal(object, str, bool)
 
     def __init__(self, note_cache, sample_rate):
         super().__init__()
@@ -113,6 +113,19 @@ class PianoPlayer(QObject):
         )
         self.stream.start()
 
+
+    def play_click(self, duration=0.05, freq=1000, volume=1):
+        """Воспроизводит короткий щелчок для метронома"""
+        t = np.linspace(0, duration, int(self.sample_rate * duration), endpoint=False)
+        click = np.sin(2 * np.pi * freq * t) * volume
+        click = click.astype(np.float32)
+        with self.lock:
+            self.active_audio_notes.append({
+                'data': click,
+                'pos': 0,
+                'vel': 1.0,
+                'note_name': 'click'
+            })
 
     def _get_note_audio(self, note_name, duration, apply_envelope=True):
         base = self.note_cache[note_name]
@@ -187,7 +200,8 @@ class PianoPlayer(QObject):
     def check_space_press(self):
         """Вызывается при нажатии пробела извне"""
         if self.current_note_await_time is None:
-            self.note_wrong.emit(self.current_note_item, self.current_note_await)
+            print(self.current_note_item, "test")
+            self.note_wrong.emit(self.current_note_item, self.current_note_await, False)
             return False
         now = time.time()
         dt = now - self.current_note_await_time
@@ -195,7 +209,7 @@ class PianoPlayer(QObject):
             self.space_pressed_in_window = True
             self.note_correct.emit(self.current_note_item, self.current_note_await)
             return True
-        self.note_wrong.emit(self.current_note_item, self.current_note_await)
+        self.note_wrong.emit(self.current_note_item, self.current_note_await, False)
         return False
 
 
@@ -204,7 +218,7 @@ class PianoPlayer(QObject):
         with self.lock:
             if not self.space_pressed_in_window:
                 # Если пробел не был нажат, генерируем сигнал wrong
-                self.note_wrong.emit(self.current_note_item, self.current_note_await)
+                self.note_wrong.emit(self.current_note_item, self.current_note_await, True)
             self.current_note_await_time = None
             self.space_pressed_in_window = False
             self.current_note_item = None

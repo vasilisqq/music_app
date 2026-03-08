@@ -1,6 +1,6 @@
 import sys
 from PyQt6.QtCore import Qt, QTimer
-from PyQt6.QtGui import QPainter, QShortcut, QKeySequence
+from PyQt6.QtGui import QPainter, QShortcut, QKeySequence, QIcon
 from PyQt6.QtWidgets import (
     QGraphicsScene,
     QWidget,
@@ -16,7 +16,7 @@ from scipy.io import wavfile
 import time
 from GUI.creator import Ui_MainWindow
 import threading
-from config import X0
+from config import X0, Y0
 
 # SAMPLE_RATE, PIANO_C4 = wavfile.read('C4.wav')
 
@@ -31,15 +31,27 @@ class CreatorController(QWidget):
         self.load_scene()
         self.init_playhead()
 
+        combo = self.ui.duration_combo
+        combo.addItem("Целая", 1.0)
+        combo.addItem("Половинная", 0.5)
+        combo.addItem("Четверть", 0.25)
+        combo.addItem("Восьмая", 0.125)
+        combo.setCurrentIndex(2)  # четверть по умолчанию
+        combo.currentIndexChanged.connect(self.on_duration_changed)
+
+
         self.api.lesson_created_sygnal.connect(self.on_lesson_created)
         self.api.lesson_error_sygnal.connect(self.on_lesson_error)
         self.api.lesson_get_signal.connect(self.on_lesson_get)
         self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
         self.connect_buttons()
-
+        self.play_started = False
         self.current_note = None
         self.score = 0
         self.misses = 0
+        self.metronome_beats = 4          # количество ударов метронома перед стартом
+        self.metronome_count = 0
+        self.current_playhead_x = 0
         player.note_correct.connect(self.on_note_correct_graphic)
         player.note_wrong.connect(self.on_note_wrong_graphic)
         self.player_thread = None
@@ -52,21 +64,29 @@ class CreatorController(QWidget):
         if note_item is None:
             return
         # Координаты центра ноты
-        x = note_item.x
-        y = note_item.y + 20   # немного ниже ноты
+        x = self.playhead.line().x1()
+        y = Y0 + 200   # немного ниже ноты
         self.create_feedback_circle(x, y, is_correct=True)
 
 
-    def on_note_wrong_graphic(self, note_item, note_name):
-        """Красный кружок на текущей позиции playhead, на высоте ожидаемой ноты"""
-        if note_item is None:
-            return
-        # Получаем текущую X-координату playhead (если линия видна)
-        if self.playhead.isVisible():
-            x = self.playhead.line().x1()   # вертикальная линия – x1 и x2 равны
+    def on_note_wrong_graphic(self, note_item, note_name, is_timeout):
+        """Красный кружок: при таймауте — под нотой, при неправильном нажатии — на playhead"""
+        # if note_item is None:
+        #     return
+
+        if is_timeout:
+            # Не нажали ничего — рисуем под нотой (или вообще ничего не рисуем)
+            x = note_item.x
+            y = Y0 + 200   # под нотой, как зелёный
+            # Если хотите вообще не рисовать, просто return
         else:
-            x = note_item.x                 # запасной вариант
-        y = note_item.y                      # прямо на линии ноты
+            # Неправильное нажатие — на текущей позиции playhead
+            if self.playhead.isVisible():
+                x = self.playhead.line().x1()
+            else:
+                x = note_item.x
+            y = Y0 + 200   # прямо на линии ноты
+
         self.create_feedback_circle(x, y, is_correct=False)
 
     def create_feedback_circle(self, x, y, is_correct):
@@ -104,10 +124,10 @@ class CreatorController(QWidget):
         print(f"💥 Промах! {note_name} dt={dt:.3f}")
         # self.show_feedback(False, dt)
 
-
-    def on_space_pressed(self):
-        player.check_space_press()
-    
+    def on_duration_changed(self, index):
+        self.current_duration = self.ui.duration_combo.currentData()
+        self.lay.set_duration(self.current_duration)
+        print(f"Выбрана длительность: {self.current_duration}")
 
     def on_note_correct(self, note_name):
         """Правильное нажатие"""
@@ -123,7 +143,7 @@ class CreatorController(QWidget):
 
     def keyPressEvent(self, event):
         if event.key() == Qt.Key.Key_Space:
-            if not event.isAutoRepeat():     # только первое нажатие
+            if not event.isAutoRepeat() and self.play_started:     # только первое нажатие
                 player.check_space_press()
             event.accept()                   # не передаём событие дальше
         else:
@@ -160,8 +180,30 @@ class CreatorController(QWidget):
 
 
     def on_start_clicked(self):
-        self.lay.start_lesson()
+        # self.lay.start_lesson()
+        # QTimer.singleShot(int(0.4 * 1000), self.start_playhead_animation)
+        self.metronome_count = 0
         self.start_playhead_animation()
+        self.play_metronome_beat()
+
+
+    def play_metronome_beat(self):
+        interval_ms = int(60 / self.lay.bpm * 1000)
+        player.play_click()
+        self.metronome_count += 1
+        """Воспроизводит один удар метронома и планирует следующий или запускает упражнение"""
+        if self.metronome_count < self.metronome_beats:
+            # Планируем следующий удар через интервал, соответствующий BPM
+            QTimer.singleShot(interval_ms, self.play_metronome_beat)
+        elif self.playhead.isVisible():
+            if not self.play_started:
+                QTimer.singleShot(interval_ms - 400, self.lay.start_lesson)
+                QTimer.singleShot(interval_ms, self.start_playhead_animation)
+                QTimer.singleShot(interval_ms, lambda: self.animation_timer.start(50))
+            QTimer.singleShot(interval_ms, self.play_metronome_beat)
+            QTimer.singleShot(interval_ms - 400, lambda: setattr(self, 'play_started', True))
+            # Последний удар был – запускаем упражнение
+                
 
     def start_playhead_animation(self):
         """Запускает движение красной линии"""
@@ -172,10 +214,9 @@ class CreatorController(QWidget):
                 total_duration += 60 / self.lay.bpm   # все биты одинаковой длины
 
         # Начальная и конечная позиции playhead
-        start_x = X0 + 100                     # как в первом такте
+        start_x = self.lay.tacts[0].bits[0].notes[0].x                  # как в первом такте
         # Конец последнего такта
-        last_tact = self.lay.tacts[-1]
-        end_x = last_tact.x0 + last_tact.width
+        end_x = self.lay.tacts[-1].bar_lines[-1].x+15
 
         # Настраиваем playhead
         self.playhead.setLine(start_x, 0, start_x, 500)
@@ -186,9 +227,10 @@ class CreatorController(QWidget):
         self.anim_end_x = end_x
         self.anim_total_duration = total_duration
         self.anim_start_time = time.time()
+        self.current_playhead_x = start_x
 
         # Запускаем таймер (обновление каждые 50 мс)
-        self.animation_timer.start(50)
+        
 
     def update_playhead(self):
         """Сдвигает playhead пропорционально прошедшему времени"""
@@ -200,6 +242,7 @@ class CreatorController(QWidget):
         progress = elapsed / self.anim_total_duration
         current_x = self.anim_start_x + progress * (self.anim_end_x - self.anim_start_x)
         self.playhead.setLine(current_x, 0, current_x, 500)
+        self.current_playhead_x = current_x   # сохраняем
 
 
 

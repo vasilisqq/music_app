@@ -91,49 +91,11 @@ class Ui_MainWindow(object):
         self.label_time_signature = QtWidgets.QLabel(parent=MainWindow)
         self.label_time_signature.setObjectName("label_time_signature")
         self.horizontalLayout.addWidget(self.label_time_signature)
-        self.quarter_btn = QtWidgets.QPushButton(parent=MainWindow)
-        self.quarter_btn.setStyleSheet("QPushButton {\n"
-" background-color: #5bc0de;\n"
-" color: white;\n"
-" border: none;\n"
-" padding: 10px 20px;\n"
-" font-size: 16px;\n"
-" margin: 4px 2px;\n"
-" border-radius: 8px;\n"
-" min-width: 60px;\n"
-"}\n"
-"QPushButton:hover {\n"
-" background-color: #31b0d5;\n"
-"}\n"
-"QPushButton:pressed {\n"
-" background-color: #269abc;\n"
-"}")
-        self.quarter_btn.setText("")
-        icon1 = QtGui.QIcon()
-        icon1.addPixmap(QtGui.QPixmap("app/photos/quarter.png"), QtGui.QIcon.Mode.Normal, QtGui.QIcon.State.Off)
-        self.quarter_btn.setIcon(icon1)
-        self.quarter_btn.setIconSize(QtCore.QSize(16, 22))
-        self.quarter_btn.setObjectName("quarter_btn")
-        self.horizontalLayout.addWidget(self.quarter_btn)
-        self.time_34_button = QtWidgets.QPushButton(parent=MainWindow)
-        self.time_34_button.setStyleSheet("QPushButton {\n"
-" background-color: #5bc0de;\n"
-" color: white;\n"
-" border: none;\n"
-" padding: 10px 20px;\n"
-" font-size: 16px;\n"
-" margin: 4px 2px;\n"
-" border-radius: 8px;\n"
-" min-width: 60px;\n"
-"}\n"
-"QPushButton:hover {\n"
-" background-color: #31b0d5;\n"
-"}\n"
-"QPushButton:pressed {\n"
-" background-color: #269abc;\n"
-"}")
-        self.time_34_button.setObjectName("time_34_button")
-        self.horizontalLayout.addWidget(self.time_34_button)
+        self.duration_combo = QtWidgets.QComboBox(parent=MainWindow)
+        self.duration_combo.setMinimumSize(QtCore.QSize(120, 30))
+        self.duration_combo.setEditable(False)
+        self.duration_combo.setObjectName("duration_combo")
+        self.horizontalLayout.addWidget(self.duration_combo)
         spacerItem = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum)
         self.horizontalLayout.addItem(spacerItem)
         self.settings_button = QtWidgets.QPushButton(parent=MainWindow)
@@ -177,8 +139,8 @@ class Ui_MainWindow(object):
         self.start_button.setText(_translate("MainWindow", "Старт"))
         self.save_button.setText(_translate("MainWindow", "Сохранить"))
         self.reset_button.setText(_translate("MainWindow", "Сброс"))
-        self.label_time_signature.setText(_translate("MainWindow", "Размерность:"))
-        self.time_34_button.setText(_translate("MainWindow", "3/4"))
+        self.label_time_signature.setText(_translate("MainWindow", "Длительность:"))
+        self.duration_combo.setToolTip(_translate("MainWindow", "Выберите длительность ноты"))
         self.settings_button.setText(_translate("MainWindow", "Настройки"))
         self.info_label.setText(_translate("MainWindow", "Подсказка: Наведите курсор на линии и пространства между ними"))
-from GUI.helpful import ScalableGraphicsView
+from app.GUI.helpful import ScalableGraphicsView

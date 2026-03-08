@@ -141,67 +141,23 @@ QPushButton:pressed {
      <item>
       <widget class="QLabel" name="label_time_signature">
        <property name="text">
-        <string>Размерность:</string>
+        <string>Длительность:</string>
        </property>
       </widget>
      </item>
      <item>
-      <widget class="QPushButton" name="quarter_btn">
-       <property name="styleSheet">
-        <string notr="true">QPushButton {
- background-color: #5bc0de;
- color: white;
- border: none;
- padding: 10px 20px;
- font-size: 16px;
- margin: 4px 2px;
- border-radius: 8px;
- min-width: 60px;
-}
-QPushButton:hover {
- background-color: #31b0d5;
-}
-QPushButton:pressed {
- background-color: #269abc;
-}</string>
-       </property>
-       <property name="text">
-        <string/>
-       </property>
-       <property name="icon">
-        <iconset>
-         <normaloff>app/photos/quarter.png</normaloff>app/photos/quarter.png</iconset>
-       </property>
-       <property name="iconSize">
+      <widget class="QComboBox" name="duration_combo">
+       <property name="minimumSize">
         <size>
-         <width>16</width>
-         <height>22</height>
+         <width>120</width>
+         <height>30</height>
         </size>
        </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QPushButton" name="time_34_button">
-       <property name="styleSheet">
-        <string notr="true">QPushButton {
- background-color: #5bc0de;
- color: white;
- border: none;
- padding: 10px 20px;
- font-size: 16px;
- margin: 4px 2px;
- border-radius: 8px;
- min-width: 60px;
-}
-QPushButton:hover {
- background-color: #31b0d5;
-}
-QPushButton:pressed {
- background-color: #269abc;
-}</string>
+       <property name="toolTip">
+        <string>Выберите длительность ноты</string>
        </property>
-       <property name="text">
-        <string>3/4</string>
+       <property name="editable">
+        <bool>false</bool>
        </property>
       </widget>
      </item>
