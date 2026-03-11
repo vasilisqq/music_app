@@ -27,10 +27,10 @@ class NoteItem(QGraphicsEllipseItem):
         self.y = y
         self.width = 12
         self.height = 10
-        self.shtil = has_shtil
         self.reversing = reversing
         self.scene = scene
         self.bit = bit
+        self.flag_path = None
         self.setRect(QRectF(x - self.width/2, y - self.height/2, 
                            self.width, self.height))
         self.setBrush(QBrush(Qt.GlobalColor.black))
@@ -51,15 +51,38 @@ class NoteItem(QGraphicsEllipseItem):
         painter.drawLine(stem_x, self.y, stem_x, stem_y_top)
         match self.note_lenght:
             case 0.125:
-                stem_x = int(self.x + self.width/2 - 1)
-                stem_y_top = self.y - 32
-                path = QPainterPath()
-                path.moveTo(stem_x, stem_y_top)
-                # Кривая Безье: от конца штиля вправо и вниз (больший Y)
-                path.cubicTo(stem_x + 12, stem_y_top + 4,
-                             stem_x + 16, stem_y_top + 12,
-                             stem_x + 8,  stem_y_top + 20)
-                painter.drawPath(path)
+                self.flag_path = self.computeFlagPath()
+                painter.drawPath(self.flag_path)
+                self.scene.update()
+                
+
+    def computeFlagPath(self):
+        """Строит QPainterPath для флажка (восьмая нота)."""
+        ax = int(self.x + self.width/2 - 1) if not self.reversing else int(self.x - self.width/2 - 1)
+        ay = self.y - 32
+        sign_x = 1
+        sign_y = 1 
+        # ---- Верхняя кривая (A -> B) ----
+        # Координаты B
+        bx = ax + sign_x * 10
+        by = ay + sign_y * 20
+        # Контрольные точки верхней
+        up_c1 = (ax + sign_x * 0, ay + sign_y * 20)
+        up_c2 = (ax + sign_x * 10, ay + sign_y * 10)
+        # ---- Нижняя кривая (B -> A) ----
+        # Контрольные точки (абсолютные координаты от A)
+        low_c1 = (ax + sign_x * 8, ay + sign_y * 10)   # первая контрольная (от B)
+        low_c2 = (ax + sign_x * 0, ay + sign_y * 23)   # вторая контрольная (от A)
+        # Конечная точка - A (ax, ay)
+        # ---- Замкнутый путь ----
+        path = QPainterPath()
+        path.moveTo(ax, ay)
+        # Верхняя сторона
+        path.cubicTo(up_c1[0], up_c1[1], up_c2[0], up_c2[1], bx, by)
+        # Нижняя сторона (обратно к A)
+        path.cubicTo(low_c1[0], low_c1[1], low_c2[0], low_c2[1], ax, ay)
+        path.closeSubpath()
+        return path
 
 
     def mousePressEvent(self, event) -> None:
