@@ -44,7 +44,6 @@ class NoteItem(QGraphicsEllipseItem):
 
     def paint(self, painter: QPainter, option, widget):
         super().paint(painter, option, widget)
-        # if self.shtil:
         painter.setPen(QPen(Qt.GlobalColor.black, LINE_WIDTH, Qt.PenStyle.SolidLine))
         stem_x = int(self.x + self.width/2 - 1) if not self.reversing else int(self.x - self.width/2 - 1)
         stem_y_top = self.y - 32
@@ -55,6 +54,7 @@ class NoteItem(QGraphicsEllipseItem):
                 painter.drawPath(self.flag_path)
                 self.scene.update()
                 
+
 
     def computeFlagPath(self):
         """Строит QPainterPath для флажка (восьмая нота)."""
@@ -90,10 +90,6 @@ class NoteItem(QGraphicsEllipseItem):
         self.bit.notes.remove(self)
         self.scene.removeItem(self)
         del self
-
-        # если хочешь, чтобы работало стандартное поведение (выделение/перетаскивание)
-        # super().mousePressEvent(event)
-
 
 
 
@@ -287,13 +283,12 @@ class BarLine:
 
 class Bits(QGraphicsRectItem):
 
-    def __init__(self, rect, x0, x1,parent=None):
+    def __init__(self, rect, x0, x1, weigth=0.25, parent=None):
         super().__init__(rect, parent)
         self.notes = []
         self.x0 = x0
         self.x1 = x1
-        self.weigth = 0
-        self.max_weigth = 1/4
+        self.weigth = weigth
         self.full = False
         # self.y0 = Y0
         # self.y1 = y1
@@ -322,7 +317,7 @@ class Bits(QGraphicsRectItem):
 
 
     def add_note(self, note):
-        if note.note_lenght > self.max_weigth:
+        if note.note_lenght != self.weigth:
             return False
         note.bit = self
         self.notes.append(note)
@@ -436,6 +431,7 @@ class Tact:
         for bit in self.bits:
             if int(click_x) in range(bit.x0, bit.x1):
                 item = bit
+                break
         if not item.isExist_note(line):
             if (rev:=item.has_upper_or_lower(line)) is None:
                 note_item = NoteItem(item.x0+15, line.y, line.note_name, self.scene, self.duration) 
@@ -466,24 +462,54 @@ class StaffLayout:
         return 4 * LINE_SPACING
     
     def set_duration(self, duration):
+        # if duration == "0.125":
+        passed = False
         for tact in self.tacts:
             tact.duration = duration
             new_bits = []
-            for bit in tact.bits:
+            for i, bit in enumerate(tact.bits):
                 if duration < self.current_duration:
-                    if not bit.notes:
+                    if not bit.notes and not bit.weigth == duration:
                         width = int((bit.x1-bit.x0)/2)
                         new_bits.extend([
-                            Bits(QRectF(bit.x0, Y0, width, self.y_bottom-Y0), bit.x0, bit.x0+width),
-                            Bits(QRectF(bit.x0+width, Y0, width, self.y_bottom-Y0), bit.x0+width+1, bit.x1)]
+                            Bits(QRectF(bit.x0, Y0, width, self.y_bottom-Y0), bit.x0, bit.x0+width,weigth=duration),
+                            Bits(QRectF(bit.x0+width, Y0, width, self.y_bottom-Y0), bit.x0+width+1, bit.x1,weigth=duration)]
                             )
                         self.scene.removeItem(bit)
                     else:
                         new_bits.append(bit)
-            del bit
+                else:
+                    print(f"{i} увеличиваем размерность бита")
+                    if not passed:
+                        print(f"{i} этот бит не удален")
+                        if not bit.notes and not bit.weigth == duration:
+                            print(f"в {i} бите нет нот")
+                            try:
+                                next_bit = tact.bits[i+1]
+                                print(f"{i} после него есть бит")
+                                if not next_bit.notes:
+                                    print(f"{i} в следующем бите нет нот")
+                                    width = int((next_bit.x1-bit.x0))
+                                    new_bits.append(Bits(QRectF(bit.x0, Y0, width, self.y_bottom-Y0), bit.x0, bit.x0+width,weigth=duration))
+                                    passed = True
+                                    self.scene.removeItem(bit)
+                            except Exception as e:
+                                print(e)
+                                print(f"{i} этот последний бит")
+                                new_bits.append(bit)
+                                continue
+                        else:
+                            print(f"{i} этот бит заполнен не трогаем его")
+                            new_bits.append(bit)
+                    else:
+                        print(f"{i} этот бит удален")
+                        passed = False
+                        self.scene.removeItem(bit)
+                del bit
             tact.bits = new_bits
             for item in new_bits:
                 self.scene.addItem(item)
+        self.scene.update()
         self.current_duration = duration
                         
 
@@ -570,11 +596,11 @@ class StaffLayout:
             for tact in self.tacts:
                 for bit in tact.bits:
                     if bit.notes:
-                        duration = 60/self.bpm * 1/4 * 4
+                        duration = 60/self.bpm * bit.weigth * 4
                         chord_notes = [note.note_name for note in bit.notes]
                         player.play_chord(chord_notes, duration)
                     time.sleep(duration)
 
     def start_lesson(self):
         threading.Thread(target=self.touch_thread, daemon=True).start()
-        # threading.Thread(target=self.sound_thread, daemon=True).start()
+        threading.Thread(target=self.sound_thread, daemon=True).start()

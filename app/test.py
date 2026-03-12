@@ -78,7 +78,7 @@ def precompute_all():
         arr = zoom(base_note, new_len / len(base_note), order=3).astype(np.float32)
         note_cache[name] = arr.ravel()
     print(f'Предвычислено {len(note_cache)} нот')
-# precompute_all()
+precompute_all()
 # save_cache()
 
 
