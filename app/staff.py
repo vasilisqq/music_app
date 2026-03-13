@@ -35,11 +35,20 @@ class NoteItem(QGraphicsEllipseItem):
                            self.width, self.height))
         self.setBrush(QBrush(Qt.GlobalColor.black))
         self.setPen(QPen(Qt.GlobalColor.black))
+        self.prev_note = None   # первая нота в группе (для себя)
+        self.next_note = None    # последняя нота в группе
+
+    # def stem_x(self):
+    #     return int(self.x + self.width/2 - 1) if not self.reversing else int(self.x - self.width/2 - 1)
+
+    # def stem_y_top(self):
+    #     return self.y - 32 if not self.reversing else self.y + 32
+
 
 
     def boundingRect(self):
         rect = super().boundingRect()
-        return rect.adjusted(-self.width/2, -32, self.width/2, self.height/2)
+        return rect.adjusted(-self.width, -32, self.width, self.height/2)
 
 
     def paint(self, painter: QPainter, option, widget):
@@ -50,9 +59,9 @@ class NoteItem(QGraphicsEllipseItem):
         painter.drawLine(stem_x, self.y, stem_x, stem_y_top)
         match self.note_lenght:
             case 0.125:
-                self.flag_path = self.computeFlagPath()
-                painter.drawPath(self.flag_path)
-                self.scene.update()
+                if not self.reversing:
+                    self.flag_path = self.computeFlagPath()
+                    painter.drawPath(self.flag_path)
                 
 
 
@@ -87,9 +96,21 @@ class NoteItem(QGraphicsEllipseItem):
 
     def mousePressEvent(self, event) -> None:
         event.accept()
-        self.bit.notes.remove(self)
+        self.bit.update_notes(self)
         self.scene.removeItem(self)
+        if self.bit.tact:
+            self.bit.tact.update_beams()
+        self.scene.update()
         del self
+
+
+    def reverse(self):
+        self.x -= self.width
+        self.setRect(QRectF(self.x - self.width/2, self.y-self.height/2, self.width,
+                        self.height))
+        self.reversing = False
+        self.scene.update()
+
 
 
 
@@ -283,13 +304,14 @@ class BarLine:
 
 class Bits(QGraphicsRectItem):
 
-    def __init__(self, rect, x0, x1, weigth=0.25, parent=None):
+    def __init__(self, rect, x0, x1, tact=None, weigth=0.25, parent=None):
         super().__init__(rect, parent)
         self.notes = []
         self.x0 = x0
         self.x1 = x1
         self.weigth = weigth
         self.full = False
+        self.tact = tact
         # self.y0 = Y0
         # self.y1 = y1
 
@@ -309,11 +331,31 @@ class Bits(QGraphicsRectItem):
 
 
     def has_upper_or_lower(self, line):
-        for note in self.notes:
-            if abs(note.y - line.y) <= 6:
-                print(note.y, "note", line.y, "line")
-                return 0 if note.reversing else 12
-        return None
+        if self.weigth == 0.25:
+            for note in self.notes:
+                if abs(note.y - line.y) <= 6 and note != line:
+                    print(note.y, "note", line.y, "line")
+                    return 0 if note.reversing else 12
+                elif abs(note.y - line.y) <= 12 and note != line:
+                    return 12 if note.reversing else 0
+            return None
+        elif self.weigth == 0.125:
+            for note in self.notes:
+                if abs(note.y - line.y) <= 6:
+                    if line.y > note.y:
+                        return 0 if note.reversing else 12
+                    
+
+    def update_notes(self, note:NoteItem):
+        if note.note_lenght == 0.25:
+            self.notes.remove(note)
+            for active_note in self.notes:
+                if self.has_upper_or_lower(active_note) is None and abs(active_note.y - note.y) <= 6 and active_note.reversing:
+                    active_note.reverse()
+
+            
+
+
 
 
     def add_note(self, note):
@@ -405,7 +447,7 @@ class Tact:
                 x1 = int((self.width - 100)/count_bits*i+self.x0+100)
             else:
                 x1 = int(self.width/count_bits*i+self.x0)
-            bit = Bits(QRectF(x_left, Y0, x1-x_left, self.y_bottom-Y0), x_left, x1)
+            bit = Bits(QRectF(x_left, Y0, x1-x_left, self.y_bottom-Y0), x_left, x1,tact=self)
             x_left = x1
             self.bits.append(bit)
             self.scene.addItem(bit)
@@ -432,6 +474,8 @@ class Tact:
             if int(click_x) in range(bit.x0, bit.x1):
                 item = bit
                 break
+        if len(item.notes) == 5:
+            return
         if not item.isExist_note(line):
             if (rev:=item.has_upper_or_lower(line)) is None:
                 note_item = NoteItem(item.x0+15, line.y, line.note_name, self.scene, self.duration) 
@@ -439,6 +483,51 @@ class Tact:
                 note_item = NoteItem(item.x0+15+rev, line.y, line.note_name,self.scene, self.duration, False, True if rev>0 else False)
             if item.add_note(note_item):
                 self.scene.addItem(note_item)
+                self.update_beams()
+
+
+    def update_beams(self):
+        # Сброс групповых атрибутов у всех нот
+        for bit in self.bits:
+            for note in bit.notes:
+                note.group_first = None
+                note.group_last = None
+
+        # Словарь активных групп: имя ноты -> список нот
+        active_groups = {}
+        groups = []
+
+        for bit in self.bits:
+            # Все восьмые ноты в текущем бите
+            current_notes = [n for n in bit.notes if n.note_lenght == 0.125]
+
+            # Закрываем группы, которые не получили продолжения
+            for name in list(active_groups.keys()):
+                if not any(n.note_name == name for n in current_notes):
+                    groups.append(active_groups.pop(name))
+
+            # Обрабатываем текущие ноты
+            for note in current_notes:
+                name = note.note_name
+                if name in active_groups:
+                    active_groups[name].append(note)
+                else:
+                    active_groups[name] = [note]
+
+        # Закрываем оставшиеся группы
+        for group in active_groups.values():
+            groups.append(group)
+
+        # Для каждой группы длиной >1 устанавливаем связи
+        for group in groups:
+            if len(group) > 1:
+                first = group[0]
+                last = group[-1]
+                first.group_first = first
+                first.group_last = last
+                for note in group[1:]:
+                    note.group_first = first
+                    note.group_last = last
         
 
 
