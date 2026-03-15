@@ -19,7 +19,7 @@ import threading
 
 
 class NoteItem(QGraphicsEllipseItem):
-    def __init__(self, x, y, name, scene, duration, has_shtil=True, reversing=False, bit=None):
+    def __init__(self, x, y, name, scene, duration, has_shtil=False, reversing=False, bit=None):
         super().__init__()
         self.note_lenght = duration
         self.note_name = name
@@ -27,6 +27,7 @@ class NoteItem(QGraphicsEllipseItem):
         self.y = y
         self.width = 12
         self.height = 10
+        self.shtil = has_shtil
         self.reversing = reversing
         self.scene = scene
         self.bit = bit
@@ -37,6 +38,7 @@ class NoteItem(QGraphicsEllipseItem):
         self.setPen(QPen(Qt.GlobalColor.black))
         self.prev_note = None   # первая нота в группе (для себя)
         self.next_note = None    # последняя нота в группе
+        self.stem_x = int(self.x + self.width/2) if not self.reversing else int(self.x - self.width/2)
 
     # def stem_x(self):
     #     return int(self.x + self.width/2 - 1) if not self.reversing else int(self.x - self.width/2 - 1)
@@ -45,29 +47,29 @@ class NoteItem(QGraphicsEllipseItem):
     #     return self.y - 32 if not self.reversing else self.y + 32
 
 
-
     def boundingRect(self):
         rect = super().boundingRect()
-        return rect.adjusted(-self.width, -32, self.width, self.height/2)
+        return rect.adjusted(-self.width, -32, self.width*3, self.height/2)
 
 
     def paint(self, painter: QPainter, option, widget):
         super().paint(painter, option, widget)
         painter.setPen(QPen(Qt.GlobalColor.black, LINE_WIDTH, Qt.PenStyle.SolidLine))
-        stem_x = int(self.x + self.width/2 - 1) if not self.reversing else int(self.x - self.width/2 - 1)
         stem_y_top = self.y - 32
-        painter.drawLine(stem_x, self.y, stem_x, stem_y_top)
+        painter.drawLine(self.stem_x, self.y, self.stem_x, stem_y_top)
         match self.note_lenght:
             case 0.125:
-                if not self.reversing:
+                if self.shtil:  
                     self.flag_path = self.computeFlagPath()
                     painter.drawPath(self.flag_path)
+                elif self.next_note:
+                    painter.drawLine(self.stem_x, self.y-32, self.next_note.stem_x, self.next_note.y-32)
                 
 
 
     def computeFlagPath(self):
         """Строит QPainterPath для флажка (восьмая нота)."""
-        ax = int(self.x + self.width/2 - 1) if not self.reversing else int(self.x - self.width/2 - 1)
+        ax = self.stem_x
         ay = self.y - 32
         sign_x = 1
         sign_y = 1 
@@ -96,22 +98,32 @@ class NoteItem(QGraphicsEllipseItem):
 
     def mousePressEvent(self, event) -> None:
         event.accept()
-        self.bit.update_notes(self)
+        self.bit.remove_note(self)
         self.scene.removeItem(self)
-        if self.bit.tact:
-            self.bit.tact.update_beams()
         self.scene.update()
         del self
 
 
-    def reverse(self):
-        self.x -= self.width
-        self.setRect(QRectF(self.x - self.width/2, self.y-self.height/2, self.width,
-                        self.height))
-        self.reversing = False
-        self.scene.update()
+    def reverse(self, reverse):
+        if self.reversing == reverse:
+            return
+        self.reversing = reverse
+        if self.reversing:
+            self.x += self.width
+        else:
+            self.x -= self.width
+        self.setRect(QRectF(self.x - self.width/2, self.y - self.height/2, 
+                           self.width, self.height))
+        self.update()
 
 
+    def remove_shtil(self):
+        self.shtil = False
+        self.update()
+
+    def create_shtil(self):
+        self.shtil = True
+        self.update()
 
 
 class HighlightableLineItem(QGraphicsLineItem):
@@ -274,8 +286,6 @@ class TimeSignature:
         """Обновляет размерность такта"""
         self.numerator = numerator
         self.denominator = denominator
-        # В реальном приложении нужно было бы обновить существующие элементы,
-        # но для простоты мы просто перерисуем всю сцену
 
 
 class BarLine:
@@ -328,42 +338,60 @@ class Bits(QGraphicsRectItem):
             if note.note_name == line.note_name:
                 return True
         return False
+    
+    
+    def has_near_note(self, note_):
+        for note in self.notes:
+            if abs(note.y - note_.y) <= 6 and note != note_:
+                return True
+            elif abs(note.y - note_.y) <= 12 and note != note_:
+                return False
+        return False
 
 
-    def has_upper_or_lower(self, line):
-        if self.weigth == 0.25:
-            for note in self.notes:
-                if abs(note.y - line.y) <= 6 and note != line:
-                    print(note.y, "note", line.y, "line")
-                    return 0 if note.reversing else 12
-                elif abs(note.y - line.y) <= 12 and note != line:
-                    return 12 if note.reversing else 0
-            return None
-        elif self.weigth == 0.125:
-            for note in self.notes:
-                if abs(note.y - line.y) <= 6:
-                    if line.y > note.y:
-                        return 0 if note.reversing else 12
-                    
-
-    def update_notes(self, note:NoteItem):
-        if note.note_lenght == 0.25:
-            self.notes.remove(note)
-            for active_note in self.notes:
-                if self.has_upper_or_lower(active_note) is None and abs(active_note.y - note.y) <= 6 and active_note.reversing:
-                    active_note.reverse()
+    def update_notes(self):
+        pred_note = None
+        for note in self.notes:
+            if pred_note:
+                pred_note.remove_shtil()
+                if abs(note.y - pred_note.y) <= 6:
+                    print(f"нота рядом {note.y}")
+                    note.reverse(not pred_note.reversing)
+                elif note.reversing:
+                    print(f"нота реверсивна и без соседей {note.y}")
+                    note.reverse(False)
+            elif note.reversing:
+                print(f"нота реверсивна и без соседей {note.y}")
+                note.reverse(False)
+            pred_note = note
+        if self.notes:
+            self.notes[-1].create_shtil()
+        self.tact.update_beams()
+        
 
             
+    def remove_note(self, note):
+        self.notes.remove(note)
+        self.update_notes()
 
 
-
-
-    def add_note(self, note):
-        if note.note_lenght != self.weigth:
+    def add_note(self, duration, line, scene):
+        if duration != self.weigth:
             return False
-        note.bit = self
-        self.notes.append(note)
-        return True
+        if self.isExist_note(line):
+            return False
+        note_item = NoteItem(
+            self.x0+15, 
+            line.y, 
+            line.note_name,
+            scene, 
+            duration, 
+            bit=self)
+        self.notes.append(note_item)
+        self.notes.sort(key=lambda note:note.y, reverse=True)
+        self.update_notes()
+        return note_item
+
 
 
 class Tact:
@@ -476,58 +504,27 @@ class Tact:
                 break
         if len(item.notes) == 5:
             return
-        if not item.isExist_note(line):
-            if (rev:=item.has_upper_or_lower(line)) is None:
-                note_item = NoteItem(item.x0+15, line.y, line.note_name, self.scene, self.duration) 
-            else:
-                note_item = NoteItem(item.x0+15+rev, line.y, line.note_name,self.scene, self.duration, False, True if rev>0 else False)
-            if item.add_note(note_item):
-                self.scene.addItem(note_item)
-                self.update_beams()
+        if note:=item.add_note(self.duration, line, self.scene):
+            self.scene.addItem(note)
 
 
     def update_beams(self):
-        # Сброс групповых атрибутов у всех нот
+        pred_bit = None
         for bit in self.bits:
-            for note in bit.notes:
-                note.group_first = None
-                note.group_last = None
+            if bit.notes and pred_bit:
+                if bit.weigth == pred_bit.weigth == 0.125:
+                    pred_note = pred_bit.notes[-1]
+                    current_note = bit.notes[-1]
+                    pred_note.remove_shtil()
+                    pred_note.next_note = current_note
+                    current_note.remove_shtil()
+                    pred_note.update()
+            pred_bit = bit
+        self.scene.update()
+                    
 
-        # Словарь активных групп: имя ноты -> список нот
-        active_groups = {}
-        groups = []
 
-        for bit in self.bits:
-            # Все восьмые ноты в текущем бите
-            current_notes = [n for n in bit.notes if n.note_lenght == 0.125]
 
-            # Закрываем группы, которые не получили продолжения
-            for name in list(active_groups.keys()):
-                if not any(n.note_name == name for n in current_notes):
-                    groups.append(active_groups.pop(name))
-
-            # Обрабатываем текущие ноты
-            for note in current_notes:
-                name = note.note_name
-                if name in active_groups:
-                    active_groups[name].append(note)
-                else:
-                    active_groups[name] = [note]
-
-        # Закрываем оставшиеся группы
-        for group in active_groups.values():
-            groups.append(group)
-
-        # Для каждой группы длиной >1 устанавливаем связи
-        for group in groups:
-            if len(group) > 1:
-                first = group[0]
-                last = group[-1]
-                first.group_first = first
-                first.group_last = last
-                for note in group[1:]:
-                    note.group_first = first
-                    note.group_last = last
         
 
 
@@ -561,8 +558,8 @@ class StaffLayout:
                     if not bit.notes and not bit.weigth == duration:
                         width = int((bit.x1-bit.x0)/2)
                         new_bits.extend([
-                            Bits(QRectF(bit.x0, Y0, width, self.y_bottom-Y0), bit.x0, bit.x0+width,weigth=duration),
-                            Bits(QRectF(bit.x0+width, Y0, width, self.y_bottom-Y0), bit.x0+width+1, bit.x1,weigth=duration)]
+                            Bits(QRectF(bit.x0, Y0, width, self.y_bottom-Y0), bit.x0, bit.x0+width,weigth=duration, tact=tact),
+                            Bits(QRectF(bit.x0+width, Y0, width, self.y_bottom-Y0), bit.x0+width+1, bit.x1,weigth=duration, tact=tact)]
                             )
                         self.scene.removeItem(bit)
                     else:
