@@ -404,13 +404,10 @@ class Bits(QGraphicsRectItem):
 
 
     def add_note(self, duration, line, scene):
-        print("SKJDFHLKS")
         print(duration, self.weigth)
         if duration != self.weigth:
-            print("SKJDFHLKS")
             return False
         if self.isExist_note(line):
-            print("SKJDFHLKS")
             return False
         note_item = NoteItem(
             self.x0+15, 
@@ -419,7 +416,6 @@ class Bits(QGraphicsRectItem):
             scene, 
             duration, 
             bit=self)
-        print("SKJDFHLKS")
         self.notes.append(note_item)
         self.notes.sort(key=lambda note:note.y, reverse=True)
         self.update_notes()
@@ -505,9 +501,9 @@ class Tact:
             x_left = self.x0
         for i in range(1, count_bits+1):
             if self.tact_number == 0:
-                x1 = int((self.width - 100)/count_bits*i+self.x0+100)
+                x1 = (self.width - 100)/count_bits*i+self.x0+100
             else:
-                x1 = int(self.width/count_bits*i+self.x0)
+                x1 = self.width/count_bits*i+self.x0
             bit = Bits(QRectF(x_left, Y0, x1-x_left, self.y_bottom-Y0), x_left, x1,tact=self)
             x_left = x1
             self.bits.append(bit)
@@ -546,6 +542,7 @@ class Tact:
     def update_beams(self):
         pred_bit = None
         for bit in self.bits:
+            print(bit.x0, bit.x1)
             if bit.notes:
                 if pred_bit:
                     if bit.weigth == pred_bit.weigth == 0.125:
@@ -557,8 +554,14 @@ class Tact:
                         pred_note.remove_shtil()
                         pred_note.next_note = current_note
                         current_note.prev_note = pred_note
+                        if current_note.next_note:
+                            current_note.next_note.create_shtil()
+                            current_note.next_note.prev_note = None
+                            current_note.next_note = None
                         current_note.remove_shtil()
                         pred_note.update()
+                        pred_bit = bit
+                    else:
                         pred_bit = bit
                 else:
                     pred_bit = bit
@@ -582,7 +585,7 @@ class Tact:
                     continue
                 if bit.weigth == available_bit.weigth:
                     print("биты одинаковой длительности, их можно сложить")
-                    width = int((bit.x1-available_bit.x0))
+                    width = (bit.x1-available_bit.x0)
                     new_bits.append(Bits(QRectF(available_bit.x0, 
                                                 Y0, 
                                                 width, 
@@ -696,7 +699,7 @@ class Tact:
         new_bits = []
         for bit in self.bits:
             if not bit.notes and not bit.weigth <= duration:
-                width = int((bit.x1-bit.x0)/2)
+                width = (bit.x1-bit.x0)/2
                 new_bits.extend([
                     Bits(QRectF(bit.x0, Y0, width, self.y_bottom-Y0), bit.x0, bit.x0+width,weigth=bit.weigth/2, tact=self),
                     Bits(QRectF(bit.x0+width, Y0, width, self.y_bottom-Y0), bit.x0+width+1, bit.x1,weigth=bit.weigth/2, tact=self)]
