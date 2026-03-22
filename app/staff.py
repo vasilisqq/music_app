@@ -20,7 +20,7 @@ import threading
 
 class NoteItem(QGraphicsEllipseItem):
     def __init__(self, x, y, name, scene, duration, has_shtil=False, reversing=False, bit=None):
-        super().__init__()
+        super().__init__(parent=bit)
         self.note_lenght = duration
         self.note_name = name
         self.x = x
@@ -383,6 +383,8 @@ class Bits(QGraphicsRectItem):
             last_note.create_shtil()
             last_note.next_note = linked_note_next
             last_note.prev_note = linked_note_prev
+        else:
+            self.tact.change_bits(self)
         self.tact.update_beams()
         
 
@@ -398,7 +400,6 @@ class Bits(QGraphicsRectItem):
                 prev.shtil= True
                 prev.next_note = None
                 prev.update()
-                
         self.update_notes()
 
 
@@ -528,15 +529,17 @@ class Tact:
 
     def add_note_at_position(self, click_x, line):
         """Добавляет ноту на ближайшую доступную позицию"""
-        if not int(click_x) in range(self.note_x, self.note_x+self.width):
+        if not self.x0 <= click_x <= self.x0 + self.width:
             return
         for bit in self.bits:
-            if int(click_x) in range(bit.x0, bit.x1):
+            if bit.x0 <= click_x <= bit.x1:
                 item = bit
                 break
+        else:
+            return
         if len(item.notes) == 5:
             return
-        if note:=item.add_note(self.duration, line, self.scene):
+        if note := item.add_note(self.duration, line, self.scene):
             self.scene.addItem(note)
 
 
@@ -564,42 +567,148 @@ class Tact:
         self.scene.update()
 
 
-    # def update_durations(self, bit):
-    #     for i, bit in enumerate(self.bits):
-    #             print(f"{i} увеличиваем размерность бита")
-    #             if not passed:
-    #                 print(f"{i} этот бит не удален")
-    #                 if not bit.notes and not bit.weigth == duration:
-    #                     print(f"в {i} бите нет нот")
-    #                     try:
-    #                         next_bit = tact.bits[i+1]
-    #                         print(f"{i} после него есть бит")
-    #                         if not next_bit.notes:
-    #                             print(f"{i} в следующем бите нет нот")
-    #                             width = int((next_bit.x1-bit.x0))
-    #                             new_bits.append(Bits(QRectF(bit.x0, Y0, width, self.y_bottom-Y0), bit.x0, bit.x0+width,weigth=tact.duration, tact=tact))
-    #                             self.scene.addItem(new_bits[-1])
-    #                             passed = True
-    #                             self.scene.removeItem(bit)
-    #                     except Exception as e:
-    #                         print(e)
-    #                         print(f"{i} этот последний бит")
-    #                         new_bits.append(bit)
-    #                         continue
-    #                 else:
-    #                     print(f"{i} этот бит заполнен не трогаем его")
-    #                     new_bits.append(bit)
-    #             else:
-    #                 print(f"{i} этот бит удален")
-    #                 passed = False
-    #                 self.scene.removeItem(bit)
-    #             del bit    
-    #         tact.bits = new_bits
-    #     self.current_duration *= 2
-    #     if self.current_duration != duration:
-    #         self.increase_duration(duration) 
+    def increase_duration(self, duration):
+        self.duration *= 2
+        available_bit = None
+        new_bits = []
+        for bit in self.bits:
+            if available_bit:
+                print("есть пустой бит")
+                if bit.notes:
+                    print("в этом бите есть ноты, оставляем не тронутым, пустой бит сбрасывается")
+                    new_bits.append(available_bit)
+                    new_bits.append(bit)
+                    available_bit = None
+                    continue
+                if bit.weigth == available_bit.weigth:
+                    print("биты одинаковой длительности, их можно сложить")
+                    width = int((bit.x1-available_bit.x0))
+                    new_bits.append(Bits(QRectF(available_bit.x0, 
+                                                Y0, 
+                                                width, 
+                                                self.y_bottom-Y0), 
+                                            available_bit.x0, 
+                                            available_bit.x0+width,
+                                            weigth=self.duration, 
+                                            tact=self))
+                    self.scene.addItem(new_bits[-1])
+                    self.scene.removeItem(bit)
+                    self.scene.removeItem(available_bit)
+                    available_bit = None
+            elif not bit.notes:
+                print("пустого бита нет, добавляем существующий если нет нот в нем")
+                available_bit = bit
+            else:
+                new_bits.append(bit)
+        if available_bit:
+            new_bits.append(available_bit)
+        self.bits = new_bits
+        if self.duration != duration:
+            self.increase_duration(duration)
                     
 
+    def change_bits(self, empty_bit):
+        """Обрабатывает изменения битов: объединяет пустые биты одинаковой длительности или разбивает слишком большие пустые биты."""
+        # Если бит пуст и его длительность больше текущей (требуется разбиение)
+        if not empty_bit.notes and empty_bit.weigth > self.duration:
+            # Разбиваем на несколько битов текущей длительности
+            ratio = int(empty_bit.weigth / self.duration)
+            if ratio > 1:
+                new_width = (empty_bit.x1 - empty_bit.x0) / ratio
+                new_bits = []
+                x = empty_bit.x0
+                for i in range(ratio):
+                    new_bit = Bits(
+                        QRectF(x, Y0, new_width, self.y_bottom - Y0),
+                        x, x + new_width,
+                        weigth=self.duration,
+                        tact=self
+                    )
+                    self.scene.addItem(new_bit)
+                    new_bits.append(new_bit)
+                    x += new_width
+                # Удаляем старый бит
+                self.scene.removeItem(empty_bit)
+                # Заменяем старый бит в списке на новые
+                idx = self.bits.index(empty_bit)
+                self.bits.pop(idx)
+                for new_bit in reversed(new_bits):
+                    self.bits.insert(idx, new_bit)
+                # После разбиения возможны дальнейшие объединения с соседями, но это уже будет обработано при последующих вызовах
+                # (например, если соседние биты тоже пусты и той же длительности)
+                return
+
+        # Старая логика объединения соседей (как ранее)
+        # Находим индекс пустого бита в списке битов такта
+        try:
+            idx = self.bits.index(empty_bit)
+        except ValueError:
+            return
+
+        # Проверяем левого соседа
+        left_idx = idx - 1
+        if left_idx >= 0 and self.bits[left_idx].weigth == empty_bit.weigth and not self.bits[left_idx].notes:
+            left_bit = self.bits[left_idx]
+            new_x0 = left_bit.x0
+            new_x1 = empty_bit.x1
+            new_weigth = left_bit.weigth * 2
+            new_bit = Bits(
+                QRectF(new_x0, Y0, new_x1 - new_x0, self.y_bottom - Y0),
+                new_x0, new_x1, weigth=new_weigth, tact=self
+            )
+            self.scene.addItem(new_bit)
+            self.scene.removeItem(left_bit)
+            self.scene.removeItem(empty_bit)
+            self.bits.pop(left_idx)
+            self.bits.pop(left_idx)
+            self.bits.insert(left_idx, new_bit)
+            self.change_bits(new_bit)  # рекурсивно
+            return
+
+        # Проверяем правого соседа
+        right_idx = idx + 1
+        if right_idx < len(self.bits) and self.bits[right_idx].weigth == empty_bit.weigth and not self.bits[right_idx].notes:
+            right_bit = self.bits[right_idx]
+            new_x0 = empty_bit.x0
+            new_x1 = right_bit.x1
+            new_weigth = empty_bit.weigth * 2
+            new_bit = Bits(
+                QRectF(new_x0, Y0, new_x1 - new_x0, self.y_bottom - Y0),
+                new_x0, new_x1, weigth=new_weigth, tact=self
+            )
+            self.scene.addItem(new_bit)
+            self.scene.removeItem(empty_bit)
+            self.scene.removeItem(right_bit)
+            # Индексы: сначала удаляем правый, потом пустой (индекс пустого смещается после удаления правого?)
+            # Удаляем правый, индекс idx остаётся действительным, пока мы не удалили empty_bit
+            self.bits.pop(right_idx)
+            self.bits.pop(idx)
+            self.bits.insert(idx, new_bit)
+            self.change_bits(new_bit)
+            return
+
+        # Если соседей для объединения нет, ничего не делаем
+
+
+
+    def decrease_duration(self, duration):
+        if self.duration != duration: self.duration /= 2
+        new_bits = []
+        for bit in self.bits:
+            if not bit.notes and not bit.weigth <= duration:
+                width = int((bit.x1-bit.x0)/2)
+                new_bits.extend([
+                    Bits(QRectF(bit.x0, Y0, width, self.y_bottom-Y0), bit.x0, bit.x0+width,weigth=bit.weigth/2, tact=self),
+                    Bits(QRectF(bit.x0+width, Y0, width, self.y_bottom-Y0), bit.x0+width+1, bit.x1,weigth=bit.weigth/2, tact=self)]
+                    )
+                self.scene.addItem(new_bits[-2])
+                self.scene.addItem(new_bits[-1])
+                self.scene.removeItem(bit)
+            else:
+                new_bits.append(bit)
+        self.bits = new_bits
+        if self.duration != duration:
+            self.decrease_duration(duration) 
 
 
         
@@ -625,67 +734,18 @@ class StaffLayout:
         return 4 * LINE_SPACING
     
 
-    def increase_duration(self, duration):
-        for tact in self.tacts:
-            tact.duration *= 2
-            available_bit = None
-            new_bits = []
-            for bit in tact.bits:
-                if available_bit:
-                    if bit.notes:
-                        new_bits.append(available_bit)
-                        new_bits.append(bit)
-                        available_bit = None
-                        continue
-                    if bit.weigth == available_bit.weigth:
-                        width = int((bit.x1-available_bit.x0))
-                        new_bits.append(Bits(QRectF(available_bit.x0, 
-                                                    Y0, 
-                                                    width, 
-                                                    self.y_bottom-Y0), 
-                                                available_bit.x0, 
-                                                available_bit.x0+width,
-                                                weigth=tact.duration, 
-                                                tact=tact))
-                        self.scene.addItem(new_bits[-1])
-                        self.scene.removeItem(bit)
-                        self.scene.removeItem(available_bit)
-                        available_bit = None
-                else:
-                    available_bit = bit
-            tact.bits = new_bits
-        self.current_duration *= 2
-        if self.current_duration != duration:
-            self.increase_duration(duration) 
-
-
-    def decrease_duration(self, duration):
-        for tact in self.tacts:
-            tact.duration /= 2
-            new_bits = []
-            for bit in tact.bits:
-                if not bit.notes and not bit.weigth <= duration:
-                    width = int((bit.x1-bit.x0)/2)
-                    new_bits.extend([
-                        Bits(QRectF(bit.x0, Y0, width, self.y_bottom-Y0), bit.x0, bit.x0+width,weigth=tact.duration, tact=tact),
-                        Bits(QRectF(bit.x0+width, Y0, width, self.y_bottom-Y0), bit.x0+width+1, bit.x1,weigth=tact.duration, tact=tact)]
-                        )
-                    self.scene.addItem(new_bits[-2])
-                    self.scene.addItem(new_bits[-1])
-                    self.scene.removeItem(bit)
-                else:
-                    new_bits.append(bit)
-            tact.bits = new_bits
-        self.current_duration /= 2
-        if self.current_duration != duration:
-            self.decrease_duration(duration) 
-
 
     def set_duration(self, duration):
         if duration > self.current_duration:
-            self.increase_duration(duration)
+            print("объединяем ячейки")
+            self.current_duration = duration
+            for tact in self.tacts:
+                tact.increase_duration(duration)
         else:
-            self.decrease_duration(duration)
+            print("разделяем ячейки")
+            self.current_duration = duration
+            for tact in self.tacts:
+                tact.decrease_duration(duration)
         self.scene.update()
                         
 
