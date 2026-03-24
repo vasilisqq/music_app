@@ -32,45 +32,44 @@ class NoteItem(QGraphicsEllipseItem):
         self.scene = scene
         self.bit = bit
         self.flag_path = None
-        self.setRect(QRectF(x - self.width/2, y - self.height/2, 
-                           self.width, self.height))
-        self.setBrush(QBrush(Qt.GlobalColor.black))
+        self.tilt_angle = -15   # угол наклона в градусах
+
+        # Устанавливаем прямоугольник для коллизий и bounding rect (не используется для рисования)
+        self.setRect(QRectF(x - self.width/2, y - self.height/2, self.width, self.height))
+        
+        if duration < 0.5:
+            self.setBrush(QBrush(Qt.GlobalColor.black))
         self.setPen(NORMAL_PEN)
-        self.prev_note = None   # первая нота в группе (для себя)
-        self.next_note = None    # последняя нота в группе
+        self.prev_note = None
+        self.next_note = None
         self.stem_x = int(self.x + self.width/2) if not self.reversing else int(self.x - self.width/2)
 
-    # def stem_x(self):
-    #     return int(self.x + self.width/2 - 1) if not self.reversing else int(self.x - self.width/2 - 1)
-
-    # def stem_y_top(self):
-    #     return self.y - 32 if not self.reversing else self.y + 32
-
-
-    def boundingRect(self):
-        rect = super().boundingRect()
-        # Расширяем на половину толщины линии (с запасом)
-        margin = max(LINE_WIDTH, 3) // 2 + 1  # например, для толщины 3 -> отступ 2
-        return rect.adjusted(-self.width - margin, -32 - margin, 
-                            self.width + margin, self.height/2 + margin)
-
-
     def paint(self, painter: QPainter, option, widget):
-        super().paint(painter, option, widget)
-        stem_y_top = self.y - 32
-        painter.drawLine(self.stem_x, self.y, self.stem_x, stem_y_top)
-        match self.note_lenght:
-            case 0.125:
-                if self.shtil:  
-                    self.flag_path = self.computeFlagPath()
-                    painter.drawPath(self.flag_path)
-                elif self.next_note:
-                    beam_pen = QPen(Qt.GlobalColor.black, 3.2)  # или ваша переменная толщины
-                    beam_pen.setCapStyle(Qt.PenCapStyle.FlatCap)  # скруглённые окончания
-                    painter.setPen(beam_pen)
-                    painter.drawLine(self.stem_x, self.y-32, self.next_note.stem_x, self.next_note.y-32)
-                
+        # Рисуем головку ноты с наклоном
+        painter.save()
+        painter.translate(self.x, self.y)
+        painter.rotate(self.tilt_angle)
+        painter.setBrush(self.brush())
+        painter.setPen(self.pen())
+        painter.drawEllipse(QRectF(-self.width/2, -self.height/2, self.width, self.height))
+        painter.restore()
 
+        if self.note_lenght != 1:
+            # Рисуем штиль и бим (без наклона)
+            stem_y_top = self.y - 32
+            painter.drawLine(self.stem_x, self.y, self.stem_x, stem_y_top)
+            match self.note_lenght:
+                case 0.125:
+                    if self.shtil:
+                        self.flag_path = self.computeFlagPath()
+                        painter.drawPath(self.flag_path)
+                    elif self.next_note:
+                        beam_pen = QPen(Qt.GlobalColor.black, 3.2)
+                        beam_pen.setCapStyle(Qt.PenCapStyle.FlatCap)
+                        painter.setPen(beam_pen)
+                        painter.drawLine(self.stem_x, self.y-32, self.next_note.stem_x, self.next_note.y-32)
+
+    # Остальные методы (boundingRect, computeFlagPath, mousePressEvent и т.д.) без изменений
 
     def computeFlagPath(self):
         """Строит QPainterPath для флажка (восьмая нота)."""
