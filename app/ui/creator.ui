@@ -162,6 +162,32 @@ QPushButton:pressed {
       </widget>
      </item>
      <item>
+      <widget class="QLabel" name="label_accidental">
+       <property name="text">
+        <string>Знак:</string>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">margin-left: 10px;</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QComboBox" name="accidental_combo">
+       <property name="minimumSize">
+        <size>
+         <width>80</width>
+         <height>30</height>
+        </size>
+       </property>
+       <property name="toolTip">
+        <string>Выберите диез, бемоль или бекар</string>
+       </property>
+       <property name="editable">
+        <bool>false</bool>
+       </property>
+      </widget>
+     </item>
+     <item>
       <spacer name="horizontalSpacer">
        <property name="orientation">
         <enum>Qt::Orientation::Horizontal</enum>
@@ -231,7 +257,7 @@ QPushButton:pressed {
   <customwidget>
    <class>ScalableGraphicsView</class>
    <extends>QGraphicsView</extends>
-   <header>helpful.h</header>
+   <header>app.GUI.helpful.h</header>
   </customwidget>
  </customwidgets>
  <resources/>

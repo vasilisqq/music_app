@@ -8,7 +8,7 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtGui import QPen, QColor, QBrush
 from PyQt6.QtWidgets import QGraphicsEllipseItem, QGraphicsLineItem
-from staff import StaffLayout
+from staff import StaffLayout, settings
 from test import player
 from config import BACKGROUND_SCENE_COLOR
 from workers.lesson_worker import LessonWorker
@@ -38,6 +38,13 @@ class CreatorController(QWidget):
         combo.addItem("Восьмая", 0.125)
         combo.setCurrentIndex(2)  # четверть по умолчанию
         combo.currentIndexChanged.connect(self.on_duration_changed)
+        accidental_combo = self.ui.accidental_combo
+        accidental_combo.addItem("Нет (♮)", None)
+        accidental_combo.addItem("Диез (♯)", "sharp")
+        accidental_combo.addItem("Бемоль (♭)", "flat")
+        accidental_combo.setCurrentIndex(0) # По умолчанию знака нет
+        accidental_combo.currentIndexChanged.connect(self.on_accidental_changed)
+
 
 
         self.api.lesson_created_sygnal.connect(self.on_lesson_created)
@@ -58,6 +65,11 @@ class CreatorController(QWidget):
         self.current_feedback_bit = None  # какая нота сейчас оцениваем
         self.animation_timer = QTimer()
         self.animation_timer.timeout.connect(self.update_playhead)
+
+    # И новый метод для обработки изменения:
+    def on_accidental_changed(self, index):
+        settings.accidental = self.ui.accidental_combo.currentData()
+
 
     def on_note_correct_graphic(self, note_item, note_name):
         """Зелёный кружок под сыгранной нотой"""
@@ -158,6 +170,7 @@ class CreatorController(QWidget):
     
     def load_scene(self):
         self.scene = QGraphicsScene(0,0,1000,500)
+        settings.scene = self.scene
         self.lay = StaffLayout(self.scene)
         self.scene.setBackgroundBrush(BACKGROUND_SCENE_COLOR)
         self.ui.graphicsView.setScene(self.scene)
@@ -197,21 +210,18 @@ class CreatorController(QWidget):
             QTimer.singleShot(interval_ms, self.play_metronome_beat)
         elif self.playhead.isVisible():
             if not self.play_started:
-                QTimer.singleShot(interval_ms - 400, self.lay.start_lesson)
+                QTimer.singleShot(interval_ms - 50, self.lay.start_lesson)
                 QTimer.singleShot(interval_ms, self.start_playhead_animation)
                 QTimer.singleShot(interval_ms, lambda: self.animation_timer.start(50))
             QTimer.singleShot(interval_ms, self.play_metronome_beat)
-            QTimer.singleShot(interval_ms - 400, lambda: setattr(self, 'play_started', True))
+            QTimer.singleShot(interval_ms - 50, lambda: setattr(self, 'play_started', True))
             # Последний удар был – запускаем упражнение
                 
 
     def start_playhead_animation(self):
         """Запускает движение красной линии"""
         # Рассчитываем общую длительность урока
-        total_duration = 0
-        for tact in self.lay.tacts:
-            for bit in tact.bits:
-                total_duration += 60 / self.lay.bpm   # все биты одинаковой длины
+        total_duration = 60 / self.lay.bpm * 4 
 
         # Начальная и конечная позиции playhead
         start_x = self.lay.tacts[0].bits[0].notes[0].x                  # как в первом такте

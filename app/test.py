@@ -11,7 +11,7 @@ from PyQt6.QtWidgets import QWidget
 import time
 import threading
 from typing import Optional
-
+from scipy.signal import butter, lfilter
 
 # Загружаем ОДИН реальный сэмпл пианино C4
 SAMPLE_RATE, PIANO_C4 = wavfile.read('single-piano-note-c4_100bpm_C_major.wav')
@@ -68,16 +68,28 @@ def load_cache(filename="piano_cache.npz"):
     return cache
 
 
+def lowpass_filter(data, cutoff, sr, order=5):
+    nyquist = 0.5 * sr
+    normal_cutoff = cutoff / nyquist
+    b, a = butter(order, normal_cutoff, btype='low', analog=False)
+    return lfilter(b, a, data)
+
 def precompute_all():
     for name, freq in NOTE_FREQ.items():
-        ratio = freq / 261.63  # частота относительно C4
+        ratio = freq / 261.63
         new_len = int(len(base_note) / ratio)
         if new_len < 1:
             new_len = 1
-        # Кубическая интерполяция (хорошее качество)
         arr = zoom(base_note, new_len / len(base_note), order=3).astype(np.float32)
+
+        # Anti-aliasing фильтр для высоких нот (ratio > 1)
+        if ratio > 1:
+            cutoff = 20000 / ratio   # пропорциональное снижение частоты среза
+            cutoff = min(cutoff, 20000)  # не выше 20 кГц
+            if cutoff > 50:
+                arr = lowpass_filter(arr, cutoff, SAMPLE_RATE, order=5)
+
         note_cache[name] = arr.ravel()
-    print(f'Предвычислено {len(note_cache)} нот')
 # precompute_all()
 # save_cache()
 
@@ -96,7 +108,7 @@ class PianoPlayer(QObject):
         self.current_note_plays = None
         self.current_note_await = None         
         self.current_note_await_time = None    # время старта ожидания
-        self.hit_window = 0.8
+        self.hit_window = 0.1
         self.pre_start_active = False
         self.current_note_item = None 
         self.on_note_correct = None
@@ -114,7 +126,7 @@ class PianoPlayer(QObject):
         self.stream.start()
 
 
-    def play_click(self, duration=0.05, freq=1000, volume=1):
+    def play_click(self, duration=0.05, freq=1000, volume=0.25):
         """Воспроизводит короткий щелчок для метронома"""
         t = np.linspace(0, duration, int(self.sample_rate * duration), endpoint=False)
         click = np.sin(2 * np.pi * freq * t) * volume
@@ -127,45 +139,60 @@ class PianoPlayer(QObject):
                 'note_name': 'click'
             })
 
-    def _get_note_audio(self, note_name, duration, apply_envelope=True):
+    def _get_note_audio(self, note_name, duration, volume=0.7):
         base = self.note_cache[note_name]
-        target_len = int(SAMPLE_RATE * duration)
+        target_len = int(self.sample_rate * duration)
         
         if target_len <= len(base):
             audio = base[:target_len].copy()
         else:
             repeats = target_len // len(base) + 1
             audio = np.tile(base, repeats)[:target_len]
-            if apply_envelope:
-                t = np.arange(target_len)
-                envelope = np.exp(-t / (SAMPLE_RATE * duration * 0.3))
-                audio *= envelope
-        
-        return audio
+
+        # Простая ADSR
+        attack = int(0.01 * self.sample_rate)      # 10 мс
+        decay = int(0.05 * self.sample_rate)       # 50 мс
+        release = int(0.1 * self.sample_rate)      # 100 мс
+        sustain = 0.7
+
+        envelope = np.ones(target_len)
+        # Attack
+        if attack > 0:
+            envelope[:attack] = np.linspace(0, 1, attack)
+        # Decay
+        start = attack
+        end = min(attack + decay, target_len)
+        envelope[start:end] = np.linspace(1, sustain, end - start)
+        # Release
+        start_release = max(0, target_len - release)
+        envelope[start_release:] = np.linspace(envelope[start_release], 0, target_len - start_release)
+
+        audio = audio * envelope
+        # Нормализация по пику
+        max_val = np.max(np.abs(audio))
+        if max_val > 0:
+            audio = audio / max_val * volume
+        return audio.astype(np.float32)
 
 
     def play_chord(self, notes, duration, volumes=None):
         if volumes is None:
-            volumes = [0.7] * len(notes)
-        # Собираем массивы для всех нот
+            n = len(notes)
+            base_vol = 0.5
+            vol = base_vol / (n ** 0.5)
+            volumes = [vol] * n
+
         active_notes = []
         for note, vol in zip(notes, volumes):
-            audio = self._get_note_audio(note, duration, apply_envelope=True)  # используем глобальную функцию
-            if len(audio) > 0:
-                max_val = np.max(np.abs(audio))
-                if max_val > 0:
-                    audio = audio / max_val * vol
-                # Добавляем в активные ноты для одновременного воспроизведения
-                active_notes.append({
-                    'data': audio,
-                    'pos': 0,
-                    'vel': 1.0,
-                    'note_name': note
-                })
-        # Добавляем все ноты аккорда одновременно
+            audio = self._get_note_audio(note, duration, vol)
+            active_notes.append({
+                'data': audio,
+                'pos': 0,
+                'vel': 1.0,
+                'note_name': note
+            })
         with self.lock:
             self.active_audio_notes.extend(active_notes)
-        
         print(f"🎸 Аккорд: {notes}")
 
 
@@ -196,6 +223,13 @@ class PianoPlayer(QObject):
             for note in to_remove:
                 self.active_audio_notes = [n for n in self.active_audio_notes if n is not note]
 
+        # ---- Лимитер ----
+        # Если сигнал превышает порог, применяем мягкое ограничение
+        peak = np.max(np.abs(outdata))
+        if peak > 0.95:
+            gain = 0.95 / peak
+            outdata[:] *= gain
+
 
     def check_space_press(self):
         """Вызывается при нажатии пробела извне"""
@@ -205,6 +239,7 @@ class PianoPlayer(QObject):
             return False
         now = time.time()
         dt = now - self.current_note_await_time
+        print(dt)
         if dt <= self.hit_window and not self.space_pressed_in_window:
             self.space_pressed_in_window = True
             self.note_correct.emit(self.current_note_item, self.current_note_await)

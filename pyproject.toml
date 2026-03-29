@@ -26,6 +26,8 @@ dependencies = [
     "librosa>=0.11.0",
     "allpairs>=2.0.1",
     "allpairspy>=2.5.1",
+    "mido>=1.3.3",
+    "python-rtmidi>=1.5.8",
 ]
 
 [tool.uv.sources]

@@ -8,6 +8,7 @@ from PyQt6.QtWidgets import (
     QGraphicsRectItem,
     QGraphicsEllipseItem
 )
+from PyQt6.QtSvgWidgets import QGraphicsSvgItem
 from config import *
 import sys
 import os
@@ -16,6 +17,14 @@ from schemas.lesson import LessonCreate, LessonResponse
 import time
 from test import player
 import threading
+
+
+class LaySettings:
+    def __init__(self):
+        self.accidental = None
+        self.scene = None
+
+settings = LaySettings()
 
 
 class NoteItem(QGraphicsEllipseItem):
@@ -33,9 +42,10 @@ class NoteItem(QGraphicsEllipseItem):
         self.bit = bit
         self.flag_path = None
         self.tilt_angle = -15   # угол наклона в градусах
-
+        self.accidental = None
         # Устанавливаем прямоугольник для коллизий и bounding rect (не используется для рисования)
-        self.setRect(QRectF(x - self.width/2, y - self.height/2, self.width, self.height))
+        #self.setRect(QRectF(x - self.width/2, y - self.height/2, self.width, self.height))
+        self.setZValue(10)
         
         if duration < 0.5:
             self.setBrush(QBrush(Qt.GlobalColor.black))
@@ -101,12 +111,39 @@ class NoteItem(QGraphicsEllipseItem):
 
 
     def mousePressEvent(self, event) -> None:
-        event.accept()
-        self.bit.remove_note(self)
-        self.scene.removeItem(self)
-        self.scene.update()
-        del self
+        if settings.accidental is None: 
+            if self.accidental is None:
+                event.accept()
+                self.bit.remove_note(self)
+                self.scene.removeItem(self)
+                self.scene.update()
+            else:
+                ...
+        else:
+            if self.accidental is None:
+                accidental_path = f"app/photos/{settings.accidental}.svg"
+                clef_item = QGraphicsSvgItem(accidental_path)
 
+                # Рассчитываем масштаб, чтобы высота была ровно 15
+                original_rect = clef_item.boundingRect()
+                if original_rect.height() > 0:
+                    target_height = 15.0
+                    scale_factor = target_height / original_rect.height()
+                    clef_item.setScale(scale_factor)
+
+                # Позиционирование
+                # Учитывай, что setPos работает с учетом масштаба
+                x_pos = self.x - 20 
+                y_pos = self.y - 8
+                clef_item.setPos(x_pos, y_pos)
+
+                # Отключаем интерактивность и добавляем на сцену
+                clef_item.setAcceptHoverEvents(False)
+                self.scene.addItem(clef_item)
+
+                # Сохраняем состояние
+                self.accidental = settings.accidental
+                self.note_name += "#"
 
     def reverse(self, reverse):
         if self.reversing == reverse:
@@ -129,10 +166,34 @@ class NoteItem(QGraphicsEllipseItem):
         self.shtil = True
         self.update()
 
-    # def delete_prev(self):
-    #     self.prev_note = None
-    #     self.
+    def boundingRect(self):
+        """Сообщает Qt реальные границы отрисовки элемента (включая штили и флаги)"""
+        min_x = self.x - self.width
+        max_x = self.x + self.width
+        min_y = self.y - self.height
+        max_y = self.y + self.height
+        
+        # Учитываем высоту штиля
+        if self.note_lenght != 1:
+            min_y = min(min_y, self.y - 35)
+            
+        # Учитываем ширину флага и длину ребра (beam)
+        if self.note_lenght == 0.125:
+            if self.shtil:
+                max_x = max(max_x, self.stem_x + 55) # Запас для флага
+            if self.next_note:
+                max_x = max(max_x, self.next_note.stem_x + 55)
+                min_y = min(min_y, self.next_note.y - 35)
+                
+        # Возвращаем прямоугольник с небольшим запасом (padding = 5px)
+        return QRectF(min_x - 5, min_y - 5, (max_x - min_x) + 10, (max_y - min_y) + 10)
 
+    def shape(self):
+        """Определяет область для коллизий и кликов мыши (только головка ноты)"""
+        path = QPainterPath()
+        # Кликабельной остается только область самой головки ноты
+        path.addEllipse(QRectF(self.x - self.width/2, self.y - self.height/2, self.width, self.height))
+        return path
 
 
 class HighlightableLineItem(QGraphicsLineItem):
@@ -726,7 +787,8 @@ class StaffLayout:
         self.scene = scene
         self.current_duration = 0.25
         self.init_staff(scene)
-    
+        self.accidental = None
+
     @property
     def y_bottom(self) -> float:
         return Y0 + 4 * LINE_SPACING
@@ -768,20 +830,26 @@ class StaffLayout:
 
     def add_treble_clef(self, scene):
         """Добавляет изображение скрипичного ключа на нотный стан"""
-        pixmap = QPixmap("app/photos/output.png")
-        target_height = LINE_SPACING * 7  # Высота в 4.5 интервала (меньше чем было)
-        scaled_pixmap = pixmap.scaledToHeight(
-            int(target_height), 
-            Qt.TransformationMode.SmoothTransformation
-        )
+        clef_item = QGraphicsSvgItem("app/photos/scrip.svg")
+        original_rect = clef_item.boundingRect()
+        original_height = original_rect.height()
+        
+        target_height = LINE_SPACING * 7
+        
+        # Вычисляем коэффициент масштабирования
+        scale_factor = target_height / original_height
+        
+        # Применяем масштаб к элементу
+        clef_item.setScale(scale_factor)
 
-        clef_item = QGraphicsPixmapItem(scaled_pixmap)
-        # Корректируем позицию для лучшего размещения
-        x_pos = X0 + 5  # Сдвигаем чуть левее начала линий
+        # Корректируем позицию
+        x_pos = X0 + 5
         y_pos = Y0 + 1.5 * LINE_SPACING - target_height / 2.5
         clef_item.setPos(x_pos, y_pos)
-        # Делаем скрипичный ключ неинтерактивным, чтобы не мешал наведению
+        
+        # Отключаем интерактивность
         clef_item.setAcceptHoverEvents(False)
+        
         # Добавляем на сцену
         scene.addItem(clef_item)
 
@@ -826,11 +894,11 @@ class StaffLayout:
                     # Берём первую ноту в бите (для простоты)
                     note_item = bit.notes[0]
                     player.start_waiting_for_note(note_item.note_name, note_item)
-                    duration = 60 / self.bpm   # длительность четверти (одна бита)
+                    duration = 60/self.bpm * bit.weigth * 4
                     time.sleep(duration)
 
     def sound_thread(self):
-            time.sleep(0.4)
+            time.sleep(0.05)
             for tact in self.tacts:
                 for bit in tact.bits:
                     if bit.notes:
@@ -842,3 +910,7 @@ class StaffLayout:
     def start_lesson(self):
         threading.Thread(target=self.touch_thread, daemon=True).start()
         threading.Thread(target=self.sound_thread, daemon=True).start()
+
+
+    def change_accidental(self, data):
+        self.accidental = data
