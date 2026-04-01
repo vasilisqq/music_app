@@ -59,8 +59,7 @@ class NoteItem(QGraphicsEllipseItem):
         self.prev_note = None
         self.next_note = None
         self.stem_x = int(self.x + self.width/2) if not self.reversing else int(self.x - self.width/2)
-        if settings.accidental:
-            self._add_accidental(settings.accidental)
+
 
     def paint(self, painter: QPainter, option, widget):
         # Рисуем головку ноты с наклоном
@@ -131,68 +130,68 @@ class NoteItem(QGraphicsEllipseItem):
         event.accept()
         selected_accidental = settings.accidental 
         tact = self.bit.tact
-        # ----- Режим "нет альтерации" -----
-        if selected_accidental is None:  # selected_accidental == None (режим "none")
+
+        if selected_accidental is None:
             if self.accidental is not None:
-                # Удаляем альтерацию с ноты
                 tact.set_accidental_for_note(self, "natural")
             else:
-                # Удаляем ноту целиком
                 self.delete()
             return
-        # ----- Выбрана конкретная альтерация -----
-        # Если нота уже имеет такую же альтерацию – ничего не делаем
+
+        # Если выбран знак, который уже есть на ноте — снимаем (natural)
         if self.accidental == selected_accidental:
-            self.delete()
+            tact.set_accidental_for_note(self, "natural")
             return
 
-        # Удаляем старую альтерацию, если она есть
-        if self.accidental is not None:
-            self._remove_accidental()
-
-        # Добавляем новую альтерацию
-        self._add_accidental(selected_accidental)
+        # Устанавливаем новый знак
+        tact.set_accidental_for_note(self, selected_accidental)
 
 
-    def _add_accidental(self, acc_type):
-        """Добавляет знак на ноту (для natural не рисует)."""
+    def _add_accidental(self, acc_type, display=True):
+        """Добавляет знак на ноту. Если display=True, рисует SVG."""
+        # Если natural — просто удаляем знак
         if acc_type == "natural":
-            # Просто снимаем существующий знак
             self._remove_accidental()
             self.accidental = "natural"
             return
 
-        # Удаляем старый, если был
+        # Удаляем старый знак, если был
         if self.accidental is not None:
             self._remove_accidental()
 
-        svg_path = f"app/photos/{acc_type}.svg"
-        acc_item = QGraphicsSvgItem(svg_path)
-
-        # Масштабирование и позиционирование (твой существующий код)
-        original_rect = acc_item.boundingRect()
-        if acc_type == "sharp":
-            target_height = 15.0
-            x_pos = self.x - 20
-            y_pos = self.y - 8
-        else:  # flat
-            target_height = 25.0
-            x_pos = self.x - 18
-            y_pos = self.y - 17
-
-        scale_factor = target_height / original_rect.height()
-        acc_item.setScale(scale_factor)
-        acc_item.setPos(x_pos, y_pos)
-        acc_item.setAcceptHoverEvents(False)
-        self.scene.addItem(acc_item)
-
-        self.accidental_item = acc_item
-        self.accidental = acc_type
-
-        # Добавляем символ в имя ноты
+        # Обновляем имя ноты
         symbol = self._accidental_to_symbol(acc_type)
         self.note_name += symbol
+        self.accidental = acc_type
 
+        if display:
+            # Создаём SVG
+            svg_path = f"app/photos/{acc_type}.svg"
+            acc_item = QGraphicsSvgItem(svg_path)
+
+            # Масштабирование и позиционирование (твой существующий код)
+            original_rect = acc_item.boundingRect()
+            if acc_type == "sharp":
+                target_height = 15.0
+                x_pos = self.x - 20
+                y_pos = self.y - 8
+            else:
+                target_height = 25.0
+                x_pos = self.x - 18
+                y_pos = self.y - 17
+
+            scale_factor = target_height / original_rect.height()
+            acc_item.setScale(scale_factor)
+            acc_item.setPos(x_pos, y_pos)
+            acc_item.setAcceptHoverEvents(False)
+            self.scene.addItem(acc_item)
+            self.accidental_item = acc_item
+        else:
+            self.accidental_item = None  # знак не отображается
+
+    def _set_accidental_without_display(self, acc_type):
+        """Устанавливает знак на ноту без отображения."""
+        self._add_accidental(acc_type, display=False)
 
     def _remove_accidental(self):
         """Удаляет графический объект знака и сбрасывает атрибуты."""
@@ -556,13 +555,24 @@ class Bits(QGraphicsRectItem):
             duration, 
             bit=self)
         self.notes.append(note_item)
-        self.notes.sort(key=lambda note:note.y, reverse=True)
+        self.notes.sort(key=lambda note: note.y, reverse=True)
         self.update_notes()
-        acc = self.tact.get_accidental_for_note(note_item)
-        if acc is not None:
-            note_item._add_accidental(acc)
-        return note_item
 
+        base = note_item.get_base_note_name()
+        bit_index = self.tact.bits.index(self)
+
+        # Текущий знак, который должен быть у ноты по правилам такта
+        current = self.tact.get_accidental_for_note(note_item)
+
+        # Если пользователь выбрал знак и он отличается от текущего
+        if settings.accidental is not None and current != settings.accidental:
+            # Устанавливаем новый знак, начиная с текущего бита
+            self.tact.set_accidental_for_note(note_item, settings.accidental)
+        else:
+            # Иначе просто обновляем все ноты этой высоты, начиная с текущего бита
+            self.tact.update_accidentals_for_base_from_bit(base, bit_index)
+
+        return note_item
 
 
 class Tact:
@@ -580,6 +590,7 @@ class Tact:
         self.scene = scene
         self.bits = []
         self.active_accidentals = {}
+        self.displayed_accidentals = set()
         self.current_bit = 0
         self.duration = 0.25
         self.init_bits()
@@ -857,23 +868,28 @@ class Tact:
 
 
     def set_accidental_for_note(self, note_item, acc_type):
-        """Устанавливает знак на конкретную ноту и применяет его к последующим."""
         base = note_item.get_base_note_name()
-        bit_index = self.bits.index(note_item.bit)  # индекс бита в списке
+        bit_index = self.bits.index(note_item.bit)
+
         if acc_type == "natural":
-            # Удаляем активный знак для этой высоты
+            # Удаляем активный знак
             if base in self.active_accidentals:
                 del self.active_accidentals[base]
-            # Пересчитываем ноты, начиная с этого бита
-            self.update_accidentals_from_bit(bit_index, base)
+            # Убираем из отображённых, чтобы при возможном повторном добавлении знак нарисовался
+            self.displayed_accidentals.discard(base)
+            # Обновляем все ноты этой высоты, начиная с текущего бита
+            self.update_accidentals_for_base_from_bit(base, bit_index)
         else:
-            # Запоминаем знак и индекс бита, с которого он действует
+            # Устанавливаем активный знак, начиная с этого бита
             self.active_accidentals[base] = (acc_type, bit_index)
-            # Пересчитываем ноты, начиная с этого бита
-            self.update_accidentals_from_bit(bit_index, base)
+            # При ручной установке знак должен отобразиться на этой ноте, поэтому убираем из отображённых,
+            # чтобы при обновлении он нарисовался
+            self.displayed_accidentals.discard(base)
+            # Обновляем все ноты этой высоты, начиная с этого бита
+            self.update_accidentals_for_base_from_bit(base, bit_index)
 
-    def update_accidentals_from_bit(self, start_bit_index, base_note_name):
-        """Применяет/удаляет знак для всех нот с заданной базовой высотой, начиная с указанного бита."""
+    def update_accidentals_for_base_from_bit(self, base_note_name, start_bit_index):
+        """Обновляет знаки у всех нот с заданной высотой, начиная с бита start_bit_index."""
         for i in range(start_bit_index, len(self.bits)):
             bit = self.bits[i]
             for note in bit.notes:
@@ -882,11 +898,22 @@ class Tact:
                     if base_note_name in self.active_accidentals:
                         acc, start_bit = self.active_accidentals[base_note_name]
                         if start_bit <= i:
-                            note._add_accidental(acc)  # применим знак
+                            # Применяем знак, но рисуем только если его ещё не рисовали
+                            if base_note_name in self.displayed_accidentals:
+                                # Уже был отображён, не рисуем
+                                note._set_accidental_without_display(acc)
+                            else:
+                                # Первый раз — рисуем и запоминаем
+                                note._add_accidental(acc, display=True)
+                                self.displayed_accidentals.add(base_note_name)
                         else:
-                            note._remove_accidental()  # знак ещё не действует
+                            # Знак ещё не действует — удаляем, если был
+                            if note.accidental is not None:
+                                note._remove_accidental()
                     else:
-                        note._remove_accidental()      # знак отсутствует
+                        # Активного знака нет — удаляем
+                        if note.accidental is not None:
+                            note._remove_accidental()
 
     def get_accidental_for_note(self, note_item):
         """Возвращает знак, который должен быть у ноты, или None."""

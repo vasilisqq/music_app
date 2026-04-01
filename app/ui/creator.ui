@@ -139,6 +139,32 @@ QPushButton:pressed {
       </widget>
      </item>
      <item>
+      <widget class="QPushButton" name="add_tact_button">
+       <property name="styleSheet">
+        <string notr="true">QPushButton {
+ background-color: #4CAF50;
+ color: white;
+ border: none;
+ padding: 10px 20px;
+ text-align: center;
+ font-size: 16px;
+ margin: 4px 2px;
+ border-radius: 8px;
+ min-width: 80px;
+}
+QPushButton:hover {
+ background-color: #45a049;
+}
+QPushButton:pressed {
+ background-color: #3e8e41;
+}</string>
+       </property>
+       <property name="text">
+        <string>Добавить такт</string>
+       </property>
+      </widget>
+     </item>
+     <item>
       <widget class="QLabel" name="label_time_signature">
        <property name="text">
         <string>Длительность:</string>

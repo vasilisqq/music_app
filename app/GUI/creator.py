@@ -88,6 +88,26 @@ class Ui_MainWindow(object):
 "}")
         self.reset_button.setObjectName("reset_button")
         self.horizontalLayout.addWidget(self.reset_button)
+        self.add_tact_button = QtWidgets.QPushButton(parent=MainWindow)
+        self.add_tact_button.setStyleSheet("QPushButton {\n"
+" background-color: #4CAF50;\n"
+" color: white;\n"
+" border: none;\n"
+" padding: 10px 20px;\n"
+" text-align: center;\n"
+" font-size: 16px;\n"
+" margin: 4px 2px;\n"
+" border-radius: 8px;\n"
+" min-width: 80px;\n"
+"}\n"
+"QPushButton:hover {\n"
+" background-color: #45a049;\n"
+"}\n"
+"QPushButton:pressed {\n"
+" background-color: #3e8e41;\n"
+"}")
+        self.add_tact_button.setObjectName("add_tact_button")
+        self.horizontalLayout.addWidget(self.add_tact_button)
         self.label_time_signature = QtWidgets.QLabel(parent=MainWindow)
         self.label_time_signature.setObjectName("label_time_signature")
         self.horizontalLayout.addWidget(self.label_time_signature)
@@ -148,6 +168,7 @@ class Ui_MainWindow(object):
         self.start_button.setText(_translate("MainWindow", "Старт"))
         self.save_button.setText(_translate("MainWindow", "Сохранить"))
         self.reset_button.setText(_translate("MainWindow", "Сброс"))
+        self.add_tact_button.setText(_translate("MainWindow", "Добавить такт"))
         self.label_time_signature.setText(_translate("MainWindow", "Длительность:"))
         self.duration_combo.setToolTip(_translate("MainWindow", "Выберите длительность ноты"))
         self.label_accidental.setText(_translate("MainWindow", "Знак:"))
