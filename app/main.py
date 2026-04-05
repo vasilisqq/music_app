@@ -6,11 +6,11 @@ from PyQt6.QtCore import QSysInfo, QStorageInfo
 
 def main() -> None:
     app = QApplication(sys.argv)
-    window = CreatorController()
-    window.show()
+    # window = CreatorController()
+    # window.show()
     # Создаем и отображаем главное окно
-    # auth = Auth()
-    # auth.show()
+    auth = Auth()
+    auth.show()
     
     sys.exit(app.exec())
 

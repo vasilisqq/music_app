@@ -174,8 +174,10 @@ class CreatorController(QWidget):
         self.lay.delete_tact()
 
 
+    
+
     def load_scene(self):
-        self.scene = QGraphicsScene(0,0,1000,500)
+        self.scene = QGraphicsScene(0,0,1000,1000)
         settings.scene = self.scene
         self.lay = StaffLayout(self.scene)
         self.scene.setBackgroundBrush(BACKGROUND_SCENE_COLOR)
@@ -188,14 +190,16 @@ class CreatorController(QWidget):
         # )
         # Настраиваем view - ВАЖНО: убираем fitInView и центрирование!
         # self.view.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
-        # self.view.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        self.ui.graphicsView.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOn)
         # self.view.fitInView(self.scene.itemsBoundingRect(), Qt.AspectRatioMode.KeepAspectRatio)
         # Выравниваем содержимое в левом верхнем углу
         self.ui.graphicsView.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop)
         # Устанавливаем область сцены (важно для корректного отображения)
-        # self.view.setSceneRect(self.scene.sceneRect())
+        # self.ui.graphicsView.setSceneRect(self.scene.sceneRect())
         # Чтобы изображение не было пиксельным, устанавливаем режим сглаживания для изображений
         self.ui.graphicsView.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform, True)
+        # self.scene.setSceneRect(self.scene.itemsBoundingRect())
+        
 
 
     def on_start_clicked(self):

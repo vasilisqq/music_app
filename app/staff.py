@@ -1107,6 +1107,12 @@ class StaffLayout:
             self.x = new_x0 
             self.current_tact = Tact(self.y_bottom, self.scene, len(self.tacts), new_x0, self.y, self.current_duration)
         self.tacts.append(self.current_tact)
+        current_rect = self.scene.sceneRect()
+        # # Получаем реальные границы всех объектов
+        bounding = self.scene.itemsBoundingRect()
+        needed_height = bounding.bottom() + 100
+        if needed_height > current_rect.bottom():
+            self.scene.setSceneRect(0, 0, current_rect.width(), needed_height)
 
 
     def delete_tact(self):
@@ -1116,7 +1122,12 @@ class StaffLayout:
         tact.remove_from_scene()
         self.tacts.pop(-1)
         self.y = self.tacts[-1].y0
-        # print(self.tacts)
+        current_rect = self.scene.sceneRect()
+        # # Получаем реальные границы всех объектов
+        bounding = self.scene.itemsBoundingRect()
+        needed_height = bounding.bottom() - 100
+        if needed_height < current_rect.bottom():
+            self.scene.setSceneRect(0, 0, current_rect.width(), needed_height)
 
 
 
