@@ -1,7 +1,7 @@
 from passlib.context import CryptContext
 
 # Контекст для хеширования паролей
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+pwd_context = CryptContext(schemes=["bcrypt_sha256"], deprecated="auto")
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Проверка пароля"""
@@ -9,4 +9,5 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 
 def get_password_hash(password: str) -> str:
     """Хеширование пароля"""
+    print(password)
     return pwd_context.hash(password)
