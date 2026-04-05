@@ -93,7 +93,7 @@ def precompute_all():
                 arr = lowpass_filter(arr, cutoff, SAMPLE_RATE, order=5)
 
         note_cache[name] = arr.ravel()
-precompute_all()
+# precompute_all()
 # save_cache()
 
 

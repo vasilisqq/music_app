@@ -39,7 +39,7 @@ class CreatorController(QWidget):
         combo.setCurrentIndex(2)  # четверть по умолчанию
         combo.currentIndexChanged.connect(self.on_duration_changed)
         accidental_combo = self.ui.accidental_combo
-        accidental_combo.addItem("Нет (♮)", None)
+        accidental_combo.addItem("Нет (♮)", "natural")
         accidental_combo.addItem("Диез (♯)", "sharp")
         accidental_combo.addItem("Бемоль (♭)", "flat")
         accidental_combo.setCurrentIndex(0) # По умолчанию знака нет
@@ -59,6 +59,7 @@ class CreatorController(QWidget):
         self.metronome_beats = 4          # количество ударов метронома перед стартом
         self.metronome_count = 0
         self.current_playhead_x = 0
+        self.current_playhead_y = Y0
         player.note_correct.connect(self.on_note_correct_graphic)
         player.note_wrong.connect(self.on_note_wrong_graphic)
         self.player_thread = None
@@ -114,7 +115,7 @@ class CreatorController(QWidget):
 
     def init_playhead(self):
         """🔥 Создаём красную вертикальную линию для анимации"""
-        self.playhead = QGraphicsLineItem(0, 0, 0, 500)  # x1,y1,x2,y2
+        self.playhead = QGraphicsLineItem(X0, Y0, X0, Y0+200)  # x1,y1,x2,y2
         self.playhead.setPen(QPen(QColor("#ff4444"), 3))
         self.playhead.setZValue(100)  # поверх всех нот
         self.scene.addItem(self.playhead)
@@ -166,8 +167,13 @@ class CreatorController(QWidget):
         self.ui.start_button.clicked.connect(self.on_start_clicked)
         self.ui.save_button.clicked.connect(self.on_save_clicked)
         self.ui.reset_button.clicked.connect(self.on_listen_clicked)
+        self.ui.add_tact_button.clicked.connect(self.on_add_tact)
 
-    
+
+    def on_add_tact(self):
+        self.lay.delete_tact()
+
+
     def load_scene(self):
         self.scene = QGraphicsScene(0,0,1000,500)
         settings.scene = self.scene
@@ -219,46 +225,51 @@ class CreatorController(QWidget):
                 
 
     def start_playhead_animation(self):
-        """Запускает движение красной линии"""
-        # Рассчитываем общую длительность урока
-        total_duration = 60 / self.lay.bpm * 4 
-
-        # Начальная и конечная позиции playhead
-        start_x = self.lay.tacts[0].bits[0].notes[0].x                  # как в первом такте
-        # Конец последнего такта
-        end_x = self.lay.tacts[-1].bar_lines[-1].x+15
-
-        # Настраиваем playhead
-        self.playhead.setLine(start_x, 0, start_x, 500)
-        self.playhead.show()
-
-        # Сохраняем параметры анимации
-        self.anim_start_x = start_x
-        self.anim_end_x = end_x
+        total_duration = 60 / self.lay.bpm * 4 * len(self.lay.tacts)  # или точнее через сумму длительностей
         self.anim_total_duration = total_duration
         self.anim_start_time = time.time()
-        self.current_playhead_x = start_x
 
-        # Запускаем таймер (обновление каждые 50 мс)
+        # Получаем путь от StaffLayout
+        self.playhead_segments, self.total_path_length = self.lay.get_playhead_path()
+        if not self.playhead_segments:
+            return
+
+        # Начальная точка первого сегмента
+        first_seg = self.playhead_segments[0]
+        start_x, start_y = first_seg[0], first_seg[1]
+        self.playhead.setLine(start_x, start_y, start_x, start_y + 200)
+        self.playhead.show()
+
         
 
     def update_playhead(self):
-        """Сдвигает playhead пропорционально прошедшему времени"""
         elapsed = time.time() - self.anim_start_time
         if elapsed >= self.anim_total_duration:
             self.animation_timer.stop()
             self.playhead.hide()
             return
+
         progress = elapsed / self.anim_total_duration
-        current_x = self.anim_start_x + progress * (self.anim_end_x - self.anim_start_x)
-        self.playhead.setLine(current_x, 0, current_x, 500)
-        self.current_playhead_x = current_x   # сохраняем
+        target_dist = progress * self.total_path_length
+
+        # Находим сегмент, содержащий target_dist
+        for (x_start, y, x_end, y_end, length, cum_start) in self.playhead_segments:
+            cum_end = cum_start + length
+            if cum_start <= target_dist <= cum_end:
+                local_dist = target_dist - cum_start
+                t = local_dist / length
+                current_x = x_start + t * (x_end - x_start)
+                current_y = y  # если y не меняется внутри строки
+                # Если в будущем понадобятся строки с наклоном, можно интерполировать y
+                self.playhead.setLine(current_x, current_y, current_x, current_y + 200)
+                break
 
 
 
 
     def on_save_clicked(self):
-        QMessageBox.warning(self, "Ошибка", "Не все такты заполнены")
+        self.lay.add_tact()
+        # QMessageBox.warning(self, "Ошибка", "Не все такты заполнены")
         # lesson = self.lay.save_lesson()
         # print(lesson)
         # self.api.create_lesson(lesson)

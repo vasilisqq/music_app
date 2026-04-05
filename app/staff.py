@@ -21,7 +21,7 @@ import threading
 
 class LaySettings:
     def __init__(self):
-        self.accidental = None
+        self.accidental = "natural"
         self.scene = None
 
 settings = LaySettings()
@@ -50,7 +50,7 @@ class NoteItem(QGraphicsEllipseItem):
         self.bit = bit
         self.flag_path = None
         self.tilt_angle = -15   # угол наклона в градусах
-        self.accidental = None
+        self.accidental = settings.accidental
         self.accidental_item = None
         self.setZValue(10)
         if duration < 0.5:
@@ -59,6 +59,58 @@ class NoteItem(QGraphicsEllipseItem):
         self.prev_note = None
         self.next_note = None
         self.stem_x = int(self.x + self.width/2) if not self.reversing else int(self.x - self.width/2)
+
+
+    def delete_accidental(self):
+        if self.accidental_item:
+            self.scene.removeItem(self.accidental_item)
+            self.accidental_item = None
+
+    def draw_accidental(self, index):
+        # Удаляем старый знак, если был
+        if self.accidental_item is not None:
+            self.scene.removeItem(self.accidental_item)
+            self.accidental_item = None
+        if self.accidental == "natural" and index == 0:
+            return
+        # Обычные знаки (sharp, flat)
+        symbol = self._accidental_to_symbol(self.accidental)
+        if not self.note_name.endswith(symbol):
+            self.note_name += symbol
+        svg_path = f"app/photos/{self.accidental}.svg"
+        acc_item = QGraphicsSvgItem(svg_path)
+        # Масштабирование и позиционирование (твой существующий код)
+        original_rect = acc_item.boundingRect()
+        if self.accidental == "sharp":
+            target_height = 15.0
+            x_pos = self.x - 20
+            y_pos = self.y - 8
+        else:
+            target_height = 25.0
+            x_pos = self.x - 18
+            y_pos = self.y - 17
+
+        scale_factor = target_height / original_rect.height()
+        acc_item.setScale(scale_factor)
+        acc_item.setPos(x_pos, y_pos)
+        acc_item.setAcceptHoverEvents(False)
+        self.scene.addItem(acc_item)
+        self.accidental_item = acc_item
+        self.update()
+
+
+    def delete(self):
+        self.bit.remove_note(self)   # внутри remove_note вызовется пересчёт
+        self.scene.removeItem(self)
+        self.scene.removeItem(self.accidental_item)
+        self.scene.update()
+
+    def mousePressEvent(self, event):
+        if event.button() == Qt.MouseButton.RightButton:
+            self.delete()
+            return
+        self.accidental = settings.accidental
+        self.bit.recalculate_accidental(self)
 
 
     def paint(self, painter: QPainter, option, widget):
@@ -117,55 +169,40 @@ class NoteItem(QGraphicsEllipseItem):
         return path
 
 
-    def delete(self):
-        print("SJKD")
-        self._remove_accidental()
-        self.bit.remove_note(self)
-        self.scene.removeItem(self)
-        self.scene.update()
-        print("SLDJGFSJDLGFKSHDK")
-
-
-    def mousePressEvent(self, event) -> None:
-        event.accept()
-        selected_accidental = settings.accidental 
-        tact = self.bit.tact
-
-        if selected_accidental is None:
-            if self.accidental is not None:
-                tact.set_accidental_for_note(self, "natural")
-            else:
-                self.delete()
-            return
-
-        # Если выбран знак, который уже есть на ноте — снимаем (natural)
-        if self.accidental == selected_accidental:
-            tact.set_accidental_for_note(self, "natural")
-            return
-
-        # Устанавливаем новый знак
-        tact.set_accidental_for_note(self, selected_accidental)
-
 
     def _add_accidental(self, acc_type, display=True):
-        """Добавляет знак на ноту. Если display=True, рисует SVG."""
-        # Если natural — просто удаляем знак
+        # Удаляем старый знак, если был
+        if self.accidental_item is not None:
+            self.scene.removeItem(self.accidental_item)
+            self.accidental_item = None
+
         if acc_type == "natural":
-            self._remove_accidental()
+            # Бекар – только если display=True (пользователь явно поставил)
+            if display:
+                svg_path = "app/photos/natural.svg"
+                acc_item = QGraphicsSvgItem(svg_path)
+                target_height = 15.0
+                x_pos = self.x - 20
+                y_pos = self.y - 10
+                original_rect = acc_item.boundingRect()
+                scale_factor = target_height / original_rect.height()
+                acc_item.setScale(scale_factor)
+                acc_item.setPos(x_pos, y_pos)
+                self.scene.addItem(acc_item)
+                self.accidental_item = acc_item
             self.accidental = "natural"
+            # Убираем символ из имени ноты (natural не добавляет символ)
+            # ... (код удаления символа, если был)
+            self.update()
             return
 
-        # Удаляем старый знак, если был
-        if self.accidental is not None:
-            self._remove_accidental()
-
-        # Обновляем имя ноты
+        # Обычные знаки (sharp, flat)
         symbol = self._accidental_to_symbol(acc_type)
-        self.note_name += symbol
+        if not self.note_name.endswith(symbol):
+            self.note_name += symbol
         self.accidental = acc_type
 
         if display:
-            # Создаём SVG
             svg_path = f"app/photos/{acc_type}.svg"
             acc_item = QGraphicsSvgItem(svg_path)
 
@@ -186,24 +223,25 @@ class NoteItem(QGraphicsEllipseItem):
             acc_item.setAcceptHoverEvents(False)
             self.scene.addItem(acc_item)
             self.accidental_item = acc_item
-        else:
-            self.accidental_item = None  # знак не отображается
+        self.update()
+
+
 
     def _set_accidental_without_display(self, acc_type):
         """Устанавливает знак на ноту без отображения."""
         self._add_accidental(acc_type, display=False)
 
     def _remove_accidental(self):
-        """Удаляет графический объект знака и сбрасывает атрибуты."""
         if self.accidental_item is not None:
             self.scene.removeItem(self.accidental_item)
             self.accidental_item = None
-        # Убираем символ из имени ноты, если он есть
-        if self.accidental:
+        # Убираем символ из имени ноты
+        if self.accidental and self.accidental != "natural":
             symbol = self._accidental_to_symbol(self.accidental)
-            if symbol and self.note_name.endswith(symbol):
+            if self.note_name.endswith(symbol):
                 self.note_name = self.note_name[:-len(symbol)]
         self.accidental = None
+        self.update()
 
 
     def _accidental_to_symbol(self, acc_type):
@@ -445,7 +483,7 @@ class BarLine:
         self.x = x
         self.y_top = y_top
         self.y_bottom = y_bottom
-        
+        self.line_item = None
         self.render()
     
     def render(self):
@@ -457,8 +495,8 @@ class BarLine:
         pen = QPen(Qt.GlobalColor.black)
         pen.setWidthF(2.0)
         line.setPen(pen)
-        
         self.scene.addItem(line)
+        self.line_item = line
 
 
 class Bits(QGraphicsRectItem):
@@ -515,7 +553,6 @@ class Bits(QGraphicsRectItem):
             if n:=note.prev_note:
                linked_note_prev,n = n,linked_note_prev
             if n:=note.next_note: 
-                print("эта нота левая в соединении")
                 linked_note_next,note.next_note = note.next_note,linked_note_next
         if self.notes:
             last_note = self.notes[-1]
@@ -527,62 +564,49 @@ class Bits(QGraphicsRectItem):
         self.tact.update_beams()
         
 
-            
-    def remove_note(self, note):
-        self.notes.remove(note)
-        if note.note_lenght == 0.125:
-            if next:= note.next_note:
-                next.prev_note = None
-                next.shtil= True
-                next.update()
-            elif prev:=note.prev_note:
-                prev.shtil= True
-                prev.next_note = None
-                prev.update()
-        self.update_notes()
-
 
     def add_note(self, duration, line, scene):
         if duration != self.weigth:
             return False
         if self.isExist_note(line):
             return False
-        note_item = NoteItem(
-            self.x0+15, 
-            line.y, 
-            line.note_name,
-            scene, 
-            duration, 
-            bit=self)
+        note_item = NoteItem(self.x0+15, line.y, line.note_name, scene, duration, bit=self)
         self.notes.append(note_item)
         self.notes.sort(key=lambda note: note.y, reverse=True)
         self.update_notes()
-
-        base = note_item.get_base_note_name()
-        bit_index = self.tact.bits.index(self)
-
-        # Текущий знак, который должен быть у ноты по правилам такта
-        current = self.tact.get_accidental_for_note(note_item)
-
-        # Если пользователь выбрал знак и он отличается от текущего
-        if settings.accidental is not None and current != settings.accidental:
-            # Устанавливаем новый знак, начиная с текущего бита
-            self.tact.set_accidental_for_note(note_item, settings.accidental)
-        else:
-            # Иначе просто обновляем все ноты этой высоты, начиная с текущего бита
-            self.tact.update_accidentals_for_base_from_bit(base, bit_index)
-
+        self.tact.recalculate_all_accidentals(note_item)
+        print(note_item.note_name)
         return note_item
+
+    def remove_note(self, note):
+        self.notes.remove(note)
+        if note.note_lenght == 0.125:
+            if next_note := note.next_note:
+                next_note.prev_note = None
+                next_note.shtil = True
+                next_note.update()
+            elif prev_note := note.prev_note:
+                prev_note.shtil = True
+                prev_note.next_note = None
+                prev_note.update()
+        self.update_notes()
+
+        # Пересчитываем знаки для всего такта (после удаления)
+        self.tact.recalculate_all_accidentals(note)
+
+    def recalculate_accidental(self, note):
+        self.tact.recalculate_all_accidentals(note)
 
 
 class Tact:
-    def __init__(self,y_bottom,scene,number):
+    def __init__(self,y_bottom,scene,number,x0=X0, y=Y0, duration=0.25):
         self.tact_number = number
         self.bits_count = 4
-        self.x0 = X0*(number+1)
+        self.x0 = x0
         self.spaces = []
         self.width = WIDTH if number > 0 else WIDTH + 100
         self.y_bottom = y_bottom
+        self.y0 = y
         self.note_x = X0 if number > 0 else X0 + 100
         self.lines = []
         self.bar_lines = []  # Храним вертикальные линии тактов
@@ -592,7 +616,7 @@ class Tact:
         self.active_accidentals = {}
         self.displayed_accidentals = set()
         self.current_bit = 0
-        self.duration = 0.25
+        self.duration = duration
         self.init_bits()
         self.init_tact()
     
@@ -600,8 +624,8 @@ class Tact:
     def init_tact(self):
     # Сначала создаем пространства между линиями (4 пространства между 5 линиями)
         for i in range(5):
-            y_top = Y0 + i * LINE_SPACING
-            space_rect = QRectF(X0, y_top, self.width, LINE_SPACING)
+            y_top = self.y0 + i * LINE_SPACING
+            space_rect = QRectF(self.x0, y_top, self.width, LINE_SPACING)
             match i:
                 case 0:
                     note_name = "E5"
@@ -618,7 +642,7 @@ class Tact:
             self.spaces.append(space_item)
         # Затем создаем 5 линий стана
         for i in range(6):
-            y = Y0 + i * LINE_SPACING
+            y = self.y0 + i * LINE_SPACING
             match i:
                 case 0:
                     note_name = "F5"
@@ -633,12 +657,12 @@ class Tact:
                 case 5: 
                     note_name = "C4"
                     line_item = HighlightableLineItem(
-                    QLineF(X0, y, X0 + self.width, y),
+                    QLineF(self.x0, y, self.x0 + self.width, y),
                     self,y, note_name, transparent=True
                 )
             if i != 5:
                 line_item = HighlightableLineItem(
-                    QLineF(X0, y, X0 + self.width, y),
+                    QLineF(self.x0, y, self.x0 + self.width, y),
                     self,y, note_name
                 )
             line_item.line_number = i
@@ -648,7 +672,7 @@ class Tact:
 
 
     def init_bits(self):
-        count_bits = self.bits_count
+        count_bits = int(1 / self.duration)
         if self.tact_number == 0:
             x_left = self.x0+100
         else:
@@ -658,7 +682,7 @@ class Tact:
                 x1 = (self.width - 100)/count_bits*i+self.x0+100
             else:
                 x1 = self.width/count_bits*i+self.x0
-            bit = Bits(QRectF(x_left, Y0, x1-x_left, self.y_bottom-Y0), x_left, x1,tact=self)
+            bit = Bits(QRectF(x_left, self.y0, x1-x_left, self.y_bottom-self.y0), x_left, x1,tact=self, weigth=self.duration)
             x_left = x1
             self.bits.append(bit)
             self.scene.addItem(bit)
@@ -668,11 +692,11 @@ class Tact:
         """Добавляет вертикальные линии тактов"""
         # Добавляем левую тактовую черту (сразу после размерности такта)
         scene = self.scene
-        left_bar = BarLine(scene, X0 , Y0, self.y_bottom)
+        left_bar = BarLine(scene, self.x0 , self.y0, self.y_bottom)
         self.bar_lines.append(left_bar)
         # Добавляем правую тактовую черту (конечную)
-        right_bar_x = X0 + self.width
-        right_bar = BarLine(scene, right_bar_x, Y0, self.y_bottom)
+        right_bar_x = self.x0 + self.width
+        right_bar = BarLine(scene, right_bar_x, self.y0, self.y_bottom)
         self.bar_lines.append(right_bar)
 
 
@@ -729,20 +753,17 @@ class Tact:
         new_bits = []
         for bit in self.bits:
             if available_bit:
-                print("есть пустой бит")
                 if bit.notes:
-                    print("в этом бите есть ноты, оставляем не тронутым, пустой бит сбрасывается")
                     new_bits.append(available_bit)
                     new_bits.append(bit)
                     available_bit = None
                     continue
                 if bit.weigth == available_bit.weigth:
-                    print("биты одинаковой длительности, их можно сложить")
                     width = (bit.x1-available_bit.x0)
                     new_bits.append(Bits(QRectF(available_bit.x0, 
-                                                Y0, 
+                                                self.y0, 
                                                 width, 
-                                                self.y_bottom-Y0), 
+                                                self.y_bottom-self.y0), 
                                             available_bit.x0, 
                                             available_bit.x0+width,
                                             weigth=self.duration, 
@@ -752,7 +773,6 @@ class Tact:
                     self.scene.removeItem(available_bit)
                     available_bit = None
             elif not bit.notes:
-                print("пустого бита нет, добавляем существующий если нет нот в нем")
                 available_bit = bit
             else:
                 new_bits.append(bit)
@@ -809,7 +829,7 @@ class Tact:
             new_x1 = empty_bit.x1
             new_weigth = left_bit.weigth * 2
             new_bit = Bits(
-                QRectF(new_x0, Y0, new_x1 - new_x0, self.y_bottom - Y0),
+                QRectF(new_x0, self.y0, new_x1 - new_x0, self.y_bottom - self.y0),
                 new_x0, new_x1, weigth=new_weigth, tact=self
             )
             self.scene.addItem(new_bit)
@@ -829,7 +849,7 @@ class Tact:
             new_x1 = right_bit.x1
             new_weigth = empty_bit.weigth * 2
             new_bit = Bits(
-                QRectF(new_x0, Y0, new_x1 - new_x0, self.y_bottom - Y0),
+                QRectF(new_x0, self.y0, new_x1 - new_x0, self.y_bottom - self.y0),
                 new_x0, new_x1, weigth=new_weigth, tact=self
             )
             self.scene.addItem(new_bit)
@@ -854,8 +874,8 @@ class Tact:
             if not bit.notes and not bit.weigth <= duration:
                 width = (bit.x1-bit.x0)/2
                 new_bits.extend([
-                    Bits(QRectF(bit.x0, Y0, width, self.y_bottom-Y0), bit.x0, bit.x0+width,weigth=bit.weigth/2, tact=self),
-                    Bits(QRectF(bit.x0+width, Y0, width, self.y_bottom-Y0), bit.x0+width+1, bit.x1,weigth=bit.weigth/2, tact=self)]
+                    Bits(QRectF(bit.x0, self.y0, width, self.y_bottom-self.y0), bit.x0, bit.x0+width,weigth=bit.weigth/2, tact=self),
+                    Bits(QRectF(bit.x0+width, self.y0, width, self.y_bottom-self.y0), bit.x0+width+1, bit.x1,weigth=bit.weigth/2, tact=self)]
                     )
                 self.scene.addItem(new_bits[-2])
                 self.scene.addItem(new_bits[-1])
@@ -867,72 +887,84 @@ class Tact:
             self.decrease_duration(duration) 
 
 
-    def set_accidental_for_note(self, note_item, acc_type):
-        base = note_item.get_base_note_name()
-        bit_index = self.bits.index(note_item.bit)
 
-        if acc_type == "natural":
-            # Удаляем активный знак
-            if base in self.active_accidentals:
-                del self.active_accidentals[base]
-            # Убираем из отображённых, чтобы при возможном повторном добавлении знак нарисовался
-            self.displayed_accidentals.discard(base)
-            # Обновляем все ноты этой высоты, начиная с текущего бита
-            self.update_accidentals_for_base_from_bit(base, bit_index)
-        else:
-            # Устанавливаем активный знак, начиная с этого бита
-            self.active_accidentals[base] = (acc_type, bit_index)
-            # При ручной установке знак должен отобразиться на этой ноте, поэтому убираем из отображённых,
-            # чтобы при обновлении он нарисовался
-            self.displayed_accidentals.discard(base)
-            # Обновляем все ноты этой высоты, начиная с этого бита
-            self.update_accidentals_for_base_from_bit(base, bit_index)
+    def remove_from_scene(self):
+        # Удаляем линии
+        for line in self.lines[:]:          # копия списка для безопасной итерации
+            self.scene.removeItem(line)
+            # При необходимости: del line
+        self.lines.clear()
+        # Удаляем пробелы
+        for space in self.spaces[:]:
+            self.scene.removeItem(space)
+        self.spaces.clear()
+        # Удаляем тактовые черты
+        for bar in self.bar_lines[:]:
+            self.scene.removeItem(bar.line_item)
+        self.bar_lines.clear()
 
-    def update_accidentals_for_base_from_bit(self, base_note_name, start_bit_index):
-        """Обновляет знаки у всех нот с заданной высотой, начиная с бита start_bit_index."""
-        for i in range(start_bit_index, len(self.bits)):
-            bit = self.bits[i]
+        # Удаляем биты (и их ноты)
+        for bit in self.bits:
+            for note in bit.notes[:]:
+                self.scene.removeItem(note)
+            self.scene.removeItem(bit)
+        self.bits.clear()
+
+        # Дополнительно: удаляем ноты, если они хранятся отдельно
+        for note in self.notes[:]:
+            self.scene.removeItem(note)
+        del self
+
+
+    def recalculate_all_accidentals(self, note_item):
+        """Убирает все знаки и заново рисует только те, что явно поставил пользователь."""
+        alteration = None
+        drawed = False
+
+        for i, bit in enumerate(self.bits):
             for note in bit.notes:
-                if note.get_base_note_name() == base_note_name:
-                    # Проверяем, есть ли активный знак, действующий с бита <= i
-                    if base_note_name in self.active_accidentals:
-                        acc, start_bit = self.active_accidentals[base_note_name]
-                        if start_bit <= i:
-                            # Применяем знак, но рисуем только если его ещё не рисовали
-                            if base_note_name in self.displayed_accidentals:
-                                # Уже был отображён, не рисуем
-                                note._set_accidental_without_display(acc)
-                            else:
-                                # Первый раз — рисуем и запоминаем
-                                note._add_accidental(acc, display=True)
-                                self.displayed_accidentals.add(base_note_name)
+                if note == note_item and note.accidental == "natural" and alteration is None:
+                    note.draw_accidental(0)
+                    alteration = note.accidental
+                    drawed = True
+                    continue
+                if note.note_name[:2] == note_item.note_name[:2]:
+                    if alteration is None and note.accidental == "natural":
+                        alteration = note.accidental
+                        note.draw_accidental(0)
+                        drawed = True
+                        continue 
+                    if alteration == note.accidental:
+                        symbol = note._accidental_to_symbol(alteration)
+                        if not note.note_name.endswith(symbol):
+                            note.note_name += symbol
+                        if drawed:
+                            note.delete_accidental()
                         else:
-                            # Знак ещё не действует — удаляем, если был
-                            if note.accidental is not None:
-                                note._remove_accidental()
+                            note.draw_accidental(i)
+                            drawed = True
                     else:
-                        # Активного знака нет — удаляем
-                        if note.accidental is not None:
-                            note._remove_accidental()
 
-    def get_accidental_for_note(self, note_item):
-        """Возвращает знак, который должен быть у ноты, или None."""
-        base = note_item.get_base_note_name()
-        bit_index = self.bits.index(note_item.bit)
-        if base in self.active_accidentals:
-            acc, start_bit = self.active_accidentals[base]
-            if start_bit <= bit_index:
-                return acc
-        return None
+                        alteration = note.accidental
+                        note.draw_accidental(i)
+                        drawed = True
+        # if note_item.accidental != "natural":
+        #     note_item.draw_accidental()
+
+                    
+
 
 
 class StaffLayout:
     def __init__(self, scene):
         self.left_hand = False
         self.tacts = []
+        self.tacts_per_rows = 0
         self.time_signature = None  # Будет хранить объект размерности такта
         self.current_tact = None
         self.bpm = 60
+        self.y = Y0
+        self.x = X0
         self.scene = scene
         self.current_duration = 0.25
         self.init_staff(scene)
@@ -940,7 +972,7 @@ class StaffLayout:
 
     @property
     def y_bottom(self) -> float:
-        return Y0 + 4 * LINE_SPACING
+        return self.y + (4 * LINE_SPACING) 
     
     @property
     def staff_height(self) -> float:
@@ -950,12 +982,10 @@ class StaffLayout:
 
     def set_duration(self, duration):
         if duration > self.current_duration:
-            print("объединяем ячейки")
             self.current_duration = duration
             for tact in self.tacts:
                 tact.increase_duration(duration)
         else:
-            print("разделяем ячейки")
             self.current_duration = duration
             for tact in self.tacts:
                 tact.decrease_duration(duration)
@@ -965,8 +995,9 @@ class StaffLayout:
 
 
     def init_staff(self, scene):
-        self.current_tact = Tact(self.y_bottom, scene, len(self.tacts))
+        self.current_tact = Tact(self.y_bottom, scene, len(self.tacts), duration=self.current_duration)
         self.tacts.append(self.current_tact)
+        self.tacts_per_rows = 1
         # Добавляем скрипичный ключ
         self.add_treble_clef(scene)
         # Добавляем размерность такта (4/4) после скрипичного ключа
@@ -1063,3 +1094,57 @@ class StaffLayout:
 
     def change_accidental(self, data):
         self.accidental = data
+
+
+    def add_tact(self):
+        pred_tact = self.tacts[-1]
+        new_x0 = pred_tact.x0+pred_tact.width
+        if new_x0 + WIDTH > SCENE_WIDTH:
+            self.x = X0
+            self.y += (self.staff_height + 100)
+            self.current_tact = Tact(self.y_bottom, self.scene, len(self.tacts), X0, self.y, self.current_duration)
+        else:    
+            self.x = new_x0 
+            self.current_tact = Tact(self.y_bottom, self.scene, len(self.tacts), new_x0, self.y, self.current_duration)
+        self.tacts.append(self.current_tact)
+
+
+    def delete_tact(self):
+        if len(self.tacts) == 1:
+            return False
+        tact = self.tacts[-1]
+        tact.remove_from_scene()
+        self.tacts.pop(-1)
+        self.y = self.tacts[-1].y0
+        # print(self.tacts)
+
+
+
+    # staff.py (внутри StaffLayout)
+    def get_playhead_path(self):
+        """
+        Возвращает список сегментов пути playhead.
+        Каждый сегмент: (x_start, y_start, x_end, y_end, length, cum_length)
+        """
+        segments = []
+        cum_length = 0.0
+
+        # Предполагаем, что такты хранятся в self.tacts в порядке добавления
+        # и что они уже размещены с правильными координатами x0, y0
+        # Для разбиения на строки можно сгруппировать такты по y0 (или хранить rows)
+        # Упрощённо: идём по всем тактам подряд, но при изменении y добавляем разрыв
+        prev_y = None
+        for tact in self.tacts:
+            y = tact.y0  # вертикальная координата стана
+            if prev_y is not None and y != prev_y:
+                # Переход на новую строку – разрыв, но мы просто продолжаем,
+                # так как playhead "перепрыгнет" – координата y изменится
+                pass
+            # Начало такта: x0, конец такта: x0 + width
+            x_start = tact.bits[0].notes[0].x
+            x_end = tact.bits[-1].x1 + 15
+            length = x_end - x_start
+            segments.append((x_start, y, x_end, y, length, cum_length))
+            cum_length += length
+            prev_y = y
+        return segments, cum_length
