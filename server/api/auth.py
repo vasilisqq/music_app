@@ -3,7 +3,7 @@ import sys
 import os
 # from app.core.config import settings
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-from schemas.auth import UserCreate, UserLogin
+from schemas.auth import UserCreate, UserLogin, TokenResponse, UserResponse
 from services.user_service import UserService
 from services.auth_service import AuthService
 # from app.services.auth_service import AuthService
@@ -39,13 +39,20 @@ async def register(
             detail="Не удалось создать пользователя"
         )
     
-    return token
+    return TokenResponse(
+        access_token=token,
+        user=UserResponse(
+            username=user_data.username,
+            email=user_data.email
+        )
+    )
 
 @router.post("/login", status_code=status.HTTP_201_CREATED)
 async def login(
     user_data: UserLogin,
     response: Response,
-    auth_service: AuthService = Depends(get_auth_service)
+    auth_service: AuthService = Depends(get_auth_service),
+    user_service: UserService = Depends(get_user_service)
 ):
     """Вход пользователя"""
     token = await auth_service.login_user(user_data)
@@ -54,7 +61,16 @@ async def login(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Неверный email или пароль",
         )
-    return token
+    user = await user_service.get_user_by_email(user_data.email)
+    
+    # Возвращаем Pydantic-объект
+    return TokenResponse(
+        access_token=token,
+        user=UserResponse(
+            username=user.username,
+            email=user.email
+        )
+    )
 
 
 # @router.post("/logout")

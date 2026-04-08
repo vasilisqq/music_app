@@ -13,12 +13,12 @@ class UserCreate(UserLogin):
     username: str
 
 
-# class UserResponse(BaseModel):
-#     """Схема для ответа с данными пользователя"""
-#     id: int
-#     email: str
-#     username: str
-#     is_active: bool
-#     role: int
+class UserResponse(BaseModel):
+    username: str
+    email: EmailStr  # или просто str, если не используешь EmailStr
 
-#     model_config = ConfigDict(from_attributes=True)
+# Итоговая модель ответа при логине/регистрации
+class TokenResponse(BaseModel):
+    access_token: str
+    user: UserResponse
+    token_type: str = "bearer"

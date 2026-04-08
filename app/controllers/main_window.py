@@ -1,15 +1,22 @@
-from PyQt6.QtWidgets import QMainWindow
-from GUI.main_window import Ui_MainWindow  # Убедись, что импортируешь правильный класс из сгенерированного файла
-import sys
+from PyQt6.QtWidgets import QMainWindow, QMessageBox
+from loader import settings
+from GUI.main_window import Ui_MainWindow
 
 class Main(QMainWindow):
     def __init__(self):
         super().__init__()
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
-        # Зафиксированная ширина панели — меню всегда открыто
-        self.expanded_width = 220
+        # Вызываем метод заполнения профиля
+        self.setup_profile()
+        # ... (тут остается твой код для анимации выезжающего меню, если ты его добавил) ...
 
-        # Применяем фиксированную ширину
-        self.ui.drawerWidget.setMinimumWidth(self.expanded_width)
-        self.ui.drawerWidget.setMaximumWidth(self.expanded_width)
+    def setup_profile(self):
+        """Читаем данные из кэша и обновляем интерфейс"""
+        # Достаем сохраненные значения (второй аргумент - заглушка на случай, если данных нет)
+        username = settings.value("username", "👤 Гость")
+        email = settings.value("email", "no-reply@example.com")
+        
+        # Устанавливаем текст в твои лейблы
+        self.ui.userNameLabel.setText(f"👤 {username}")
+        self.ui.emailLabel.setText(email)

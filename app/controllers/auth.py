@@ -23,7 +23,6 @@ QLineEdit:focus {
     padding: 12px 17px; 
 }
 """
-
 ERROR_STYLE = """
 QLineEdit { 
     padding: 15px 20px; border: 3px solid #ff4444; border-radius: 15px; 
@@ -263,11 +262,19 @@ class Auth(QMainWindow):
             self.api.login_user(user)
 
             
-    def on_user_recieved(self, token):
-        settings.setValue("token",token)
-        print(token)
-        QMessageBox.information(self, "Успех", 
-                f"Добро пожаловать!")
+    def on_user_recieved(self, data: dict):
+        # 1. Извлекаем данные из ответа
+        token = data.get("access_token")
+        user_info = data.get("user", {})
+        
+        # 2. Сохраняем в QSettings (чтобы главное окно могло их забрать)
+        settings.setValue("token", token)
+        settings.setValue("username", user_info.get("username", "Неизвестно"))
+        settings.setValue("email", user_info.get("email", "Нет почты"))
+        
+        QMessageBox.information(self, "Успех", "Добро пожаловать!")
+        
+        # 3. Открываем главное окно
         self.main_window = Main()
         self.main_window.show()
         self.close()

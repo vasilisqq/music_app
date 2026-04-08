@@ -15,7 +15,7 @@ T = TypeVar('T', bound=BaseModel)
 
 class AuthWorker(QObject):
     """Типизированный API клиент с Pydantic моделями"""
-    user_received_signal = pyqtSignal(str)
+    user_received_signal = pyqtSignal(dict)
     error_occurred_signal = pyqtSignal(str)
 
 
