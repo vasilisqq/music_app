@@ -2,7 +2,7 @@ import sys
 from PyQt6.QtWidgets import QApplication
 from controllers.auth import Auth
 from app.controllers.creator import CreatorController
-from PyQt6.QtCore import QSysInfo, QStorageInfo
+from controllers.main_window import Main
 from loader import settings
 
 def main() -> None:
@@ -11,7 +11,7 @@ def main() -> None:
     # window.show()
     # Создаем и отображаем главное окно
     if settings.value("token"):
-        window = CreatorController()
+        window = Main()
     else:
         window = Auth()
     window.show()
