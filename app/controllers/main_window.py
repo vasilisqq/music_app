@@ -1,94 +1,92 @@
-from PyQt6.QtWidgets import QMainWindow, QMessageBox, QListWidgetItem
+from PyQt6.QtWidgets import QMainWindow, QMessageBox, QWidget, QGridLayout, QHBoxLayout
+from PyQt6.QtCore import Qt
 from loader import settings
 from GUI.main_window import Ui_MainWindow
 from GUI.LessonCard import LessonCard
+from GUI.helpful import FlowLayout
+
+from PyQt6.QtWidgets import QMainWindow, QMessageBox, QWidget, QHBoxLayout, QScrollArea
+from GUI.main_window import Ui_MainWindow
+from GUI.LessonCard import LessonCard
+from GUI.helpful import FlowLayout
 
 class Main(QMainWindow):
     def __init__(self):
         super().__init__()
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
-        # home_layout = self.ui.homePageLayout
-        # card1 = LessonCard("Аккорды для начинающих", progress=0.45)
-        # card1.play_btn.clicked.connect(lambda: self.start_lesson("chords"))
+        
+        self.ui.topicsListWidget.hide()
+        
+        # 1. Создаем Scroll Area, чтобы можно было крутить список вниз
+        self.scroll_area = QScrollArea()
+        self.scroll_area.setWidgetResizable(True) # Это критично для адаптивности
+        self.scroll_area.setStyleSheet("background: transparent; border: none;")
+        
+        # 2. Создаем внутренний виджет и назначаем ему FlowLayout
+        self.ui.topicsListWidget.hide()
+        
+        self.scroll_area = QScrollArea()
+        self.scroll_area.setWidgetResizable(True)
+        self.scroll_area.setStyleSheet("background: transparent; border: none;")
+        
+        self.topics_container = QWidget()
+        # Важно: убираем лишние QHBoxLayout с addStretch вокруг контейнера, 
+        # так как теперь FlowLayout сам центрирует содержимое внутри себя.
+        self.flow_layout = FlowLayout(self.topics_container, spacing=25)
+        
+        self.scroll_area.setWidget(self.topics_container)
+        self.ui.topicsPageLayout.addWidget(self.scroll_area)
 
-        # card2 = LessonCard("Ритм и темп", progress=0.80)
-        # card2.play_btn.clicked.connect(lambda: self.start_lesson("rhythm"))
-
-        # card3 = LessonCard("Игра по нотам", progress=0.20)
-        # card3.play_btn.clicked.connect(lambda: self.start_lesson("notes"))
-
-        # home_layout.addWidget(card1)
-        # home_layout.addWidget(card2)
-        # home_layout.addWidget(card3)
-        # Вызываем метод заполнения профиля
         self.setup_profile()
-        
-        # Подключаем события
         self._setup_signals()
-        
-        # Загружаем доступные темы
         self._load_topics()
 
+    def _load_topics(self):
+        # ... (данные те же самые)
+        topics_data = [
+            {"title": "🎹 Основы пианино", "progress": 0.45},
+            {"title": "🎸 Гитара для новичков", "progress": 0.10},
+            {"title": "🥁 Ритм и барабаны", "progress": 0.80},
+            {"title": "🎤 Вокал и дыхание", "progress": 0.0},
+            {"title": "🎼 Теория музыки", "progress": 0.25},
+            {"title": "🎵 Импровизация", "progress": 0.05},
+        ]
+
+        while self.flow_layout.count():
+            item = self.flow_layout.takeAt(0)
+            if item.widget():
+                item.widget().deleteLater()
+
+        for data in topics_data:
+            card = LessonCard(title=data["title"], progress=data["progress"])
+            
+            # Подключаем клик по ВСЕЙ карточке
+            card.clicked.connect(self.on_topic_selected_by_name)
+            
+            self.flow_layout.addWidget(card)
+
+    def on_topic_selected_by_name(self, topic_name):
+        print(f"Выбрана тема: {topic_name}")
+
     def _setup_signals(self):
-        """Подключаем кнопки к методам"""
         self.ui.cardPlayBtn.clicked.connect(self.show_topics)
         self.ui.backBtn.clicked.connect(self.show_home)
         self.ui.logoutBtn.clicked.connect(self.logout)
 
-    def _load_topics(self):
-        """Загружаем список доступных тем в QListWidget"""
-        # Пример тем — замени на реальные данные из API или БД
-        topics = [
-            "🎹 Основы пианино",
-            "🎸 Гитара для новичков",
-            "🥁 Ритм и основы барабанов",
-            "🎤 Вокал и дыхание",
-            "🎼 Музыкальная теория",
-            "🎵 Импровизация",
-        ]
-        
-        self.ui.topicsListWidget.clear()
-        for topic in topics:
-            item = QListWidgetItem(topic)
-            self.ui.topicsListWidget.addItem(item)
-        
-        # Подключаем выбор темы
-        self.ui.topicsListWidget.itemClicked.connect(self.on_topic_selected)
-
     def show_topics(self):
-        """Показать страницу с темами"""
         self.ui.stackedWidget.setCurrentWidget(self.ui.topicsPageWidget)
 
     def show_home(self):
-        """Вернуться на главную страницу"""
         self.ui.stackedWidget.setCurrentWidget(self.ui.homePageWidget)
-        self.ui.topicsListWidget.clearSelection()
-
-    def on_topic_selected(self, item):
-        """Обработка выбора темы"""
-        topic_name = item.text()
-        print(f"Выбрана тема: {topic_name}")
-        # Здесь можно запустить урок по выбранной теме
-        # Например: self.start_lesson(topic_name)
 
     def logout(self):
-        """Выход из приложения"""
-        reply = QMessageBox.question(
-            self,
-            "Выход",
-            "Вы уверены, что хотите выйти?",
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
-        )
+        reply = QMessageBox.question(self, "Выход", "Вы уверены?", QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
         if reply == QMessageBox.StandardButton.Yes:
             self.close()
 
     def setup_profile(self):
-        """Читаем данные из кэша и обновляем интерфейс"""
-        # Достаем сохраненные значения (второй аргумент - заглушка на случай, если данных нет)
         username = settings.value("username", "👤 Гость")
         email = settings.value("email", "no-reply@example.com")
-        
-        # Устанавливаем текст в твои лейблы
         self.ui.userNameLabel.setText(f"👤 {username}")
         self.ui.emailLabel.setText(email)
