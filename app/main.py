@@ -8,7 +8,6 @@ from loader import settings
 def main() -> None:
     app = QApplication(sys.argv)
     # window = CreatorController()
-    # window.show()
     # Создаем и отображаем главное окно
     if settings.value("token"):
         window = Main()
