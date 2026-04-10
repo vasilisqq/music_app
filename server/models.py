@@ -7,7 +7,7 @@ from server.db import Base
 
 class Role(Base):
     __tablename__ = "role"
-
+    
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, unique=True, index=True, nullable=False)
 
@@ -28,6 +28,17 @@ class User(Base):
         return f"<User(id={self.id}, email={self.email}, username={self.username}, password={self.hashed_password}, is_active={self.is_active}, role={self.role})>"
     
 
+class Topic(Base):
+    __tablename__ = "topic"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, unique=True, index=True, nullable=False)
+    description = Column(String, nullable=True) # Описание может быть пустым
+    
+    # Связь: у одной темы может быть много уроков
+    lessons = relationship("Lesson", back_populates="topic_info", cascade="all, delete-orphan")
+
+
 class Lesson(Base):
     __tablename__ = "lesson"
     id = Column(Integer, primary_key=True, index=True)
@@ -36,6 +47,9 @@ class Lesson(Base):
     rhythm = Column(DECIMAL(), nullable=False)
     notes = Column(JSONB(), nullable=False)
     topic = Column(Integer, nullable=False)
+
+    topic_id = Column(Integer, ForeignKey("topic.id"), nullable=False) # Теперь это внешний ключ!
+    topic_info = relationship("Topic", back_populates="lessons")
     
 
 

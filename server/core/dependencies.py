@@ -5,9 +5,8 @@ from db import get_db
 from services.user_service import UserService
 from services.auth_service import AuthService
 from services.lesson_services import LessonService
-from jose import jwt
+from services.topic_service import TopicService
 from models import User
-from core.config import settings
 from utils.jwt import verify_token
 from services.user_service import UserService
 # from app.services.auth_service import AuthService
@@ -27,6 +26,10 @@ async def get_auth_service(db: AsyncSession = Depends(get_db)) -> AuthService:
 async def get_lesson_service(db: AsyncSession = Depends(get_db)) -> AuthService:
     """Зависимость, предоставляющая AuthService."""
     return LessonService(db)
+
+async def get_topic_service(db: AsyncSession = Depends(get_db)) -> AuthService:
+    """Зависимость, предоставляющая AuthService."""
+    return TopicService(db)
 
 
 async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security),

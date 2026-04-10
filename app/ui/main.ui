@@ -606,6 +606,78 @@ QPushButton#cardPlayBtn:pressed {
   </item>
  </layout>
 </widget>
+<widget class="QWidget" name="adminPageWidget">
+        <layout class="QVBoxLayout" name="adminLayout">
+         <property name="spacing">
+          <number>15</number>
+         </property>
+         <property name="leftMargin">
+          <number>30</number>
+         </property>
+         <property name="topMargin">
+          <number>20</number>
+         </property>
+         <property name="rightMargin">
+          <number>30</number>
+         </property>
+         <property name="bottomMargin">
+          <number>20</number>
+         </property>
+         <item>
+          <widget class="QLabel" name="adminTitle">
+           <property name="text">
+            <string>Панель администратора: Темы</string>
+           </property>
+           <property name="styleSheet">
+            <string notr="true">color: #1a1a1a; font-size: 22px; font-weight: bold;</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QTableWidget" name="table_topics">
+           <column>
+            <property name="text">
+             <string>ID</string>
+            </property>
+           </column>
+           <column>
+            <property name="text">
+             <string>Название темы</string>
+            </property>
+           </column>
+           <column>
+            <property name="text">
+             <string>Уроков</string>
+            </property>
+           </column>
+          </widget>
+         </item>
+         <item>
+          <layout class="QHBoxLayout" name="addTopicLayout">
+           <item>
+            <widget class="QLineEdit" name="line_new_topic">
+             <property name="placeholderText">
+              <string>Введите название новой темы...</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="btn_add_topic">
+             <property name="text">
+              <string>Добавить тему</string>
+             </property>
+             <property name="minimumSize">
+              <size>
+               <width>150</width>
+               <height>40</height>
+              </size>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+        </layout>
+       </widget>
       </widget>
      </widget>
     </item>
