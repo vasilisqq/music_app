@@ -48,7 +48,7 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
 
 async def get_current_active_user(current_user = Depends(get_current_user)):
     """Получение текущего активного пользователя"""
-    if not current_user[0].is_active:
+    if not current_user.is_active:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, 
             detail="Неактивный пользователь"

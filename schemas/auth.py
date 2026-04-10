@@ -15,8 +15,8 @@ class UserCreate(UserLogin):
 
 class UserResponse(BaseModel):
     username: str
-    email: EmailStr  # или просто str, если не используешь EmailStr
-
+    email: EmailStr
+    role: str
 # Итоговая модель ответа при логине/регистрации
 class TokenResponse(BaseModel):
     access_token: str

@@ -21,6 +21,7 @@ class User(Base):
     hashed_password = Column(String, nullable=False)
     is_active = Column(Boolean, default=True)
     role = Column(Integer, ForeignKey("role.id"), nullable=False)
+    role_info = relationship("Role", lazy="joined")
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     def __repr__(self):

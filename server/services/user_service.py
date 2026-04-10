@@ -5,7 +5,7 @@ from typing import Optional
 from models import User, Role
 from schemas.auth import UserCreate
 from utils.security import get_password_hash, verify_password
-from utils.jwt import create_access_token
+
 
 class UserService:
     def __init__(self, db: AsyncSession):
@@ -28,16 +28,19 @@ class UserService:
             self.db.add(db_user)
             await self.db.commit()
             await self.db.refresh(db_user)
-            return create_access_token(data = {"user_id": str(db_user.id)})
+            return db_user
         except IntegrityError:
             await self.db.rollback()
             return None
     
     async def get_user_by_email(self, email: str) -> Optional[User]:
-        """Получение пользователя по email"""
+        # Запрашиваем ТОЛЬКО User. Благодаря lazy="joined" в модели, 
+        # роль подтянется автоматически.
         result = await self.db.execute(
             select(User).where(User.email == email)
         )
+        # Снова используем scalar_one_or_none(), так как мы запрашиваем 
+        # только одну сущность (User), а не две раздельные
         return result.scalar_one_or_none()
     
     async def get_user_by_username(self, username: str) -> Optional[User]:
@@ -50,13 +53,16 @@ class UserService:
     async def get_user_by_id(self, user_id: int):
         """Получение пользователя по ID"""
         result = await self.db.execute(
-            select(User, Role.name).join(Role, User.role == Role.id).where(User.id == user_id)
+            select(User).where(User.id == user_id)
         )
-        return result.one_or_none()
+        # Снова используем scalar_one_or_none(), так как мы запрашиваем 
+        # только одну сущность (User), а не две раздельные
+        return result.scalar_one_or_none()
     
     async def authenticate_user(self, email: str, password: str) -> Optional[User]:
         """Аутентификация пользователя"""
         user = await self.get_user_by_email(email)
+        print(user)
         if not user:
             return None
         if not verify_password(password, user.hashed_password):

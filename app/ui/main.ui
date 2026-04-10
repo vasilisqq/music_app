@@ -230,6 +230,13 @@ QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
          </widget>
         </item>
         <item>
+         <widget class="QPushButton" name="adminPanelBtn">
+          <property name="text">
+           <string>👤 Панель</string>
+          </property>
+         </widget>
+        </item>
+        <item>
          <spacer name="verticalSpacer_drawer">
           <property name="orientation">
            <enum>Qt::Orientation::Vertical</enum>

@@ -263,19 +263,16 @@ class Auth(QMainWindow):
 
             
     def on_user_recieved(self, data: dict):
-        # 1. Извлекаем данные из ответа
         token = data.get("access_token")
-        user_info = data.get("user", {})
+        user_info = data.get("user", {}) # Здесь лежат username, email, role с бэкенда
         
-        # 2. Сохраняем в QSettings (чтобы главное окно могло их забрать)
+        # Сохраняем токен для будущих сессий
         settings.setValue("token", token)
-        settings.setValue("username", user_info.get("username", "Неизвестно"))
-        settings.setValue("email", user_info.get("email", "Нет почты"))
         
         QMessageBox.information(self, "Успех", "Добро пожаловать!")
         
-        # 3. Открываем главное окно
-        self.main_window = Main()
+        # Передаем свежие данные прямо в конструктор главного окна
+        self.main_window = Main(user_info) 
         self.main_window.show()
         self.close()
         

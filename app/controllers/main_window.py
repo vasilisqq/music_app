@@ -11,11 +11,16 @@ from GUI.LessonCard import LessonCard
 from GUI.helpful import FlowLayout
 
 class Main(QMainWindow):
-    def __init__(self):
+    def __init__(self, user_data: dict):
         super().__init__()
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
-        
+        self.ui.adminPanelBtn.setVisible(False) 
+        self.user_data = user_data
+        # Проверяем роль из полученных от сервера данных
+        user_role = self.user_data.get("role", "пользователь") 
+        if user_role in ["администратор", "учитель"]: 
+            self.ui.adminPanelBtn.setVisible(True)
         self.ui.topicsListWidget.hide()
         
         # 1. Создаем Scroll Area, чтобы можно было крутить список вниз
@@ -86,7 +91,22 @@ class Main(QMainWindow):
             self.close()
 
     def setup_profile(self):
-        username = settings.value("username", "👤 Гость")
-        email = settings.value("email", "no-reply@example.com")
-        self.ui.userNameLabel.setText(f"👤 {username}")
-        self.ui.emailLabel.setText(email)
+        if self.ui.userNameLabel: # Например, лейбл для имени пользователя
+            self.ui.userNameLabel.setText(self.user_data.get("username", "Гость"))
+            
+        if self.ui.emailLabel: # Например, лейбл для почты
+            self.ui.emailLabel.setText(self.user_data.get("email", "Не привязана"))
+
+    def logout(self):
+        """Обработчик нажатия на кнопку 'Выйти'"""
+        
+        # 1. Удаляем токен из QSettings
+        settings.remove("token")
+        
+        # 2. Локальный импорт, чтобы избежать циклической зависимости
+        from controllers.auth import Auth
+        
+        # 3. Создаем и показываем окно авторизации
+        self.auth_window = Auth()
+        self.close()
+        self.auth_window.show()
