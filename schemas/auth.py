@@ -22,3 +22,10 @@ class TokenResponse(BaseModel):
     access_token: str
     user: UserResponse
     token_type: str = "bearer"
+
+
+class UserUpdate(BaseModel):
+    """Схема для обновления данных профиля"""
+    username: Optional[str] = None
+    email: Optional[EmailStr] = None
+    password: Optional[str] = None

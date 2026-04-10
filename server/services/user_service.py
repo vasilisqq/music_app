@@ -3,9 +3,8 @@ from sqlalchemy import select, and_
 from sqlalchemy.exc import IntegrityError
 from typing import Optional
 from models import User, Role
-from schemas.auth import UserCreate
+from schemas.auth import UserCreate, UserUpdate
 from utils.security import get_password_hash, verify_password
-
 
 class UserService:
     def __init__(self, db: AsyncSession):
@@ -68,3 +67,25 @@ class UserService:
         if not verify_password(password, user.hashed_password):
             return None
         return user
+    
+
+    
+    async def update_user(self, user_id: int, update_data: UserUpdate) -> Optional[User]:
+        """Обновление данных пользователя"""
+        user = await self.get_user_by_id(user_id)
+        if not user:
+            return None
+        if update_data.username:
+            user.username = update_data.username
+        if update_data.email:
+            user.email = update_data.email
+        if update_data.password:
+            user.hashed_password = get_password_hash(update_data.password)
+            
+        try:
+            await self.db.commit()
+            await self.db.refresh(user)
+            return user
+        except IntegrityError:
+            await self.db.rollback()
+            return None

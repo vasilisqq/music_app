@@ -96,6 +96,11 @@ class Ui_MainWindow(object):
 "QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {\n"
 "  height: 0px;\n"
 "}\n"
+"#drawerWidget QPushButton[active=\"true\"] {\n"
+"  background: rgba(63, 139, 222, 0.4);\n"
+"  border-left: 4px solid #3f8bde;\n"
+"  padding-left: 11px; /* Компенсация границы */\n"
+"}\n"
 "   ")
         self.centralwidget = QtWidgets.QWidget(parent=MainWindow)
         self.centralwidget.setObjectName("centralwidget")
@@ -136,6 +141,9 @@ class Ui_MainWindow(object):
         self.emailLabel = QtWidgets.QLabel(parent=self.drawerWidget)
         self.emailLabel.setObjectName("emailLabel")
         self.verticalLayout_drawer.addWidget(self.emailLabel)
+        self.homeBtn = QtWidgets.QPushButton(parent=self.drawerWidget)
+        self.homeBtn.setObjectName("homeBtn")
+        self.verticalLayout_drawer.addWidget(self.homeBtn)
         self.profileBtn = QtWidgets.QPushButton(parent=self.drawerWidget)
         self.profileBtn.setObjectName("profileBtn")
         self.verticalLayout_drawer.addWidget(self.profileBtn)
@@ -227,21 +235,21 @@ class Ui_MainWindow(object):
         self.backBtn = QtWidgets.QPushButton(parent=self.topicsPageWidget)
         self.backBtn.setMaximumSize(QtCore.QSize(120, 40))
         self.backBtn.setStyleSheet("\n"
-"QPushButton#backBtn {\n"
-"  background: rgba(63, 139, 222, 0.2);\n"
-"  border-radius: 8px;\n"
-"  padding: 8px 16px;\n"
-"  font-size: 14px;\n"
-"  font-weight: bold;\n"
-"  color: #3f8bde;\n"
-"  border: 1px solid rgba(63, 139, 222, 0.3);\n"
-"}\n"
-"QPushButton#backBtn:hover {\n"
-"  background: rgba(63, 139, 222, 0.3);\n"
-"}\n"
-"QPushButton#backBtn:pressed {\n"
-"  background: rgba(63, 139, 222, 0.5);\n"
-"}\n"
+"                    QPushButton#backBtn {\n"
+"                      background: rgba(63, 139, 222, 0.2);\n"
+"                      border-radius: 8px;\n"
+"                      padding: 8px 16px;\n"
+"                      font-size: 14px;\n"
+"                      font-weight: bold;\n"
+"                      color: #3f8bde;\n"
+"                      border: 1px solid rgba(63, 139, 222, 0.3);\n"
+"                    }\n"
+"                    QPushButton#backBtn:hover {\n"
+"                      background: rgba(63, 139, 222, 0.3);\n"
+"                    }\n"
+"                    QPushButton#backBtn:pressed {\n"
+"                      background: rgba(63, 139, 222, 0.5);\n"
+"                    }\n"
 "              ")
         self.backBtn.setObjectName("backBtn")
         self.topicsHeaderLayout.addWidget(self.backBtn)
@@ -255,27 +263,78 @@ class Ui_MainWindow(object):
         self.topicsPageLayout.addWidget(self.topicsHeaderLabel)
         self.topicsListWidget = QtWidgets.QListWidget(parent=self.topicsPageWidget)
         self.topicsListWidget.setStyleSheet("\n"
-"QListWidget {\n"
-"  background: white;\n"
-"  border-radius: 10px;\n"
-"  border: 1px solid rgba(0, 0, 0, 0.1);\n"
-"}\n"
-"QListWidget::item {\n"
-"  padding: 15px;\n"
-"  border-bottom: 1px solid rgba(0, 0, 0, 0.05);\n"
-"  background: white;\n"
-"}\n"
-"QListWidget::item:hover {\n"
-"  background: rgba(63, 139, 222, 0.1);\n"
-"}\n"
-"QListWidget::item:selected {\n"
-"  background: rgba(63, 139, 222, 0.25);\n"
-"  color: #1a1a1a;\n"
-"}\n"
+"                        QListWidget {\n"
+"                          background: white;\n"
+"                          border-radius: 10px;\n"
+"                          border: 1px solid rgba(0, 0, 0, 0.1);\n"
+"                        }\n"
+"                        QListWidget::item {\n"
+"                          padding: 15px;\n"
+"                          border-bottom: 1px solid rgba(0, 0, 0, 0.05);\n"
+"                          background: white;\n"
+"                        }\n"
+"                        QListWidget::item:hover {\n"
+"                          background: rgba(63, 139, 222, 0.1);\n"
+"                        }\n"
+"                        QListWidget::item:selected {\n"
+"                          background: rgba(63, 139, 222, 0.25);\n"
+"                          color: #1a1a1a;\n"
+"                        }\n"
 "            ")
         self.topicsListWidget.setObjectName("topicsListWidget")
         self.topicsPageLayout.addWidget(self.topicsListWidget)
         self.stackedWidget.addWidget(self.topicsPageWidget)
+        self.profilePageWidget = QtWidgets.QWidget()
+        self.profilePageWidget.setObjectName("profilePageWidget")
+        self.profileLayout = QtWidgets.QVBoxLayout(self.profilePageWidget)
+        self.profileLayout.setSpacing(0)
+        self.profileLayout.setObjectName("profileLayout")
+        spacerItem5 = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Expanding)
+        self.profileLayout.addItem(spacerItem5)
+        self.profileContentFrame = QtWidgets.QFrame(parent=self.profilePageWidget)
+        self.profileContentFrame.setMinimumSize(QtCore.QSize(450, 0))
+        self.profileContentFrame.setMaximumSize(QtCore.QSize(500, 16777215))
+        self.profileContentFrame.setObjectName("profileContentFrame")
+        self.innerProfileLayout = QtWidgets.QVBoxLayout(self.profileContentFrame)
+        self.innerProfileLayout.setSpacing(10)
+        self.innerProfileLayout.setObjectName("innerProfileLayout")
+        self.profileTitle = QtWidgets.QLabel(parent=self.profileContentFrame)
+        self.profileTitle.setObjectName("profileTitle")
+        self.innerProfileLayout.addWidget(self.profileTitle, 0, QtCore.Qt.AlignmentFlag.AlignHCenter)
+        self.usernameEdit = QtWidgets.QLineEdit(parent=self.profileContentFrame)
+        self.usernameEdit.setObjectName("usernameEdit")
+        self.innerProfileLayout.addWidget(self.usernameEdit)
+        self.usernameErrors = QtWidgets.QLabel(parent=self.profileContentFrame)
+        self.usernameErrors.setObjectName("usernameErrors")
+        self.innerProfileLayout.addWidget(self.usernameErrors)
+        self.emailEdit = QtWidgets.QLineEdit(parent=self.profileContentFrame)
+        self.emailEdit.setObjectName("emailEdit")
+        self.innerProfileLayout.addWidget(self.emailEdit)
+        self.emailErrors = QtWidgets.QLabel(parent=self.profileContentFrame)
+        self.emailErrors.setObjectName("emailErrors")
+        self.innerProfileLayout.addWidget(self.emailErrors)
+        self.passwordEdit = QtWidgets.QLineEdit(parent=self.profileContentFrame)
+        self.passwordEdit.setEchoMode(QtWidgets.QLineEdit.EchoMode.Password)
+        self.passwordEdit.setObjectName("passwordEdit")
+        self.innerProfileLayout.addWidget(self.passwordEdit)
+        self.passwordErrors = QtWidgets.QLabel(parent=self.profileContentFrame)
+        self.passwordErrors.setObjectName("passwordErrors")
+        self.innerProfileLayout.addWidget(self.passwordErrors)
+        self.confirmPasswordEdit = QtWidgets.QLineEdit(parent=self.profileContentFrame)
+        self.confirmPasswordEdit.setEchoMode(QtWidgets.QLineEdit.EchoMode.Password)
+        self.confirmPasswordEdit.setObjectName("confirmPasswordEdit")
+        self.innerProfileLayout.addWidget(self.confirmPasswordEdit)
+        self.confirmErrors = QtWidgets.QLabel(parent=self.profileContentFrame)
+        self.confirmErrors.setObjectName("confirmErrors")
+        self.innerProfileLayout.addWidget(self.confirmErrors)
+        self.saveProfileBtn = QtWidgets.QPushButton(parent=self.profileContentFrame)
+        self.saveProfileBtn.setMinimumSize(QtCore.QSize(0, 55))
+        self.saveProfileBtn.setObjectName("saveProfileBtn")
+        self.innerProfileLayout.addWidget(self.saveProfileBtn)
+        self.profileLayout.addWidget(self.profileContentFrame, 0, QtCore.Qt.AlignmentFlag.AlignHCenter)
+        spacerItem6 = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Expanding)
+        self.profileLayout.addItem(spacerItem6)
+        self.stackedWidget.addWidget(self.profilePageWidget)
         self.verticalLayout_global.addWidget(self.mainSplitter)
         MainWindow.setCentralWidget(self.centralwidget)
 
@@ -289,6 +348,7 @@ class Ui_MainWindow(object):
         self.collapseBtn.setText(_translate("MainWindow", "◀"))
         self.collapseBtn.setToolTip(_translate("MainWindow", "Свернуть меню"))
         self.emailLabel.setText(_translate("MainWindow", "user@example.com"))
+        self.homeBtn.setText(_translate("MainWindow", "🏠 Главная"))
         self.profileBtn.setText(_translate("MainWindow", "👤 Мой профиль"))
         self.settingsBtn.setText(_translate("MainWindow", "⚙️ Настройки"))
         self.adminPanelBtn.setText(_translate("MainWindow", "👤 Панель"))
@@ -299,3 +359,21 @@ class Ui_MainWindow(object):
         self.cardPlayBtn.setText(_translate("MainWindow", "▶️ Играть по урокам"))
         self.backBtn.setText(_translate("MainWindow", "◀ Назад"))
         self.topicsHeaderLabel.setText(_translate("MainWindow", "📚 Доступные темы"))
+        self.profileTitle.setText(_translate("MainWindow", "⚙️ Настройки профиля"))
+        self.profileTitle.setStyleSheet(_translate("MainWindow", "font-size: 26px; font-weight: bold; margin-bottom: 20px; color: #1a1a1a;"))
+        self.usernameEdit.setPlaceholderText(_translate("MainWindow", "Логин"))
+        self.usernameErrors.setStyleSheet(_translate("MainWindow", "color: #ff4444; font-size: 13px; margin-left: 10px;"))
+        self.emailEdit.setPlaceholderText(_translate("MainWindow", "Email"))
+        self.emailErrors.setStyleSheet(_translate("MainWindow", "color: #ff4444; font-size: 13px; margin-left: 10px;"))
+        self.passwordEdit.setPlaceholderText(_translate("MainWindow", "Новый пароль (если нужно)"))
+        self.passwordErrors.setStyleSheet(_translate("MainWindow", "color: #ff4444; font-size: 13px; margin-left: 10px;"))
+        self.confirmPasswordEdit.setPlaceholderText(_translate("MainWindow", "Подтверждение пароля"))
+        self.confirmErrors.setStyleSheet(_translate("MainWindow", "color: #ff4444; font-size: 13px; margin-left: 10px;"))
+        self.saveProfileBtn.setText(_translate("MainWindow", "Сохранить изменения"))
+        self.saveProfileBtn.setStyleSheet(_translate("MainWindow", "\n"
+"         QPushButton#saveProfileBtn {\n"
+"           background: qlineargradient(x1:0,y1:0,x2:0,y2:1, stop:0 #3f8bde, stop:1 #2968c0);\n"
+"           border-radius: 15px; color: white; font-size: 18px; font-weight: bold; margin-top: 10px;\n"
+"         }\n"
+"         QPushButton#saveProfileBtn:hover { background: #2968c0; }\n"
+"        "))

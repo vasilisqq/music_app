@@ -20,6 +20,7 @@ class AuthWorker(QObject):
     # Новые сигналы для проверки токена
     token_valid_signal = pyqtSignal(dict)
     token_invalid_signal = pyqtSignal()
+    update_finished_signal = pyqtSignal(dict)
 
     def __init__(self):
         super().__init__()
@@ -66,4 +67,30 @@ class AuthWorker(QObject):
             self.token_valid_signal.emit(data)
         else:
             self.token_invalid_signal.emit()
+        reply.deleteLater()
+
+    def update_profile(self, token: str, update_data: dict) -> None:
+        """PATCH /me для обновления профиля"""
+        url = QUrl("http://localhost:8000/me")
+        request = QNetworkRequest(url)
+        request.setHeader(QNetworkRequest.KnownHeaders.ContentTypeHeader, "application/json")
+        request.setRawHeader(b"Authorization", f"Bearer {token}".encode("utf-8"))
+        
+        json_bytes = json.dumps(update_data).encode('utf-8')
+        
+        # Вместо .patch() используем .sendCustomRequest()
+        # Второй аргумент — это глагол в виде байтовой строки: b"PATCH"
+        reply = self.manager.sendCustomRequest(request, b"PATCH", json_bytes)
+        reply.finished.connect(lambda: self._update_reply(reply))
+
+    def _update_reply(self, reply: QNetworkReply) -> None:
+        if reply.error() == QNetworkReply.NetworkError.NoError:
+            data = json.loads(reply.readAll().data().decode("utf-8"))
+            self.update_finished_signal.emit(data)
+        else:
+            try:
+                error_data = json.loads(reply.readAll().data().decode("utf-8"))
+                self.error_occurred_signal.emit(error_data.get("detail", "Ошибка обновления"))
+            except:
+                self.error_occurred_signal.emit("Ошибка связи с сервером")
         reply.deleteLater()

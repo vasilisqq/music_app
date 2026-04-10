@@ -3,7 +3,7 @@ import sys
 import os
 # from app.core.config import settings
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-from schemas.auth import UserCreate, UserLogin, TokenResponse, UserResponse
+from schemas.auth import UserCreate, UserLogin, TokenResponse, UserResponse, UserUpdate
 from services.user_service import UserService
 from services.auth_service import AuthService
 # from app.services.auth_service import AuthService
@@ -86,4 +86,33 @@ async def verify_token_and_get_user(
         username=current_user.username,
         email=current_user.email,
         role=current_user.role_info.name
+    )
+
+
+
+@router.patch("/me", response_model=UserResponse)
+async def update_current_user(
+    update_data: UserUpdate,
+    current_user = Depends(get_current_active_user),
+    user_service: UserService = Depends(get_user_service)
+):
+    """Обновление данных текущего пользователя"""
+    # Проверка уникальности email, если он меняется
+    if update_data.email and update_data.email != current_user.email:
+        if await user_service.get_user_by_email(update_data.email):
+            raise HTTPException(status_code=400, detail="Этот email уже занят")
+            
+    # Проверка уникальности username
+    if update_data.username and update_data.username != current_user.username:
+        if await user_service.get_user_by_username(update_data.username):
+            raise HTTPException(status_code=400, detail="Этот логин уже занят")
+
+    updated_user = await user_service.update_user(current_user.id, update_data)
+    if not updated_user:
+        raise HTTPException(status_code=400, detail="Не удалось обновить данные")
+        
+    return UserResponse(
+        username=updated_user.username,
+        email=updated_user.email,
+        role=updated_user.role_info.name
     )
