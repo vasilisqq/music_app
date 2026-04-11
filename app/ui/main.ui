@@ -655,11 +655,17 @@ QPushButton#cardPlayBtn:pressed {
          <item>
           <layout class="QHBoxLayout" name="addTopicLayout">
            <item>
-            <widget class="QLineEdit" name="line_new_topic">
-             <property name="placeholderText">
-              <string>Введите название новой темы...</string>
+            <spacer name="horizontalSpacer_addTopic">
+             <property name="orientation">
+              <enum>Qt::Orientation::Horizontal</enum>
              </property>
-            </widget>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>40</width>
+               <height>20</height>
+              </size>
+             </property>
+            </spacer>
            </item>
            <item>
             <widget class="QPushButton" name="btn_add_topic">

@@ -1,7 +1,7 @@
 from sqlalchemy import select, func
 from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-from models import Topic, Lesson
+from models import Topic, Lesson # Убедись в правильных импортах
 from schemas.topic import TopicCreate
 
 class TopicService:
@@ -9,53 +9,77 @@ class TopicService:
         self.db = db
 
     async def get_all_topics_with_counts(self):
-        """Асинхронно возвращает список всех тем вместе с количеством уроков."""
-        # 1. Формируем запрос через select()
+        """Возвращаем записи БД, эндпоинт сам превратит их в TopicResponse"""
         stmt = (
             select(Topic, func.count(Lesson.id).label('lessons_count'))
             .outerjoin(Lesson)
             .group_by(Topic.id)
+            .order_by(Topic.id)
         )
         
-        # 2. Асинхронно выполняем запрос
         result = await self.db.execute(stmt)
+        topics_with_counts = result.all()
         
-        # 3. Получаем все строки
-        topics = result.all()
-        
-        # 4. Формируем результат (лучше собирать словарь руками, 
-        # чтобы избежать внутренних скрытых полей SQLAlchemy вроде _sa_instance_state)
         res_list = []
-        for topic, count in topics:
-            res_list.append({
-                "id": topic.id,
-                "name": topic.name,
-                "description": topic.description,
-                "lessons_count": count
-            })
-        return res_list
+        for topic_obj, count in topics_with_counts:
+            # Магия здесь! Динамически добавляем атрибут к объекту SQLAlchemy.
+            # Pydantic (в эндпоинте) легко его прочитает благодаря from_attributes=True
+            topic_obj.lessons_count = count
+            res_list.append(topic_obj) 
+            
+        return res_list # Возвращаем чистые ORM объекты!
 
     async def create_topic(self, topic_data: TopicCreate):
-        """Асинхронно создает новую тему."""
-        # Проверяем уникальность
         stmt = select(Topic).where(Topic.name == topic_data.name)
-        
-        # Используем await self.db.scalar(stmt) — он сам выполнит запрос 
-        # и вернет первый объект Topic или None
-        existing_topic = await self.db.scalar(stmt) # Берем первый результат или None
+        existing_topic = await self.db.scalar(stmt)
         
         if existing_topic:
             raise HTTPException(status_code=400, detail="Тема с таким названием уже существует")
             
-        # Создаем
         new_topic = Topic(name=topic_data.name, description=topic_data.description)
         self.db.add(new_topic)
-        await self.db.commit()        # Обязательно await!
-        await self.db.refresh(new_topic) # Обязательно await!
+        await self.db.commit()
+        await self.db.refresh(new_topic)
         
-        return {
-            "id": new_topic.id,
-            "name": new_topic.name,
-            "description": new_topic.description,
-            "lessons_count": 0
-        }
+        # Для Pydantic указываем, что уроков пока 0
+        new_topic.lessons_count = 0 
+        
+        return new_topic # Снова возвращаем ORM объект!
+
+    async def update_topic(self, topic_id: int, topic_data: TopicCreate):
+        topic = await self.db.get(Topic, topic_id)
+        if not topic:
+            raise HTTPException(status_code=404, detail="Тема не найдена")
+
+        if topic.name != topic_data.name:
+            stmt = select(Topic).where(Topic.name == topic_data.name)
+            existing_topic = await self.db.scalar(stmt)
+            if existing_topic:
+                raise HTTPException(status_code=400, detail="Тема с таким названием уже существует")
+
+        topic.name = topic_data.name
+        topic.description = topic_data.description
+        await self.db.commit()
+        await self.db.refresh(topic)
+
+        # Считаем количество уроков для корректного ответа
+        stmt_count = select(func.count(Lesson.id)).where(Lesson.topic_id == topic_id)
+        l_count = await self.db.scalar(stmt_count) or 0
+        
+        topic.lessons_count = l_count
+
+        return topic
+    
+
+    async def delete_topic(self, topic_id: int):
+        """Удаляет тему (каскадно удалятся и все её уроки благодаря настройкам ORM)"""
+        topic = await self.db.get(Topic, topic_id)
+        if not topic:
+            raise HTTPException(status_code=404, detail="Тема не найдена")
+
+        # Удаляем объект
+        await self.db.delete(topic)
+        await self.db.commit()
+        
+        # Возвращаем ID удаленной темы, чтобы клиент знал, что убирать из таблицы
+        return {"id": topic_id, "message": "Тема успешно удалена"}
