@@ -75,12 +75,15 @@ class UserService:
         user = await self.get_user_by_id(user_id)
         if not user:
             return None
+            
         if update_data.username:
             user.username = update_data.username
         if update_data.email:
             user.email = update_data.email
         if update_data.password:
             user.hashed_password = get_password_hash(update_data.password)
+        if getattr(update_data, "is_active", None) is not None:
+            user.is_active = update_data.is_active
             
         try:
             await self.db.commit()
@@ -89,3 +92,10 @@ class UserService:
         except IntegrityError:
             await self.db.rollback()
             return None
+        
+    async def get_all_users(self):
+        """Получение списка всех пользователей для админ-панели"""
+        result = await self.db.execute(
+            select(User).order_by(User.id)
+        )
+        return result.scalars().all()

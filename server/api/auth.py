@@ -3,12 +3,14 @@ import sys
 import os
 # from app.core.config import settings
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-from schemas.auth import UserCreate, UserLogin, TokenResponse, UserResponse, UserUpdate
+from schemas.auth import UserCreate, UserLogin, TokenResponse, UserResponse, UserUpdate, AdminUserResponse
 from services.user_service import UserService
 from services.auth_service import AuthService
 # from app.services.auth_service import AuthService
-from core.dependencies import get_user_service, get_auth_service, get_current_active_user
+from core.dependencies import get_user_service, get_auth_service, get_current_active_user, is_admin
 from utils.jwt import create_access_token
+from typing import List
+
 
 router = APIRouter(tags=["authentication"])
 
@@ -115,4 +117,79 @@ async def update_current_user(
         username=updated_user.username,
         email=updated_user.email,
         role=updated_user.role_info.name
+    )
+
+# Не забудь импортировать свою зависимость!
+# from core.dependencies import is_admin 
+
+@router.get("/users", response_model=List[AdminUserResponse])
+async def get_all_users_for_admin(
+    # Внедряем зависимость админа. Если юзер не админ, FastAPI отбросит его 
+    # с ошибкой еще ДО входа в тело функции!
+    current_admin = Depends(is_admin), 
+    user_service: UserService = Depends(get_user_service)
+):
+    """Получение списка всех пользователей. Доступно только администратору."""
+    users = await user_service.get_all_users()
+    
+    return [
+        AdminUserResponse(
+            id=u.id,
+            username=u.username,
+            email=u.email,
+            role=u.role_info.name if u.role_info else "пользователь",
+            is_active=u.is_active
+        ) for u in users
+    ]
+
+@router.patch("/users/{user_id}/status", response_model=AdminUserResponse)
+async def toggle_user_status(
+    user_id: int,
+    current_admin = Depends(is_admin),
+    user_service: UserService = Depends(get_user_service)
+):
+    """Инвертировать статус активности пользователя"""
+    user = await user_service.get_user_by_id(user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="Пользователь не найден")
+
+    new_status = not user.is_active
+    updated_user = await user_service.update_user(user_id, UserUpdate(is_active=new_status))
+    
+    return AdminUserResponse(
+        id=updated_user.id,
+        username=updated_user.username,
+        email=updated_user.email,
+        role=updated_user.role_info.name if updated_user.role_info else "пользователь",
+        is_active=updated_user.is_active
+    )
+
+@router.patch("/users/{user_id}", response_model=AdminUserResponse)
+async def update_user_by_admin(
+    user_id: int,
+    update_data: UserUpdate,
+    current_admin = Depends(is_admin),
+    user_service: UserService = Depends(get_user_service)
+):
+    """Редактирование данных пользователя"""
+    user_to_update = await user_service.get_user_by_id(user_id)
+    if not user_to_update:
+        raise HTTPException(status_code=404, detail="Пользователь не найден")
+        
+    if update_data.email and update_data.email != user_to_update.email:
+        if await user_service.get_user_by_email(update_data.email):
+            raise HTTPException(status_code=400, detail="Этот email уже занят!")
+            
+    if update_data.username and update_data.username != user_to_update.username:
+        if await user_service.get_user_by_username(update_data.username):
+            raise HTTPException(status_code=400, detail="Этот логин уже занят!")
+
+    updated_user = await user_service.update_user(user_id, update_data)
+        
+    return AdminUserResponse(
+        id=updated_user.id,
+        username=updated_user.username,
+        email=updated_user.email,
+        role=updated_user.role_info.name if updated_user.role_info else "пользователь",
+        is_active=updated_user.is_active
     )

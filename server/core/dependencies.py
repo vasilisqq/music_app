@@ -62,11 +62,13 @@ async def is_admin(
     current_user = Depends(get_current_active_user),
     user_service = Depends(get_user_service)        
 ):
-    if current_user[1] == "пользователь":
+    if not current_user.role_info or current_user.role_info.name != "администратор":
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, 
-            detail="Пользователь не является администратором"
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Недостаточно прав. Доступно только администраторам."
         )
+        
+    return current_user
     
 
 

@@ -626,7 +626,7 @@ QPushButton#cardPlayBtn:pressed {
          <item>
           <widget class="QLabel" name="adminTitle">
            <property name="text">
-            <string>Панель администратора: Темы</string>
+            <string>Панель администратора</string>
            </property>
            <property name="styleSheet">
             <string notr="true">color: #1a1a1a; font-size: 22px; font-weight: bold;</string>
@@ -634,53 +634,84 @@ QPushButton#cardPlayBtn:pressed {
           </widget>
          </item>
          <item>
-          <widget class="QTableWidget" name="table_topics">
-           <column>
-            <property name="text">
-             <string>ID</string>
-            </property>
-           </column>
-           <column>
-            <property name="text">
-             <string>Название темы</string>
-            </property>
-           </column>
-           <column>
-            <property name="text">
-             <string>Уроков</string>
-            </property>
-           </column>
+          <widget class="QTabWidget" name="adminTabWidget">
+           <property name="currentIndex">
+            <number>0</number>
+           </property>
+           <property name="styleSheet">
+            <string notr="true">
+             QTabBar::tab { padding: 10px 20px; font-size: 14px; font-weight: bold; background: #f0f0f0; border-top-left-radius: 8px; border-top-right-radius: 8px; margin-right: 2px; }
+             QTabBar::tab:selected { background: white; color: #3f8bde; border-bottom: 2px solid white; }
+             QTabWidget::pane { border: 1px solid #e0e0e0; background: white; border-radius: 10px; border-top-left-radius: 0px; }
+            </string>
+           </property>
+           
+           <widget class="QWidget" name="tab_topics">
+            <attribute name="title">
+             <string>📚 Темы</string>
+            </attribute>
+            <layout class="QVBoxLayout" name="verticalLayout_tab_topics">
+             <item>
+              <widget class="QTableWidget" name="table_topics">
+               <column>
+                <property name="text"><string>ID</string></property>
+               </column>
+               <column>
+                <property name="text"><string>Название темы</string></property>
+               </column>
+               <column>
+                <property name="text"><string>Уроков</string></property>
+               </column>
+              </widget>
+             </item>
+             <item>
+              <layout class="QHBoxLayout" name="addTopicLayout">
+               <item>
+                <spacer name="horizontalSpacer_addTopic">
+                 <property name="orientation"><enum>Qt::Orientation::Horizontal</enum></property>
+                 <property name="sizeHint" stdset="0">
+                  <size><width>40</width><height>20</height></size>
+                 </property>
+                </spacer>
+               </item>
+               <item>
+                <widget class="QPushButton" name="btn_add_topic">
+                 <property name="text"><string>Добавить тему</string></property>
+                 <property name="minimumSize">
+                  <size><width>150</width><height>40</height></size>
+                 </property>
+                </widget>
+               </item>
+              </layout>
+             </item>
+            </layout>
+           </widget>
+           
+           <widget class="QWidget" name="tab_users">
+            <attribute name="title">
+             <string>👥 Пользователи</string>
+            </attribute>
+            <layout class="QVBoxLayout" name="verticalLayout_tab_users">
+             <item>
+              <widget class="QTableWidget" name="table_users">
+               <column>
+                <property name="text"><string>ID</string></property>
+               </column>
+               <column>
+                <property name="text"><string>Логин</string></property>
+               </column>
+               <column>
+                <property name="text"><string>Email</string></property>
+               </column>
+               <column>
+                <property name="text"><string>Роль</string></property>
+               </column>
+              </widget>
+             </item>
+            </layout>
+           </widget>
+           
           </widget>
-         </item>
-         <item>
-          <layout class="QHBoxLayout" name="addTopicLayout">
-           <item>
-            <spacer name="horizontalSpacer_addTopic">
-             <property name="orientation">
-              <enum>Qt::Orientation::Horizontal</enum>
-             </property>
-             <property name="sizeHint" stdset="0">
-              <size>
-               <width>40</width>
-               <height>20</height>
-              </size>
-             </property>
-            </spacer>
-           </item>
-           <item>
-            <widget class="QPushButton" name="btn_add_topic">
-             <property name="text">
-              <string>Добавить тему</string>
-             </property>
-             <property name="minimumSize">
-              <size>
-               <width>150</width>
-               <height>40</height>
-              </size>
-             </property>
-            </widget>
-           </item>
-          </layout>
          </item>
         </layout>
        </widget>

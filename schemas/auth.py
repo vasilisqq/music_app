@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr,ConfigDict
+from pydantic import BaseModel, EmailStr,ConfigDict, Field
 from typing import Optional
 
 
@@ -29,3 +29,15 @@ class UserUpdate(BaseModel):
     username: Optional[str] = None
     email: Optional[EmailStr] = None
     password: Optional[str] = None
+    is_active: Optional[bool] = None
+
+
+class AdminUserResponse(BaseModel):
+    """Схема для вывода пользователя в таблице администратора"""
+    id: int
+    username: str
+    email: EmailStr
+    role: str 
+    is_active: bool # <--- Добавляем статус
+
+    model_config = ConfigDict(from_attributes=True)

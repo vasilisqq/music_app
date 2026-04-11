@@ -3,9 +3,13 @@ from PyQt6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QLabel, 
     QLineEdit, QTextEdit, QPushButton, QMenu
 )
+from PyQt6.QtCore import pyqtSignal
 from PyQt6.QtCore import Qt
 from workers.topic_worker import TopicWorker
+from workers.auth_worker import AuthWorker
 from schemas.topic import TopicCreate, TopicResponse
+from PyQt6.QtWidgets import QMenu, QTableWidgetItem, QHeaderView
+from PyQt6.QtGui import QColor, QBrush
 
 
 class AddTopicDialog(QDialog):
@@ -122,12 +126,115 @@ class AddTopicDialog(QDialog):
     def get_data(self):
         return self.name_edit.text().strip(), self.desc_edit.toPlainText().strip()
 
+class EditUserDialog(QDialog):
+    save_requested = pyqtSignal(str, str)
+    # Стили для обычного состояния и состояния ошибки
+    DEFAULT_STYLE = "padding: 8px; font-size: 14px; border: 1px solid #ccc; border-radius: 5px; background-color: white;"
+    ERROR_STYLE = "padding: 8px; font-size: 14px; border: 2px solid #ff4444; border-radius: 5px; background-color: #fff0f0;"
+    ERROR_LABEL_STYLE = "color: #ff4444; font-size: 13px; margin-left: 5px;"
+
+    def __init__(self, parent=None, username="", email=""):
+        super().__init__(parent)
+        self.setWindowTitle("Редактирование пользователя")
+        self.setMinimumSize(350, 250)
+        layout = QVBoxLayout(self)
+
+        # --- ПОЛЕ: Логин ---
+        layout.addWidget(QLabel("Логин:"))
+        self.username_edit = QLineEdit(username)
+        self.username_edit.setStyleSheet(self.DEFAULT_STYLE)
+        layout.addWidget(self.username_edit)
+        
+        self.username_error = QLabel("")
+        self.username_error.setStyleSheet(self.ERROR_LABEL_STYLE)
+        self.username_error.hide()
+        layout.addWidget(self.username_error)
+
+        # --- ПОЛЕ: Email ---
+        layout.addWidget(QLabel("Email:"))
+        self.email_edit = QLineEdit(email)
+        self.email_edit.setStyleSheet(self.DEFAULT_STYLE)
+        layout.addWidget(self.email_edit)
+        
+        self.email_error = QLabel("")
+        self.email_error.setStyleSheet(self.ERROR_LABEL_STYLE)
+        self.email_error.hide()
+        layout.addWidget(self.email_error)
+
+        # --- КНОПКИ ---
+        btn_layout = QHBoxLayout()
+        self.btn_save = QPushButton("Сохранить")
+        self.btn_cancel = QPushButton("Отмена")
+        
+        self.btn_save.setStyleSheet("""
+            QPushButton { background: #3f8bde; color: white; border-radius: 8px; padding: 8px 15px; font-weight: bold; }
+            QPushButton:hover { background: #2968c0; }
+            QPushButton:disabled { background: #a0c4eb; color: #f0f0f0; }
+        """)
+        self.btn_cancel.setStyleSheet("""
+            QPushButton { background: #f0f0f0; color: #333; border-radius: 8px; padding: 8px 15px; font-weight: bold; border: 1px solid #ccc; }
+            QPushButton:hover { background: #e0e0e0; }
+        """)
+        
+        btn_layout.addStretch()
+        btn_layout.addWidget(self.btn_cancel)
+        btn_layout.addWidget(self.btn_save)
+        layout.addLayout(btn_layout)
+
+        # Сигналы
+        self.btn_save.clicked.connect(self.handle_save_click)
+        self.btn_cancel.clicked.connect(self.reject)
+        
+        self.username_edit.textChanged.connect(self.validate_fields)
+        self.email_edit.textChanged.connect(self.validate_fields)
+
+    def validate_fields(self):
+        """Динамическая проверка полей на пустоту"""
+        is_valid = True
+        
+        # Проверка логина
+        if not self.username_edit.text().strip():
+            self.username_edit.setStyleSheet(self.ERROR_STYLE)
+            self.username_error.setText("Логин не может быть пустым!")
+            self.username_error.show()
+            is_valid = False
+        else:
+            self.username_edit.setStyleSheet(self.DEFAULT_STYLE)
+            self.username_error.hide()
+
+        # Проверка email
+        if not self.email_edit.text().strip():
+            self.email_edit.setStyleSheet(self.ERROR_STYLE)
+            self.email_error.setText("Email не может быть пустым!")
+            self.email_error.show()
+            is_valid = False
+        else:
+            self.email_edit.setStyleSheet(self.DEFAULT_STYLE)
+            self.email_error.hide()
+            
+        self.btn_save.setEnabled(is_valid)
+
+    def get_data(self):
+        return self.username_edit.text().strip(), self.email_edit.text().strip()
+    
+    def handle_save_click(self):
+        """Метод вызывается при нажатии Сохранить, но НЕ закрывает окно"""
+        username, email = self.get_data()
+        self.btn_save.setEnabled(False) # Блокируем кнопку на время запроса
+        self.btn_save.setText("Сохранение...")
+        self.save_requested.emit(username, email)
+
+    # Метод для ручного закрытия окна из контроллера
+    def close_success(self):
+        self.accept()
+
+
 
 class AdminController:
     def __init__(self, ui):
         self.ui = ui
         self.worker = TopicWorker()
-        
+        self.auth_worker = AuthWorker()
         # Сигналы
         self.ui.btn_add_topic.clicked.connect(self.show_add_topic_dialog)
         self.worker.topics_loaded_signal.connect(self.on_topics_loaded)
@@ -135,8 +242,16 @@ class AdminController:
         self.worker.topic_updated_signal.connect(self.on_topic_updated)
         self.worker.topic_deleted_signal.connect(self.on_topic_deleted)
         self.worker.error_signal.connect(self.show_error)
-
+        self.auth_worker.users_loaded_signal.connect(self.on_users_loaded)
+        self.auth_worker.user_status_updated_signal.connect(self.on_user_status_updated)
+        self.auth_worker.user_edited_signal.connect(self.on_user_edited) # НОВЫЙ СИГНАЛ
+        self.auth_worker.error_occurred_signal.connect(self.show_error)
         self.setup_admin_panel()
+        self.setup_users_table()
+
+        # Загружаем пользователей
+        self.auth_worker.get_all_users()
+        
 
     def setup_admin_panel(self):
         header = self.ui.table_topics.horizontalHeader()
@@ -309,3 +424,147 @@ class AdminController:
         
         # Количество уроков
         self.ui.table_topics.setItem(row_index, 2, QTableWidgetItem(str(lessons_count)))
+
+
+    def setup_users_table(self):
+        """Настройка внешнего вида таблицы пользователей"""
+        table = self.ui.table_users
+        
+        # Добавляем 5-ю колонку 'Статус'
+        table.setColumnCount(5)
+        table.setHorizontalHeaderLabels(["ID", "Логин", "Email", "Роль", "Статус"])
+        
+        header = table.horizontalHeader()
+        header.setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents) 
+        header.setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)          
+        header.setSectionResizeMode(2, QHeaderView.ResizeMode.Stretch)          
+        header.setSectionResizeMode(3, QHeaderView.ResizeMode.ResizeToContents)
+        header.setSectionResizeMode(4, QHeaderView.ResizeMode.ResizeToContents) # Статус
+        
+        # 1. Убираем "номер строки" (вертикальный хедер)
+        table.verticalHeader().setVisible(False)
+        # 2. Прячем колонку ID, так как она админу не нужна визуально, но нужна нам для логики
+        table.setColumnHidden(0, True)
+        
+        table.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        table.customContextMenuRequested.connect(self.show_user_context_menu)
+        table.setSelectionBehavior(table.SelectionBehavior.SelectRows)
+        table.setEditTriggers(table.EditTrigger.NoEditTriggers)
+        
+        table.setStyleSheet(self.ui.table_topics.styleSheet())
+
+    def on_users_loaded(self, users):
+        table = self.ui.table_users
+        table.setRowCount(0)
+        
+        # МАГИЯ СОРТИРОВКИ: True (активные) идут первыми, False (заблокированные) улетают в самый низ!
+        sorted_users = sorted(users, key=lambda x: x['is_active'], reverse=True)
+        
+        for user in sorted_users:
+            self._add_or_update_user_row(user)
+
+
+    def _add_or_update_user_row(self, user, update_row=None):
+        """Универсальный метод добавления или обновления строки"""
+        table = self.ui.table_users
+        row = table.rowCount() if update_row is None else update_row
+        
+        if update_row is None:
+            table.insertRow(row)
+            
+        id_item = QTableWidgetItem(str(user['id']))
+        name_item = QTableWidgetItem(user['username'])
+        email_item = QTableWidgetItem(user['email'])
+        role_item = QTableWidgetItem(user['role'])
+        
+        # Текстовое отображение статуса
+        status_text = "🟢 Активен" if user['is_active'] else "🔴 Заблокирован"
+        status_item = QTableWidgetItem(status_text)
+            
+        table.setItem(row, 0, id_item)
+        table.setItem(row, 1, name_item)
+        table.setItem(row, 2, email_item)
+        table.setItem(row, 3, role_item)
+        table.setItem(row, 4, status_item) # Новая колонка
+        
+        # Применяем бледный цвет к неактивным
+        self._paint_row(row, inactive=not user['is_active'])
+
+    def _paint_row(self, row, inactive=False):
+        # Если неактивен - делаем светло-серым
+        color = QColor("#a0a0a0") if inactive else QColor("#000000")
+        brush = QBrush(color)
+        for col in range(self.ui.table_users.columnCount()):
+            item = self.ui.table_users.item(row, col)
+            if item:
+                item.setForeground(brush)
+
+    def show_user_context_menu(self, pos):
+        item = self.ui.table_users.itemAt(pos)
+        if not item: return
+        
+        row = item.row()
+        user_id = int(self.ui.table_users.item(row, 0).text())
+        
+        # Определяем статус по 5-й колонке
+        is_active = "Активен" in self.ui.table_users.item(row, 4).text()
+
+        menu = QMenu()
+        edit_action = menu.addAction("✏️ Изменить")
+        toggle_action = menu.addAction("🚫 Заблокировать" if is_active else "✅ Разблокировать")
+        
+        action = menu.exec(self.ui.table_users.viewport().mapToGlobal(pos))
+        
+        if action == toggle_action:
+            self.auth_worker.toggle_user_status(user_id)
+        elif action == edit_action:
+            # Получаем текущие данные из таблицы
+            username = self.ui.table_users.item(row, 1).text()
+            email = self.ui.table_users.item(row, 2).text()
+            
+            # Сохраняем строку, которую редактируем
+            self.editing_user_row = row 
+
+            # Создаем диалог и подключаем сигнал
+            self.current_edit_dialog = EditUserDialog(self.ui.centralwidget, username=username, email=email)
+            self.current_edit_dialog.save_requested.connect(
+                lambda u, e: self.process_user_edit(user_id, username, email, u, e)
+            )
+            
+            # Открываем диалог. Теперь он не закроется, пока мы не вызовем close_success()
+            self.current_edit_dialog.exec()
+
+    def process_user_edit(self, user_id, old_username, old_email, new_username, new_email):
+        """Метод для формирования и отправки запроса"""
+        if new_username == old_username and new_email == old_email:
+            self.current_edit_dialog.close()
+            return
+
+        update_data = {}
+        if new_username != old_username: update_data["username"] = new_username
+        if new_email != old_email: update_data["email"] = new_email
+        
+        self.editing_user_row = self.ui.table_users.currentRow()
+        self.auth_worker.edit_user(user_id, update_data)
+
+    def on_user_edited(self, updated_user):
+        """Вызывается только при УДАЧНОМ ответе сервера"""
+        if hasattr(self, "current_edit_dialog") and self.current_edit_dialog:
+            self.current_edit_dialog.close_success() # Закрываем окно
+            
+        if hasattr(self, "editing_user_row"):
+            self._add_or_update_user_row(updated_user, update_row=self.editing_user_row)
+            QMessageBox.information(self.ui.centralwidget, "Успех", "Данные пользователя обновлены!")
+
+    def show_error(self, message: str):
+        """Обновленный метод показа ошибок"""
+        # Если окно редактирования открыто, разблокируем в нем кнопку обратно
+        if hasattr(self, "current_edit_dialog") and self.current_edit_dialog.isVisible():
+            self.current_edit_dialog.btn_save.setEnabled(True)
+            self.current_edit_dialog.btn_save.setText("Сохранить")
+            
+        QMessageBox.warning(self.ui.centralwidget, "Ошибка", message)
+
+    def on_user_status_updated(self, updated_user):
+        """Когда статус меняется, проще всего перезапросить список, чтобы таблица отсортировалась сама!"""
+        self.auth_worker.get_all_users()
