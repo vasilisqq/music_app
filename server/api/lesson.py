@@ -53,3 +53,17 @@ async def get_lesson(
         )
     return LessonResponse.model_validate(lesson)
 
+
+@router.get("/topic/{topic_id}", response_model=list[LessonResponse])
+async def get_lessons_by_topic(
+    topic_id: int,
+    lesson_service: LessonService = Depends(get_lesson_service),
+    current_user = Depends(get_current_active_user) # Защищаем роут авторизацией
+):
+    """
+    Эндпоинт для получения списка уроков по ID темы.
+    """
+    lessons = await lesson_service.get_lessons_by_topic(topic_id)
+    
+    # Возвращаем список уроков (FastAPI сам преобразует их в Pydantic схемы)
+    return lessons

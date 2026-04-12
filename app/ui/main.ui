@@ -646,46 +646,97 @@ QPushButton#cardPlayBtn:pressed {
             </string>
            </property>
            
-           <widget class="QWidget" name="tab_topics">
-            <attribute name="title">
-             <string>📚 Темы</string>
-            </attribute>
-            <layout class="QVBoxLayout" name="verticalLayout_tab_topics">
-             <item>
-              <widget class="QTableWidget" name="table_topics">
-               <column>
-                <property name="text"><string>ID</string></property>
-               </column>
-               <column>
-                <property name="text"><string>Название темы</string></property>
-               </column>
-               <column>
-                <property name="text"><string>Уроков</string></property>
-               </column>
-              </widget>
-             </item>
-             <item>
-              <layout class="QHBoxLayout" name="addTopicLayout">
-               <item>
-                <spacer name="horizontalSpacer_addTopic">
-                 <property name="orientation"><enum>Qt::Orientation::Horizontal</enum></property>
-                 <property name="sizeHint" stdset="0">
-                  <size><width>40</width><height>20</height></size>
+  <widget class="QWidget" name="tab_topics">
+ <layout class="QVBoxLayout" name="verticalLayout_tab_topics">
+  <item>
+   <widget class="QSplitter" name="topics_splitter">
+    <property name="orientation">
+     <enum>Qt::Horizontal</enum>
+    </property>
+    
+    <widget class="QWidget" name="topics_master_container">
+     <layout class="QVBoxLayout" name="verticalLayout_master">
+      <item>
+       <widget class="QTableWidget" name="table_topics">
+        <column><property name="text"><string>ID</string></property></column>
+        <column><property name="text"><string>Название темы</string></property></column>
+        <column><property name="text"><string>Уроков</string></property></column>
+       </widget>
+      </item>
+      <item>
+       <layout class="QHBoxLayout" name="addTopicLayout">
+        <item>
+         <spacer name="spacer_topics">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>40</width>
+            <height>20</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+        <item>
+         <widget class="QPushButton" name="btn_add_topic">
+          <property name="text"><string>Добавить тему</string></property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+     </layout>
+    </widget>
+
+    <widget class="QWidget" name="lessons_detail_container">
+             <layout class="QVBoxLayout" name="verticalLayout_detail">
+              <item>
+               <widget class="QTableWidget" name="table_lessons">
+                <column>
+                 <property name="text">
+                  <string>ID</string>
                  </property>
-                </spacer>
-               </item>
-               <item>
-                <widget class="QPushButton" name="btn_add_topic">
-                 <property name="text"><string>Добавить тему</string></property>
-                 <property name="minimumSize">
-                  <size><width>150</width><height>40</height></size>
+                </column>
+                <column>
+                 <property name="text">
+                  <string>Название урока</string>
                  </property>
-                </widget>
-               </item>
-              </layout>
-             </item>
-            </layout>
-           </widget>
+                </column>
+               </widget>
+              </item>
+              <item>
+               <layout class="QHBoxLayout" name="addLessonLayout">
+                <item>
+                 <spacer name="spacer_lessons">
+                  <property name="orientation">
+                   <enum>Qt::Horizontal</enum>
+                  </property>
+                  <property name="sizeHint" stdset="0">
+                   <size>
+                    <width>40</width>
+                    <height>20</height>
+                   </size>
+                  </property>
+                 </spacer>
+                </item>
+                <item>
+                 <widget class="QPushButton" name="btn_add_lesson">
+                  <property name="text">
+                   <string>Добавить урок</string>
+                  </property>
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                 </widget>
+                </item>
+               </layout>
+              </item>
+             </layout>
+            </widget>
+   </widget>
+  </item>
+ </layout>
+</widget>
            
            <widget class="QWidget" name="tab_users">
             <attribute name="title">

@@ -19,7 +19,7 @@ class LessonWorker(QObject):
     lesson_created_sygnal = pyqtSignal()
     lesson_error_sygnal = pyqtSignal(str)
     lesson_get_signal = pyqtSignal(LessonResponse)
-
+    lessons_by_topic_loaded_signal = pyqtSignal(list)
 
     def __init__(self):
         super().__init__()
@@ -66,4 +66,38 @@ class LessonWorker(QObject):
             self.lesson_get_signal.emit(lesson)
         else:
             self.lesson_error_sygnal.emit(data["detail"])
+        reply.deleteLater()
+
+
+    def get_lessons_by_topic(self, topic_id: int) -> None:
+        """Получает список уроков для конкретной темы через QNetworkAccessManager"""
+        url = QUrl(f"http://localhost:8000/lesson/topic/{topic_id}")
+        request = QNetworkRequest(url)
+        
+        # Добавляем токен авторизации
+        token = settings.value("token")
+        if token:
+            request.setRawHeader(b"Authorization", f"Bearer {token}".encode('utf-8'))
+        
+        request.setHeader(QNetworkRequest.KnownHeaders.ContentTypeHeader, "application/json")
+        
+        reply = self.manager.get(request)
+        reply.finished.connect(lambda: self._on_get_lessons_by_topic_reply(reply))
+
+
+    def _on_get_lessons_by_topic_reply(self, reply: QNetworkReply) -> None:
+        """Обрабатывает ответ со списком уроков"""
+        if reply.error() == QNetworkReply.NetworkError.NoError:
+            data = json.loads(reply.readAll().data().decode("utf-8"))
+            # Валидируем каждый элемент списка через Pydantic
+            lessons = [LessonResponse.model_validate(item) for item in data]
+            self.lessons_by_topic_loaded_signal.emit(lessons)
+        else:
+            # Обработка ошибки
+            try:
+                data = json.loads(reply.readAll().data().decode("utf-8"))
+                self.lesson_error_sygnal.emit(data.get("detail", "Ошибка загрузки уроков"))
+            except:
+                self.lesson_error_sygnal.emit("Ошибка связи с сервером")
+                
         reply.deleteLater()

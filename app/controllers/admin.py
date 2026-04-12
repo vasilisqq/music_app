@@ -7,6 +7,7 @@ from PyQt6.QtCore import pyqtSignal
 from PyQt6.QtCore import Qt
 from workers.topic_worker import TopicWorker
 from workers.auth_worker import AuthWorker
+from workers.lesson_worker import LessonWorker
 from schemas.topic import TopicCreate, TopicResponse
 from PyQt6.QtWidgets import QMenu, QTableWidgetItem, QHeaderView
 from PyQt6.QtGui import QColor, QBrush
@@ -233,40 +234,7 @@ class EditUserDialog(QDialog):
 class AdminController:
     def __init__(self, ui):
         self.ui = ui
-        self.worker = TopicWorker()
-        self.auth_worker = AuthWorker()
-        # Сигналы
-        self.ui.btn_add_topic.clicked.connect(self.show_add_topic_dialog)
-        self.worker.topics_loaded_signal.connect(self.on_topics_loaded)
-        self.worker.topic_added_signal.connect(self.on_topic_added)
-        self.worker.topic_updated_signal.connect(self.on_topic_updated)
-        self.worker.topic_deleted_signal.connect(self.on_topic_deleted)
-        self.worker.error_signal.connect(self.show_error)
-        self.auth_worker.users_loaded_signal.connect(self.on_users_loaded)
-        self.auth_worker.user_status_updated_signal.connect(self.on_user_status_updated)
-        self.auth_worker.user_edited_signal.connect(self.on_user_edited) # НОВЫЙ СИГНАЛ
-        self.auth_worker.error_occurred_signal.connect(self.show_error)
-        self.setup_admin_panel()
-        self.setup_users_table()
 
-        # Загружаем пользователей
-        self.auth_worker.get_all_users()
-        
-
-    def setup_admin_panel(self):
-        header = self.ui.table_topics.horizontalHeader()
-        header.setSectionResizeMode(0, header.ResizeMode.ResizeToContents) 
-        header.setSectionResizeMode(1, header.ResizeMode.Stretch)          
-        header.setSectionResizeMode(2, header.ResizeMode.ResizeToContents) 
-        
-        self.ui.table_topics.verticalHeader().setVisible(False)
-        self.ui.table_topics.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
-        self.ui.table_topics.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
-        
-        # ВКЛЮЧАЕМ контекстное меню
-        self.ui.table_topics.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
-        self.ui.table_topics.customContextMenuRequested.connect(self.show_context_menu)
-        
         table_style = """
             QTableWidget {
                 background-color: white; border: 1px solid #e0e0e0; border-radius: 10px;
@@ -280,7 +248,10 @@ class AdminController:
             QTableWidget::item { padding: 8px; border-bottom: 1px solid #f5f5f5; }
         """
         self.ui.table_topics.setStyleSheet(table_style)
+        self.ui.table_lessons.setStyleSheet(table_style)
+        self.ui.table_topics.verticalHeader().setVisible(False) # Убираем номера строк слева
         
+        # --- СТИЛИ ДЛЯ КНОПОК ---
         button_style = """
             QPushButton {
                 background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #3f8bde, stop:1 #2968c0);
@@ -289,10 +260,70 @@ class AdminController:
             }
             QPushButton:hover { background: #2968c0; }
             QPushButton:pressed { background: #1f4a8a; }
+            QPushButton:disabled { background: #a0c4eb; color: #f0f0f0; }
         """
         self.ui.btn_add_topic.setStyleSheet(button_style)
+        self.ui.btn_add_lesson.setStyleSheet(button_style)
+
+
+        self.worker = TopicWorker()
+        self.auth_worker = AuthWorker()
+        self.lesson_worker = LessonWorker()
+        # Сигналы
+        self.ui.btn_add_topic.clicked.connect(self.show_add_topic_dialog)
+        self.worker.topics_loaded_signal.connect(self.on_topics_loaded)
+        self.worker.topic_added_signal.connect(self.on_topic_added)
+        self.worker.topic_updated_signal.connect(self.on_topic_updated)
+        self.worker.topic_deleted_signal.connect(self.on_topic_deleted)
+        self.worker.error_signal.connect(self.show_error)
+        self.auth_worker.users_loaded_signal.connect(self.on_users_loaded)
+        self.auth_worker.user_status_updated_signal.connect(self.on_user_status_updated)
+        self.auth_worker.user_edited_signal.connect(self.on_user_edited) # НОВЫЙ СИГНАЛ
+        self.auth_worker.error_occurred_signal.connect(self.show_error)
+        self.ui.table_topics.cellClicked.connect(self.on_topic_selected)
+        self.lesson_worker.lessons_by_topic_loaded_signal.connect(self.on_lessons_loaded)
+        self.lesson_worker.lesson_error_sygnal.connect(self.show_error)
+        self.setup_admin_panel()
+        self.setup_users_table()
+
+        # Загружаем пользователей
+        self.auth_worker.get_all_users()
         
+
+    def setup_admin_panel(self):
+        # Настройка внешнего вида таблиц (используем твой стиль)
+        table_style = self.ui.table_topics.styleSheet()
+        self.ui.table_lessons.setStyleSheet(table_style)
+        
+        # Настройка колонок для таблицы уроков
+        l_header = self.ui.table_lessons.horizontalHeader()
+        l_header.setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)
+        l_header.setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
+        self.ui.table_lessons.verticalHeader().setVisible(False)
+        self.ui.table_lessons.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
+        
+        # Темы (стандартная настройка)
+        header = self.ui.table_topics.horizontalHeader()
+        header.setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
+        self.ui.table_topics.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         self.fetch_topics()
+
+    def on_topic_selected(self, row, column):
+        """Обработка клика по теме: загрузка уроков"""
+        topic_id = int(self.ui.table_topics.item(row, 0).text())
+        self.ui.btn_add_lesson.setEnabled(True)
+        
+        # Очистка и запуск запроса
+        self.ui.table_lessons.setRowCount(0)
+        self.lesson_worker.get_lessons_by_topic(topic_id)
+
+    def on_lessons_loaded(self, lessons):
+        """Отображение полученных уроков в таблице"""
+        self.ui.table_lessons.setRowCount(len(lessons))
+        for row, lesson in enumerate(lessons):
+            # lesson - это объект LessonResponse
+            self.ui.table_lessons.setItem(row, 0, QTableWidgetItem(str(lesson.id)))
+            self.ui.table_lessons.setItem(row, 1, QTableWidgetItem(lesson.name))
 
     def fetch_topics(self):
         self.ui.table_topics.setRowCount(0)
