@@ -647,6 +647,9 @@ QPushButton#cardPlayBtn:pressed {
            </property>
            
   <widget class="QWidget" name="tab_topics">
+  <attribute name="title">
+             <string>📚 Темы</string>
+            </attribute>
  <layout class="QVBoxLayout" name="verticalLayout_tab_topics">
   <item>
    <widget class="QSplitter" name="topics_splitter">
