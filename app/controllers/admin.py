@@ -305,7 +305,12 @@ class AdminController:
         # Темы (стандартная настройка)
         header = self.ui.table_topics.horizontalHeader()
         header.setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
+        table = self.ui.table_topics
         self.ui.table_topics.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
+        table.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        table.customContextMenuRequested.connect(self.show_context_menu)
+        table.setSelectionBehavior(table.SelectionBehavior.SelectRows)
+        table.setEditTriggers(table.EditTrigger.NoEditTriggers)
         self.fetch_topics()
 
     def on_topic_selected(self, row, column):
