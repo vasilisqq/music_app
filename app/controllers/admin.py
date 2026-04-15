@@ -11,7 +11,7 @@ from workers.lesson_worker import LessonWorker
 from schemas.topic import TopicCreate, TopicResponse
 from PyQt6.QtWidgets import QMenu, QTableWidgetItem, QHeaderView
 from PyQt6.QtGui import QColor, QBrush
-
+from controllers.creator import CreatorController
 
 class AddTopicDialog(QDialog):
     # Стили для обычного состояния и состояния ошибки
@@ -234,7 +234,9 @@ class EditUserDialog(QDialog):
 class AdminController:
     def __init__(self, ui):
         self.ui = ui
-
+        self.creator_window = None
+        self.ui.table_topics.itemSelectionChanged.connect(self._toggle_lesson_btn)
+        self.ui.btn_add_lesson.clicked.connect(self.on_add_lesson_clicked)
         table_style = """
             QTableWidget {
                 background-color: white; border: 1px solid #e0e0e0; border-radius: 10px;
@@ -289,6 +291,52 @@ class AdminController:
         # Загружаем пользователей
         self.auth_worker.get_all_users()
         
+    def _toggle_lesson_btn(self):
+        # Активируем кнопку "Добавить урок", если в таблице тем что-то выбрано
+        has_selection = len(self.ui.table_topics.selectedItems()) > 0
+        self.ui.btn_add_lesson.setEnabled(has_selection)
+
+    def on_add_lesson_clicked(self):
+        # 1. Получаем ID выбранной темы из таблицы
+        selected_row = self.ui.table_topics.currentRow()
+        if selected_row == -1:
+            return
+
+        # Берем текст из 0-й колонки (ID)
+        topic_id = self.ui.table_topics.item(selected_row, 0).text()
+
+        # 2. Показываем диалог выбора ритма (как в предыдущем шаге)
+        dialog = TimeSignatureDialog()
+        if dialog.exec():
+            selected_signature = dialog.get_signature()
+            # 3. Передаем и ритм, и ID темы
+            self.open_creator(selected_signature, topic_id)
+
+    def open_creator(self, time_signature: str, topic_id: str):
+        # 1. Прячем левую панель наглухо
+        self.ui.drawerWidget.hide()
+        
+        # 2. Создаем контроллер твоего редактора
+        self.creator_page = CreatorController(time_signature, topic_id)
+        
+        # 3. Добавляем его в текущее окно (в stackedWidget) и показываем
+        self.ui.stackedWidget.addWidget(self.creator_page)
+        self.ui.stackedWidget.setCurrentWidget(self.creator_page)
+        
+        # 4. Вешаем на кнопку "Выход" (которую я добавил в UI) функцию закрытия
+        self.creator_page.ui.exit_button.clicked.connect(self.close_creator)
+
+    def close_creator(self):
+        # 1. Возвращаем левую панель обратно
+        self.ui.drawerWidget.show()
+        
+        # 2. Переключаем экран обратно на админку
+        self.ui.stackedWidget.setCurrentWidget(self.ui.adminPageWidget)
+        
+        # 3. Уничтожаем редактор, чтобы он не висел в памяти
+        self.ui.stackedWidget.removeWidget(self.creator_page)
+        self.creator_page.deleteLater()
+
 
     def setup_admin_panel(self):
         # Настройка внешнего вида таблиц (используем твой стиль)
@@ -604,3 +652,43 @@ class AdminController:
     def on_user_status_updated(self, updated_user):
         """Когда статус меняется, проще всего перезапросить список, чтобы таблица отсортировалась сама!"""
         self.auth_worker.get_all_users()
+
+
+
+# app/GUI/dialogs.py (или внутри admin.py)
+from PyQt6.QtWidgets import QDialog, QVBoxLayout, QLabel, QComboBox, QDialogButtonBox
+
+class TimeSignatureDialog(QDialog):
+    """Диалоговое окно для выбора музыкального размера перед созданием урока."""
+    
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Настройка нового урока")
+        self.setFixedSize(300, 150)
+
+        # Основной слой
+        layout = QVBoxLayout(self)
+
+        # Текст
+        label = QLabel("Выберите размер такта (ритм) для нового урока:", self)
+        layout.addWidget(label)
+
+        # Выпадающий список с размерами
+        self.combo = QComboBox(self)
+        self.combo.addItems(["4/4", "3/4", "2/4", "6/8"])
+        # Можно сделать 4/4 по умолчанию
+        self.combo.setCurrentText("4/4") 
+        layout.addWidget(self.combo)
+
+        # Кнопки Ок/Отмена
+        self.buttons = QDialogButtonBox(
+            QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel,
+            self
+        )
+        self.buttons.accepted.connect(self.accept)
+        self.buttons.rejected.connect(self.reject)
+        layout.addWidget(self.buttons)
+
+    def get_signature(self) -> str:
+        """Возвращает выбранный размер такта."""
+        return self.combo.currentText()

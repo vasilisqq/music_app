@@ -13,148 +13,107 @@ class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
         MainWindow.resize(1200, 800)
-        icon = QtGui.QIcon()
-        icon.addPixmap(QtGui.QPixmap("app/ui/."), QtGui.QIcon.Mode.Normal, QtGui.QIcon.State.Off)
-        MainWindow.setWindowIcon(icon)
-        self.verticalLayout = QtWidgets.QVBoxLayout(MainWindow)
-        self.verticalLayout.setContentsMargins(10, 10, 10, 10)
-        self.verticalLayout.setSpacing(10)
-        self.verticalLayout.setObjectName("verticalLayout")
-        self.horizontalLayout = QtWidgets.QHBoxLayout()
-        self.horizontalLayout.setContentsMargins(0, 0, 0, 0)
-        self.horizontalLayout.setObjectName("horizontalLayout")
-        self.title_label = QtWidgets.QLabel(parent=MainWindow)
-        self.title_label.setStyleSheet("font-size: 16px; font-weight: bold; padding: 5px;")
-        self.title_label.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
-        self.title_label.setObjectName("title_label")
-        self.horizontalLayout.addWidget(self.title_label)
-        self.start_button = QtWidgets.QPushButton(parent=MainWindow)
-        self.start_button.setStyleSheet("QPushButton {\n"
-" background-color: #4CAF50;\n"
-" color: white;\n"
-" border: none;\n"
-" padding: 10px 20px;\n"
-" text-align: center;\n"
-" font-size: 16px;\n"
-" margin: 4px 2px;\n"
-" border-radius: 8px;\n"
-" min-width: 80px;\n"
+        MainWindow.setStyleSheet("\n"
+"QWidget#MainWindow {\n"
+"  background-color: white;\n"
+"}\n"
+"QLabel {\n"
+"  color: #333;\n"
+"  font-weight: 600;\n"
+"  font-size: 14px;\n"
+"}\n"
+"QPushButton {\n"
+"  background: qlineargradient(x1:0,y1:0,x2:0,y2:1, stop:0 #3f8bde, stop:1 #2968c0);\n"
+"  border-radius: 10px;\n"
+"  padding: 10px 20px;\n"
+"  font-size: 14px;\n"
+"  font-weight: bold;\n"
+"  color: white;\n"
+"  border: none;\n"
+"  min-width: 100px;\n"
 "}\n"
 "QPushButton:hover {\n"
-" background-color: #45a049;\n"
+"  background: qlineargradient(x1:0,y1:0,x2:0,y2:1, stop:0 #2968c0, stop:1 #1f4a8a);\n"
 "}\n"
 "QPushButton:pressed {\n"
-" background-color: #3e8e41;\n"
-"}")
+"  background: qlineargradient(x1:0,y1:0,x2:0,y2:1, stop:0 #1f4a8a, stop:1 #142d5a);\n"
+"}\n"
+"/* Красные кнопки для опасных действий */\n"
+"QPushButton#reset_button, QPushButton#exit_button {\n"
+"  background: qlineargradient(x1:0,y1:0,x2:0,y2:1, stop:0 #ff4444, stop:1 #cc0000);\n"
+"}\n"
+"QPushButton#reset_button:hover, QPushButton#exit_button:hover {\n"
+"  background: qlineargradient(x1:0,y1:0,x2:0,y2:1, stop:0 #cc0000, stop:1 #990000);\n"
+"}\n"
+"QComboBox {\n"
+"  border: 2px solid rgba(63, 139, 222, 0.2);\n"
+"  border-radius: 8px;\n"
+"  padding: 5px 10px;\n"
+"  background: white;\n"
+"  min-width: 120px;\n"
+"  font-size: 14px;\n"
+"  color: #333;\n"
+"}\n"
+"QComboBox:hover {\n"
+"  border: 2px solid #3f8bde;\n"
+"}\n"
+"/* ФИКС: Читабельность выпадающего списка */\n"
+"QComboBox QAbstractItemView {\n"
+"  background-color: white;\n"
+"  selection-background-color: #3f8bde;\n"
+"  selection-color: white;\n"
+"  border: 1px solid #3f8bde;\n"
+"  outline: none;\n"
+"}\n"
+"QGraphicsView#graphicsView {\n"
+"  background-color: #fcfcfc;\n"
+"  border-radius: 20px;\n"
+"  border: 2px solid rgba(63, 139, 222, 0.15);\n"
+"}\n"
+"   ")
+        self.verticalLayout = QtWidgets.QVBoxLayout(MainWindow)
+        self.verticalLayout.setContentsMargins(20, 20, 20, 20)
+        self.verticalLayout.setSpacing(15)
+        self.verticalLayout.setObjectName("verticalLayout")
+        self.horizontalLayout = QtWidgets.QHBoxLayout()
+        self.horizontalLayout.setSpacing(12)
+        self.horizontalLayout.setObjectName("horizontalLayout")
+        self.paramsLayout = QtWidgets.QHBoxLayout()
+        self.paramsLayout.setSpacing(15)
+        self.paramsLayout.setObjectName("paramsLayout")
+        self.label_time_signature = QtWidgets.QLabel(parent=MainWindow)
+        self.label_time_signature.setObjectName("label_time_signature")
+        self.paramsLayout.addWidget(self.label_time_signature)
+        self.duration_combo = QtWidgets.QComboBox(parent=MainWindow)
+        self.duration_combo.setObjectName("duration_combo")
+        self.paramsLayout.addWidget(self.duration_combo)
+        self.label_accidental = QtWidgets.QLabel(parent=MainWindow)
+        self.label_accidental.setObjectName("label_accidental")
+        self.paramsLayout.addWidget(self.label_accidental)
+        self.accidental_combo = QtWidgets.QComboBox(parent=MainWindow)
+        self.accidental_combo.setObjectName("accidental_combo")
+        self.paramsLayout.addWidget(self.accidental_combo)
+        self.horizontalLayout.addLayout(self.paramsLayout)
+        spacerItem = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum)
+        self.horizontalLayout.addItem(spacerItem)
+        self.start_button = QtWidgets.QPushButton(parent=MainWindow)
         self.start_button.setObjectName("start_button")
         self.horizontalLayout.addWidget(self.start_button)
         self.save_button = QtWidgets.QPushButton(parent=MainWindow)
-        self.save_button.setStyleSheet("QPushButton {\n"
-" background-color: #f0ad4e;\n"
-" color: white;\n"
-" border: none;\n"
-" padding: 10px 20px;\n"
-" text-align: center;\n"
-" font-size: 16px;\n"
-" margin: 4px 2px;\n"
-" border-radius: 8px;\n"
-" min-width: 80px;\n"
-"}\n"
-"QPushButton:hover {\n"
-" background-color: #ec971f;\n"
-"}\n"
-"QPushButton:pressed {\n"
-" background-color: #d58512;\n"
-"}")
         self.save_button.setObjectName("save_button")
         self.horizontalLayout.addWidget(self.save_button)
-        self.reset_button = QtWidgets.QPushButton(parent=MainWindow)
-        self.reset_button.setStyleSheet("QPushButton {\n"
-" background-color: #d9534f;\n"
-" color: white;\n"
-" border: none;\n"
-" padding: 10px 20px;\n"
-" text-align: center;\n"
-" font-size: 16px;\n"
-" margin: 4px 2px;\n"
-" border-radius: 8px;\n"
-" min-width: 80px;\n"
-"}\n"
-"QPushButton:hover {\n"
-" background-color: #c9302c;\n"
-"}\n"
-"QPushButton:pressed {\n"
-" background-color: #ac2925;\n"
-"}")
-        self.reset_button.setObjectName("reset_button")
-        self.horizontalLayout.addWidget(self.reset_button)
         self.add_tact_button = QtWidgets.QPushButton(parent=MainWindow)
-        self.add_tact_button.setStyleSheet("QPushButton {\n"
-" background-color: #4CAF50;\n"
-" color: white;\n"
-" border: none;\n"
-" padding: 10px 20px;\n"
-" text-align: center;\n"
-" font-size: 16px;\n"
-" margin: 4px 2px;\n"
-" border-radius: 8px;\n"
-" min-width: 80px;\n"
-"}\n"
-"QPushButton:hover {\n"
-" background-color: #45a049;\n"
-"}\n"
-"QPushButton:pressed {\n"
-" background-color: #3e8e41;\n"
-"}")
         self.add_tact_button.setObjectName("add_tact_button")
         self.horizontalLayout.addWidget(self.add_tact_button)
-        self.label_time_signature = QtWidgets.QLabel(parent=MainWindow)
-        self.label_time_signature.setObjectName("label_time_signature")
-        self.horizontalLayout.addWidget(self.label_time_signature)
-        self.duration_combo = QtWidgets.QComboBox(parent=MainWindow)
-        self.duration_combo.setMinimumSize(QtCore.QSize(120, 30))
-        self.duration_combo.setEditable(False)
-        self.duration_combo.setObjectName("duration_combo")
-        self.horizontalLayout.addWidget(self.duration_combo)
-        self.label_accidental = QtWidgets.QLabel(parent=MainWindow)
-        self.label_accidental.setStyleSheet("margin-left: 10px;")
-        self.label_accidental.setObjectName("label_accidental")
-        self.horizontalLayout.addWidget(self.label_accidental)
-        self.accidental_combo = QtWidgets.QComboBox(parent=MainWindow)
-        self.accidental_combo.setMinimumSize(QtCore.QSize(80, 30))
-        self.accidental_combo.setEditable(False)
-        self.accidental_combo.setObjectName("accidental_combo")
-        self.horizontalLayout.addWidget(self.accidental_combo)
-        spacerItem = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum)
-        self.horizontalLayout.addItem(spacerItem)
-        self.settings_button = QtWidgets.QPushButton(parent=MainWindow)
-        self.settings_button.setStyleSheet("QPushButton {\n"
-" background-color: #4CAF50;\n"
-" color: white;\n"
-" border: none;\n"
-" padding: 10px 20px;\n"
-" text-align: center;\n"
-" font-size: 16px;\n"
-" margin: 4px 2px;\n"
-" border-radius: 8px;\n"
-" min-width: 80px;\n"
-"}\n"
-"QPushButton:hover {\n"
-" background-color: #45a049;\n"
-"}\n"
-"QPushButton:pressed {\n"
-" background-color: #3e8e41;\n"
-"}")
-        self.settings_button.setObjectName("settings_button")
-        self.horizontalLayout.addWidget(self.settings_button)
+        self.reset_button = QtWidgets.QPushButton(parent=MainWindow)
+        self.reset_button.setObjectName("reset_button")
+        self.horizontalLayout.addWidget(self.reset_button)
+        self.exit_button = QtWidgets.QPushButton(parent=MainWindow)
+        self.exit_button.setObjectName("exit_button")
+        self.horizontalLayout.addWidget(self.exit_button)
         self.verticalLayout.addLayout(self.horizontalLayout)
-        self.info_label = QtWidgets.QLabel(parent=MainWindow)
-        self.info_label.setStyleSheet("color: #666; font-style: italic; padding: 5px;")
-        self.info_label.setObjectName("info_label")
-        self.verticalLayout.addWidget(self.info_label)
         self.graphicsView = ScalableGraphicsView(parent=MainWindow)
         self.graphicsView.setMinimumSize(QtCore.QSize(0, 400))
-        self.graphicsView.setStyleSheet("background-color: #f5f5dc;")
         self.graphicsView.setObjectName("graphicsView")
         self.verticalLayout.addWidget(self.graphicsView)
 
@@ -163,16 +122,11 @@ class Ui_MainWindow(object):
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
-        MainWindow.setWindowTitle(_translate("MainWindow", "Rhythm Trainer"))
-        self.title_label.setText(_translate("MainWindow", "Rhythm Trainer - Отработка ритма"))
-        self.start_button.setText(_translate("MainWindow", "Старт"))
-        self.save_button.setText(_translate("MainWindow", "Сохранить"))
-        self.reset_button.setText(_translate("MainWindow", "Сброс"))
-        self.add_tact_button.setText(_translate("MainWindow", "Добавить такт"))
         self.label_time_signature.setText(_translate("MainWindow", "Длительность:"))
-        self.duration_combo.setToolTip(_translate("MainWindow", "Выберите длительность ноты"))
         self.label_accidental.setText(_translate("MainWindow", "Знак:"))
-        self.accidental_combo.setToolTip(_translate("MainWindow", "Выберите диез, бемоль или бекар"))
-        self.settings_button.setText(_translate("MainWindow", "Настройки"))
-        self.info_label.setText(_translate("MainWindow", "Подсказка: Наведите курсор на линии и пространства между ними"))
+        self.start_button.setText(_translate("MainWindow", "▶ Старт"))
+        self.save_button.setText(_translate("MainWindow", "💾 Сохранить"))
+        self.add_tact_button.setText(_translate("MainWindow", "➕ Такт"))
+        self.reset_button.setText(_translate("MainWindow", "🔄 Сброс"))
+        self.exit_button.setText(_translate("MainWindow", "✕ Выход"))
 from app.GUI.helpful import ScalableGraphicsView

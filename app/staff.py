@@ -599,9 +599,9 @@ class Bits(QGraphicsRectItem):
 
 
 class Tact:
-    def __init__(self,y_bottom,scene,number,x0=X0, y=Y0, duration=0.25):
+    def __init__(self,y_bottom,scene,number,x0=X0, y=Y0, duration=0.25, numerator=4):
         self.tact_number = number
-        self.bits_count = 4
+        self.numerator = numerator
         self.x0 = x0
         self.spaces = []
         self.width = WIDTH if number > 0 else WIDTH + 100
@@ -672,17 +672,43 @@ class Tact:
 
 
     def init_bits(self):
-        count_bits = int(1 / self.duration)
-        if self.tact_number == 0:
-            x_left = self.x0+100
-        else:
-            x_left = self.x0
-        for i in range(1, count_bits+1):
-            if self.tact_number == 0:
-                x1 = (self.width - 100)/count_bits*i+self.x0+100
+        # 1. Высчитываем общую длительность такта (например, 3/4 = 0.75)
+        tact_total_duration = self.numerator / 4
+        
+        # 2. Разбиваем такт на куски (веса битов), учитывая остаток
+        remaining = round(tact_total_duration, 4)
+        grid_duration = round(self.duration, 4)
+        
+        bit_weights = []
+        while remaining > 0:
+            if remaining >= grid_duration:
+                bit_weights.append(grid_duration)
+                remaining = round(remaining - grid_duration, 4)
             else:
-                x1 = self.width/count_bits*i+self.x0
-            bit = Bits(QRectF(x_left, self.y0, x1-x_left, self.y_bottom-self.y0), x_left, x1,tact=self, weigth=self.duration)
+                # Если остаток меньше размера сетки (например, 0.25 при сетке 0.5)
+                bit_weights.append(remaining)
+                remaining = 0
+
+        # Отладка: покажет, например, [0.5, 0.25] для 3/4 с сеткой 0.5
+        print(f"Tact {self.tact_number} | Rhythm: {self.numerator/4} | Weights: {bit_weights}")
+
+        # 3. Распределяем биты пропорционально их весу
+        x_start_offset = 100 if self.tact_number == 0 else 0
+        usable_width = self.width - x_start_offset
+        x_left = self.x0 + x_start_offset
+
+        for weight in bit_weights:
+            # Ширина бита строго пропорциональна его доле от всего такта
+            bit_width = usable_width * (weight / tact_total_duration)
+            x1 = x_left + bit_width
+            
+            bit = Bits(
+                QRectF(x_left, self.y0, bit_width, self.y_bottom - self.y0), 
+                x_left, 
+                x1,
+                tact=self, 
+                weigth=weight # Передаем реальный вес (0.5 или остаток 0.25)
+            )
             x_left = x1
             self.bits.append(bit)
             self.scene.addItem(bit)
@@ -956,16 +982,18 @@ class Tact:
 
 
 class StaffLayout:
-    def __init__(self, scene):
+    def __init__(self, scene, time_signature="4/4"):
         self.left_hand = False
         self.tacts = []
+        self.time_signature = time_signature
         self.tacts_per_rows = 0
-        self.time_signature = None  # Будет хранить объект размерности такта
         self.current_tact = None
         self.bpm = 60
         self.y = Y0
         self.x = X0
         self.scene = scene
+        self.beats_per_measure = int(self.time_signature.split('/')[0])
+        # self.max_tact_duration = self.beats_per_measure * 0.25
         self.current_duration = 0.25
         self.init_staff(scene)
         self.accidental = None
@@ -995,7 +1023,7 @@ class StaffLayout:
 
 
     def init_staff(self, scene):
-        self.current_tact = Tact(self.y_bottom, scene, len(self.tacts), duration=self.current_duration)
+        self.current_tact = Tact(self.y_bottom, scene, len(self.tacts), duration=self.current_duration, numerator=self.beats_per_measure)
         self.tacts.append(self.current_tact)
         self.tacts_per_rows = 1
         # Добавляем скрипичный ключ
@@ -1005,8 +1033,9 @@ class StaffLayout:
             scene, 
             X0 + 50,  # Отступ от левого края после скрипичного ключа
             Y0,   # Немного выше первой линии
-            4, 4           # Размерность 4/4
+            self.beats_per_measure, 4           # Размерность 4/4
         )
+        print(self.beats_per_measure)
 
     def add_treble_clef(self, scene):
         """Добавляет изображение скрипичного ключа на нотный стан"""
@@ -1102,10 +1131,10 @@ class StaffLayout:
         if new_x0 + WIDTH > SCENE_WIDTH:
             self.x = X0
             self.y += (self.staff_height + 100)
-            self.current_tact = Tact(self.y_bottom, self.scene, len(self.tacts), X0, self.y, self.current_duration)
+            self.current_tact = Tact(self.y_bottom, self.scene, len(self.tacts), X0, self.y, self.current_duration,self.beats_per_measure)
         else:    
             self.x = new_x0 
-            self.current_tact = Tact(self.y_bottom, self.scene, len(self.tacts), new_x0, self.y, self.current_duration)
+            self.current_tact = Tact(self.y_bottom, self.scene, len(self.tacts), new_x0, self.y, self.current_duration,self.beats_per_measure)
         self.tacts.append(self.current_tact)
         current_rect = self.scene.sceneRect()
         # # Получаем реальные границы всех объектов

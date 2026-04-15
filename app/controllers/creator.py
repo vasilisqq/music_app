@@ -23,14 +23,14 @@ from config import X0, Y0
 
 
 class CreatorController(QWidget):
-    def __init__(self):
+    def __init__(self, time_signature, topic_id):
         super().__init__()
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self.api = LessonWorker()
-        self.load_scene()
-        self.init_playhead()
-
+        self.time_signature = time_signature
+        self.topic_id = topic_id
+        self.metronome_beats = int(self.time_signature.split('/')[0])
         combo = self.ui.duration_combo
         combo.addItem("Целая", 1.0)
         combo.addItem("Половинная", 0.5)
@@ -44,6 +44,8 @@ class CreatorController(QWidget):
         accidental_combo.addItem("Бемоль (♭)", "flat")
         accidental_combo.setCurrentIndex(0) # По умолчанию знака нет
         accidental_combo.currentIndexChanged.connect(self.on_accidental_changed)
+        self.load_scene()
+        self.init_playhead()
 
 
 
@@ -179,7 +181,7 @@ class CreatorController(QWidget):
     def load_scene(self):
         self.scene = QGraphicsScene(0,0,1000,1000)
         settings.scene = self.scene
-        self.lay = StaffLayout(self.scene)
+        self.lay = StaffLayout(self.scene, self.time_signature)
         self.scene.setBackgroundBrush(BACKGROUND_SCENE_COLOR)
         self.ui.graphicsView.setScene(self.scene)
         self.ui.graphicsView.setRenderHint(QPainter.RenderHint.Antialiasing, True)
