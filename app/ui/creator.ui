@@ -22,13 +22,23 @@ QLabel {
 }
 QPushButton {
   background: qlineargradient(x1:0,y1:0,x2:0,y2:1, stop:0 #3f8bde, stop:1 #2968c0);
-  border-radius: 10px;
-  padding: 10px 20px;
-  font-size: 14px;
+  border-radius: 8px;
+  padding: 6px 12px; /* Уменьшено с 10/20 */
+  font-size: 13px;
   font-weight: bold;
   color: white;
   border: none;
-  min-width: 100px;
+  min-width: 80px; /* Уменьшено со 100 */
+}
+QPushButton#exit_button {
+  min-width: 35px;
+  background: #ff4444;
+}
+QComboBox {
+  border: 2px solid rgba(63, 139, 222, 0.2);
+  border-radius: 6px;
+  padding: 3px 8px;
+  min-width: 100px; /* Уменьшено со 120 */
 }
 QPushButton:hover {
   background: qlineargradient(x1:0,y1:0,x2:0,y2:1, stop:0 #2968c0, stop:1 #1f4a8a);
@@ -42,15 +52,6 @@ QPushButton#reset_button, QPushButton#exit_button {
 }
 QPushButton#reset_button:hover, QPushButton#exit_button:hover {
   background: qlineargradient(x1:0,y1:0,x2:0,y2:1, stop:0 #cc0000, stop:1 #990000);
-}
-QComboBox {
-  border: 2px solid rgba(63, 139, 222, 0.2);
-  border-radius: 8px;
-  padding: 5px 10px;
-  background: white;
-  min-width: 120px;
-  font-size: 14px;
-  color: #333;
 }
 QComboBox:hover {
   border: 2px solid #3f8bde;
@@ -86,40 +87,49 @@ QGraphicsView#graphicsView {
    <property name="bottomMargin">
     <number>20</number>
    </property>
+
    <item>
-    <layout class="QHBoxLayout" name="horizontalLayout">
+    <layout class="QHBoxLayout" name="buttonsRow">
      <property name="spacing">
-      <number>12</number>
+      <number>10</number>
      </property>
      <item>
-      <layout class="QHBoxLayout" name="paramsLayout">
-       <property name="spacing">
-        <number>15</number>
+      <widget class="QPushButton" name="start_button">
+       <property name="text">
+        <string>▶ Старт</string>
        </property>
-       <item>
-        <widget class="QLabel" name="label_time_signature">
-         <property name="text">
-          <string>Длительность:</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QComboBox" name="duration_combo"/>
-       </item>
-       <item>
-        <widget class="QLabel" name="label_accidental">
-         <property name="text">
-          <string>Знак:</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QComboBox" name="accidental_combo"/>
-       </item>
-      </layout>
+      </widget>
      </item>
      <item>
-      <spacer name="horizontalSpacer">
+      <widget class="QPushButton" name="add_tact_button">
+       <property name="text">
+        <string>➕ Такт</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="delete_tact_button">
+       <property name="text">
+        <string>➖ Такт</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="save_button">
+       <property name="text">
+        <string>💾 Сохранить</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="reset_button">
+       <property name="text">
+        <string>🔄 Сброс</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <spacer name="horizontalSpacer_1">
        <property name="orientation">
         <enum>Qt::Horizontal</enum>
        </property>
@@ -132,42 +142,62 @@ QGraphicsView#graphicsView {
       </spacer>
      </item>
      <item>
-      <widget class="QPushButton" name="start_button">
-       <property name="text">
-        <string>▶ Старт</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QPushButton" name="save_button">
-       <property name="text">
-        <string>💾 Сохранить</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QPushButton" name="add_tact_button">
-       <property name="text">
-        <string>➕ Такт</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QPushButton" name="reset_button">
-       <property name="text">
-        <string>🔄 Сброс</string>
-       </property>
-      </widget>
-     </item>
-     <item>
       <widget class="QPushButton" name="exit_button">
+       <property name="maximumSize">
+        <size>
+         <width>40</width>
+         <height>16777215</height>
+        </size>
+       </property>
        <property name="text">
-        <string>✕ Выход</string>
+        <string>✕</string>
        </property>
       </widget>
      </item>
     </layout>
    </item>
+
+   <item>
+    <layout class="QHBoxLayout" name="settingsRow">
+     <property name="spacing">
+      <number>15</number>
+     </property>
+     <item>
+      <widget class="QLabel" name="label_time_signature">
+       <property name="text">
+        <string>Длительность:</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QComboBox" name="duration_combo"/>
+     </item>
+     <item>
+      <widget class="QLabel" name="label_accidental">
+       <property name="text">
+        <string>Знак:</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QComboBox" name="accidental_combo"/>
+     </item>
+     <item>
+      <spacer name="horizontalSpacer_2">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>40</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+    </layout>
+   </item>
+
    <item>
     <widget class="ScalableGraphicsView" name="graphicsView">
      <property name="minimumSize">

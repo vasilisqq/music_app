@@ -1062,39 +1062,77 @@ class StaffLayout:
         # Добавляем на сцену
         scene.addItem(clef_item)
 
-    def save_lesson(self):
-        lesson = LessonCreate(
-            name="ыдловрап",
-            difficult="легко",
-            rhythm=4/4,
-            notes = {"right_hand": []},
-            topic=1
-        )
+    def save_lesson(self, name="Новый урок", difficult="Легко", topic_id=1):
+        """Собирает ноты с нотного стана и формирует JSON для бэкенда"""
+        lesson_notes = {"right_hand": []}
+        
         for tact in self.tacts:
-            all_notes = []
+            tact_data = []
             for bit in tact.bits:
-                validate_notes=[]
-                for notes in bit.notes:
-                    # for note in notes:
-                        validate_notes.append({"name":notes.note_name, "duration":notes.note_lenght})
-                all_notes.append(validate_notes)
-            lesson.notes["right_hand"] = all_notes
-        return lesson
+                note_names = []
+                # Собираем все ноты в текущем бите (если они есть)
+                for note in bit.notes:
+                    note_names.append(note.note_name) # Сохранит имена со знаками, например "C4#"
+                
+                # Добавляем долю. Если note_names пустой - это пауза.
+                tact_data.append({
+                    "duration": bit.weigth, # Физическая длительность бита в сетке
+                    "notes": note_names
+                })
+            
+            lesson_notes["right_hand"].append(tact_data)
+
+        # Ритм можно вычислить как дробь (например, 4/4 = 1.0)
+        rhythm_val = self.beats_per_measure / 4.0
+
+        # Возвращаем Pydantic схему из schemas/lesson.py
+        lesson = LessonCreate(
+            name=name,
+            difficult=difficult,
+            rhythm=rhythm_val,
+            notes=lesson_notes,
+            topic=topic_id
+        )
+        # model_dump() конвертирует pydantic-модель в обычный словарь(JSON) для отправки по API
+        return lesson.model_dump()
     
 
     def display_lesson(self, lesson: LessonResponse):
-        tacts = lesson.notes["right_hand"]
-        for item in self.tacts[0].lines + self.tacts[0].spaces:
-            for i, bit in enumerate(tacts):
-                for note in bit:
-                    if note["name"] == item.note_name:
-                        self.tacts[0].add_note_at_position(self.tacts[0].bits[i].x0+10, item)
+        """Отрисовывает урок на нотном стане, полученный с сервера"""
+        saved_tacts = lesson.notes.get("right_hand", [])
+        
+        # 1. Убедимся, что у нас на сцене достаточно пустых тактов
+        while len(self.tacts) < len(saved_tacts):
+            self.add_tact()
+            
+        # 2. Идем по тактам из JSON
+        for tact_idx, saved_tact in enumerate(saved_tacts):
+            tact = self.tacts[tact_idx]
+            lines_and_spaces = tact.lines + tact.spaces
+            
+            # 3. Идем по битам (долям) внутри такта
+            for bit_idx, saved_bit in enumerate(saved_tact):
+                # Проверка, чтобы не выйти за пределы сетки битов
+                if bit_idx < len(tact.bits):
+                    bit = tact.bits[bit_idx]
+                    
+                    for note_name in saved_bit["notes"]:
+                        # Извлекаем "чистое" имя (например, "C4" из "C4#")
+                        base_name = note_name[:2]
+                        
+                        for item in lines_and_spaces:
+                            if item.note_name == base_name:
+                                # Устанавливаем знак альтерации перед отрисовкой
+                                if "#" in note_name:
+                                    settings.accidental = "sharp"
+                                elif "b" in note_name:
+                                    settings.accidental = "flat"
+                                else:
+                                    settings.accidental = "natural"
+                                    
+                                # Добавляем ноту, имитируя клик мышкой по позиции x0 бита
+                                tact.add_note_at_position(bit.x0 + 10, item)
 
-
-        # print(tacts)
-        # for bit, bit_self in tacts, self.tacts.bits:
-        #     for note in bit:
-        #         self.tact.add_note_at_position(bit_self.x0+10)
 
     def touch_thread(self):
         for tact in self.tacts:

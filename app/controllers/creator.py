@@ -166,14 +166,19 @@ class CreatorController(QWidget):
 
 
     def connect_buttons(self):
+        # Правильная привязка всех кнопок из UI
         self.ui.start_button.clicked.connect(self.on_start_clicked)
         self.ui.save_button.clicked.connect(self.on_save_clicked)
-        self.ui.reset_button.clicked.connect(self.on_listen_clicked)
-        self.ui.add_tact_button.clicked.connect(self.on_add_tact)
+        self.ui.add_tact_button.clicked.connect(self.on_add_tact_clicked)
+        self.ui.reset_button.clicked.connect(self.on_reset_clicked)
+        self.ui.exit_button.clicked.connect(self.on_exit_clicked)
+        self.ui.delete_tact_button.clicked.connect(self.on_delete_tact)
 
 
-    def on_add_tact(self):
-        self.lay.delete_tact()
+    def on_add_tact_clicked(self):
+        """Добавляет новый такт на нотный стан"""
+        self.lay.add_tact()
+        print("Такт добавлен")
 
 
     
@@ -274,16 +279,42 @@ class CreatorController(QWidget):
 
 
     def on_save_clicked(self):
-        self.lay.add_tact()
-        # QMessageBox.warning(self, "Ошибка", "Не все такты заполнены")
-        # lesson = self.lay.save_lesson()
-        # print(lesson)
-        # self.api.create_lesson(lesson)
+        """Собирает данные урока и отправляет на сервер"""
+        # Раскомментируем и доводим до ума логику сохранения
+        try:
+            lesson_data = self.lay.save_lesson()
+            if lesson_data:
+                print("Сохранение урока:", lesson_data)
+                self.api.create_lesson(lesson_data)
+            else:
+                QMessageBox.warning(self, "Ошибка", "Не удалось сохранить урок. Возможно, не все такты заполнены.")
+        except AttributeError:
+             QMessageBox.warning(self, "Ошибка", "Метод save_lesson не реализован в StaffLayout")
+
+
+    def on_reset_clicked(self):
+        """Сброс состояния окна/урока"""
+        # Сбрасываем счетчики и останавливаем воспроизведение
+        self.score = 0
+        self.misses = 0
+        self.metronome_count = 0
+        self.play_started = False
+        self.animation_timer.stop()
+        self.playhead.hide()
+        
+        # Полностью перерисовываем сцену для сброса (или можно добавить метод clear() в StaffLayout)
+        self.load_scene()
+        self.init_playhead()
+        print("Состояние сброшено")
+
 
 
     def on_listen_clicked(self):
         self.api.get_lesson()
 
+    def on_delete_tact(self):
+        """Метод для удаления последнего такта"""
+        self.lay.delete_tact()
 
     def on_lesson_created(self):
         QMessageBox.information(self, "Успех", "Упражнение создано")
@@ -293,4 +324,10 @@ class CreatorController(QWidget):
 
     def on_lesson_get(self, lesson):
         self.lay.display_lesson(lesson)
+
+    def on_exit_clicked(self):
+        """Закрывает текущее окно"""
+        self.close()
+
+    
 
