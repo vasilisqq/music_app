@@ -43,12 +43,13 @@ class Lesson(Base):
     __tablename__ = "lesson"
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False)
-    difficult = Column(String, nullable=False, index=True)
+    description = Column(String, nullable=False, default="")
+    difficult = Column(Integer, nullable=False, index=True)
     rhythm = Column(DECIMAL(), nullable=False)
     notes = Column(JSONB(), nullable=False)
     topic = Column(Integer, nullable=False)
 
-    topic_id = Column(Integer, ForeignKey("topic.id"), nullable=False) # Теперь это внешний ключ!
+    topic_id = Column(Integer, ForeignKey("topic.id"), nullable=False)
     topic_info = relationship("Topic", back_populates="lessons")
     
 

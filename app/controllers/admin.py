@@ -9,6 +9,7 @@ from workers.topic_worker import TopicWorker
 from workers.auth_worker import AuthWorker
 from workers.lesson_worker import LessonWorker
 from schemas.topic import TopicCreate, TopicResponse
+from schemas.lesson import LessonResponse
 from PyQt6.QtWidgets import QMenu, QTableWidgetItem, QHeaderView
 from PyQt6.QtGui import QColor, QBrush
 from controllers.creator import CreatorController
@@ -235,6 +236,7 @@ class AdminController:
     def __init__(self, ui):
         self.ui = ui
         self.creator_window = None
+        self.selected_topic_id = None
         self.ui.table_topics.itemSelectionChanged.connect(self._toggle_lesson_btn)
         self.ui.btn_add_lesson.clicked.connect(self.on_add_lesson_clicked)
         table_style = """
@@ -284,6 +286,7 @@ class AdminController:
         self.auth_worker.error_occurred_signal.connect(self.show_error)
         self.ui.table_topics.cellClicked.connect(self.on_topic_selected)
         self.lesson_worker.lessons_by_topic_loaded_signal.connect(self.on_lessons_loaded)
+        self.lesson_worker.lesson_deleted_signal.connect(self.on_lesson_deleted)
         self.lesson_worker.lesson_error_sygnal.connect(self.show_error)
         self.setup_admin_panel()
         self.setup_users_table()
@@ -312,31 +315,86 @@ class AdminController:
             # 3. Передаем и ритм, и ID темы
             self.open_creator(selected_signature, topic_id)
 
-    def open_creator(self, time_signature: str, topic_id: str):
-        # 1. Прячем левую панель наглухо
+    def open_creator(self, time_signature: str, topic_id: str, lesson: LessonResponse | None = None):
         self.ui.drawerWidget.hide()
-        
-        # 2. Создаем контроллер твоего редактора
-        self.creator_page = CreatorController(time_signature, topic_id)
-        
-        # 3. Добавляем его в текущее окно (в stackedWidget) и показываем
+
+        self.creator_page = CreatorController(time_signature, topic_id, lesson)
+        self.creator_page.lesson_created.connect(self.on_lesson_created)
+        self.creator_page.lesson_updated.connect(self.on_lesson_updated)
+
         self.ui.stackedWidget.addWidget(self.creator_page)
         self.ui.stackedWidget.setCurrentWidget(self.creator_page)
-        
-        # 4. Вешаем на кнопку "Выход" (которую я добавил в UI) функцию закрытия
         self.creator_page.ui.exit_button.clicked.connect(self.close_creator)
 
+    def refresh_lessons(self, topic_id: int):
+        self.ui.table_lessons.setRowCount(0)
+        self.lesson_worker.get_lessons_by_topic(topic_id)
+
+    def get_selected_lesson(self, row: int) -> LessonResponse:
+        lesson_id = int(self.ui.table_lessons.item(row, 0).text())
+        lesson_name = self.ui.table_lessons.item(row, 1).text()
+        lesson_item = self.ui.table_lessons.item(row, 1)
+        lesson_description = lesson_item.data(Qt.ItemDataRole.UserRole) or ""
+        lesson_difficult = lesson_item.data(Qt.ItemDataRole.UserRole + 1)
+        lesson_rhythm = lesson_item.data(Qt.ItemDataRole.UserRole + 2)
+        lesson_notes = lesson_item.data(Qt.ItemDataRole.UserRole + 3)
+        lesson_topic = lesson_item.data(Qt.ItemDataRole.UserRole + 4)
+        return LessonResponse(
+            id=lesson_id,
+            name=lesson_name,
+            description=lesson_description,
+            difficult=lesson_difficult,
+            rhythm=lesson_rhythm,
+            notes=lesson_notes,
+            topic=lesson_topic,
+        )
+
+    def show_lesson_context_menu(self, pos):
+        item = self.ui.table_lessons.itemAt(pos)
+        if item is None:
+            return
+
+        row = item.row()
+        menu = QMenu(self.ui.centralwidget)
+        edit_action = menu.addAction("✏️ Изменить")
+        delete_action = menu.addAction("🗑️ Удалить")
+        action = menu.exec(self.ui.table_lessons.viewport().mapToGlobal(pos))
+
+        if action == edit_action:
+            self.edit_lesson(row)
+        elif action == delete_action:
+            self.confirm_and_delete_lesson(row)
+
+    def edit_lesson(self, row: int):
+        lesson = self.get_selected_lesson(row)
+        time_signature = f"{int(float(lesson.rhythm) * 4)}/4"
+        self.open_creator(time_signature, str(lesson.topic), lesson)
+
+    def confirm_and_delete_lesson(self, row: int):
+        lesson = self.get_selected_lesson(row)
+        reply = QMessageBox.question(
+            self.ui.centralwidget,
+            "Подтверждение удаления",
+            f"Вы уверены, что хотите удалить урок <b>«{lesson.name}»</b>?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No
+        )
+
+        if reply == QMessageBox.StandardButton.Yes:
+            self.lesson_worker.delete_lesson(lesson.id)
+
+    def on_lesson_deleted(self, lesson_id: int):
+        if self.selected_topic_id is not None:
+            self.refresh_lessons(self.selected_topic_id)
+        self.fetch_topics()
+        QMessageBox.information(self.ui.centralwidget, "Успех", "Урок успешно удален.")
+
     def close_creator(self):
-        # 1. Возвращаем левую панель обратно
         self.ui.drawerWidget.show()
-        
-        # 2. Переключаем экран обратно на админку
         self.ui.stackedWidget.setCurrentWidget(self.ui.adminPageWidget)
-        
-        # 3. Уничтожаем редактор, чтобы он не висел в памяти
         self.ui.stackedWidget.removeWidget(self.creator_page)
         self.creator_page.deleteLater()
-
+        self.creator_page = None
 
     def setup_admin_panel(self):
         # Настройка внешнего вида таблиц (используем твой стиль)
@@ -349,6 +407,9 @@ class AdminController:
         l_header.setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
         self.ui.table_lessons.verticalHeader().setVisible(False)
         self.ui.table_lessons.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
+        self.ui.table_lessons.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.ui.table_lessons.customContextMenuRequested.connect(self.show_lesson_context_menu)
+        self.ui.table_lessons.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         
         # Темы (стандартная настройка)
         header = self.ui.table_topics.horizontalHeader()
@@ -364,19 +425,34 @@ class AdminController:
     def on_topic_selected(self, row, column):
         """Обработка клика по теме: загрузка уроков"""
         topic_id = int(self.ui.table_topics.item(row, 0).text())
+        self.selected_topic_id = topic_id
         self.ui.btn_add_lesson.setEnabled(True)
-        
-        # Очистка и запуск запроса
-        self.ui.table_lessons.setRowCount(0)
-        self.lesson_worker.get_lessons_by_topic(topic_id)
+        self.refresh_lessons(topic_id)
+
+    def on_lesson_created(self, topic_id: int):
+        self.selected_topic_id = topic_id
+        self.close_creator()
+        self.refresh_lessons(topic_id)
+        self.fetch_topics()
+
+    def on_lesson_updated(self, topic_id: int):
+        self.selected_topic_id = topic_id
+        self.close_creator()
+        self.refresh_lessons(topic_id)
+        self.fetch_topics()
 
     def on_lessons_loaded(self, lessons):
         """Отображение полученных уроков в таблице"""
         self.ui.table_lessons.setRowCount(len(lessons))
         for row, lesson in enumerate(lessons):
-            # lesson - это объект LessonResponse
             self.ui.table_lessons.setItem(row, 0, QTableWidgetItem(str(lesson.id)))
-            self.ui.table_lessons.setItem(row, 1, QTableWidgetItem(lesson.name))
+            name_item = QTableWidgetItem(lesson.name)
+            name_item.setData(Qt.ItemDataRole.UserRole, lesson.description)
+            name_item.setData(Qt.ItemDataRole.UserRole + 1, lesson.difficult)
+            name_item.setData(Qt.ItemDataRole.UserRole + 2, float(lesson.rhythm))
+            name_item.setData(Qt.ItemDataRole.UserRole + 3, lesson.notes)
+            name_item.setData(Qt.ItemDataRole.UserRole + 4, lesson.topic)
+            self.ui.table_lessons.setItem(row, 1, name_item)
 
     def fetch_topics(self):
         self.ui.table_topics.setRowCount(0)

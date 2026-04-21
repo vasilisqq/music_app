@@ -1062,39 +1062,36 @@ class StaffLayout:
         # Добавляем на сцену
         scene.addItem(clef_item)
 
-    def save_lesson(self, name="Новый урок", difficult="Легко", topic_id=1):
-        """Собирает ноты с нотного стана и формирует JSON для бэкенда"""
+    def save_lesson(self, name: str, description: str, difficult: int, topic_id: int):
+        """Собирает ноты с нотного стана и формирует lesson payload для бэкенда"""
         lesson_notes = {"right_hand": []}
-        
+
         for tact in self.tacts:
             tact_data = []
             for bit in tact.bits:
                 note_names = []
-                # Собираем все ноты в текущем бите (если они есть)
                 for note in bit.notes:
-                    note_names.append(note.note_name) # Сохранит имена со знаками, например "C4#"
-                
-                # Добавляем долю. Если note_names пустой - это пауза.
+                    note_names.append(note.note_name)
+
                 tact_data.append({
-                    "duration": bit.weigth, # Физическая длительность бита в сетке
+                    "duration": bit.weigth,
                     "notes": note_names
                 })
-            
+
             lesson_notes["right_hand"].append(tact_data)
 
-        # Ритм можно вычислить как дробь (например, 4/4 = 1.0)
         rhythm_val = self.beats_per_measure / 4.0
 
-        # Возвращаем Pydantic схему из schemas/lesson.py
-        lesson = LessonCreate(
+        return LessonCreate(
             name=name,
+            description=description,
             difficult=difficult,
             rhythm=rhythm_val,
             notes=lesson_notes,
             topic=topic_id
         )
-        # model_dump() конвертирует pydantic-модель в обычный словарь(JSON) для отправки по API
-        return lesson.model_dump()
+
+
     
 
     def display_lesson(self, lesson: LessonResponse):

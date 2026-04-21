@@ -1,17 +1,26 @@
-from pydantic import BaseModel, Json,ConfigDict
-from typing import Dict, Any
+from pydantic import BaseModel, ConfigDict
 
-class LessonCreate(BaseModel):
-    name:str
-    difficult: str
-    rhythm:float
-    notes:dict
-    topic:int
+
+class LessonBase(BaseModel):
+    name: str
+    description: str
+    difficult: int
+    rhythm: float
+    notes: dict
+    topic: int
 
     model_config = ConfigDict(from_attributes=True)
 
 
-class LessonResponse(LessonCreate):
-    id:int
+class LessonCreate(LessonBase):
+    pass
+
+
+class LessonUpdate(LessonBase):
+    pass
+
+
+class LessonResponse(LessonBase):
+    id: int
 
     model_config = ConfigDict(from_attributes=True)
