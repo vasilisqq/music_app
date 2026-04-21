@@ -177,6 +177,22 @@ class CreatorController(QWidget):
         self.lesson = lesson
         self.lesson_id = lesson.id if lesson else None
         self.metronome_beats = int(self.time_signature.split("/")[0])
+        self.metronome_count = 0
+        self._playback_token = 0
+        self._metronome_active = False
+        self.practice_mode = False
+        self.play_started = False
+        self.current_note = None
+        self.score = 0
+        self.misses = 0
+        self.current_playhead_x = 0
+        self.current_playhead_y = Y0
+        player.note_correct.connect(self.on_note_correct_graphic)
+        player.note_wrong.connect(self.on_note_wrong_graphic)
+        self.player_thread = None
+        self.current_feedback_bit = None
+        self.animation_timer = QTimer()
+        self.animation_timer.timeout.connect(self.update_playhead)
 
         combo = self.ui.duration_combo
         combo.addItem("Целая", 1.0)
@@ -202,20 +218,6 @@ class CreatorController(QWidget):
         self.api.lesson_get_signal.connect(self.on_lesson_get)
         self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
         self.connect_buttons()
-        self.play_started = False
-        self.current_note = None
-        self.score = 0
-        self.misses = 0
-        self.metronome_beats = 4
-        self.metronome_count = 0
-        self.current_playhead_x = 0
-        self.current_playhead_y = Y0
-        player.note_correct.connect(self.on_note_correct_graphic)
-        player.note_wrong.connect(self.on_note_wrong_graphic)
-        self.player_thread = None
-        self.current_feedback_bit = None
-        self.animation_timer = QTimer()
-        self.animation_timer.timeout.connect(self.update_playhead)
 
         if self.lesson:
             self.on_lesson_get(self.lesson)
@@ -224,6 +226,8 @@ class CreatorController(QWidget):
         settings.accidental = self.ui.accidental_combo.currentData()
 
     def on_note_correct_graphic(self, note_item, _note_name):
+        if not self.practice_mode:
+            return
         if note_item is None:
             return
         x = self.playhead.line().x1()
@@ -231,6 +235,9 @@ class CreatorController(QWidget):
         self.create_feedback_circle(x, y, is_correct=True)
 
     def on_note_wrong_graphic(self, note_item, _note_name, is_timeout):
+        if not self.practice_mode:
+            return
+
         if is_timeout:
             x = note_item.x
             y = Y0 + 200
@@ -312,27 +319,64 @@ class CreatorController(QWidget):
         self.ui.graphicsView.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop)
         self.ui.graphicsView.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform, True)
 
+    def _find_first_unfilled_bit(self) -> tuple[int, int] | None:
+        for tact_index, tact in enumerate(self.lay.tacts, start=1):
+            for bit_index, bit in enumerate(tact.bits, start=1):
+                if not getattr(bit, "notes", None):
+                    return tact_index, bit_index
+        return None
+
     def on_start_clicked(self):
+        if self.animation_timer.isActive():
+            self.animation_timer.stop()
+
+        self._metronome_active = False
+        if self.playhead.isVisible():
+            self.playhead.hide()
+
+        unfilled = self._find_first_unfilled_bit()
+        if unfilled is not None:
+            tact_index, bit_index = unfilled
+            QMessageBox.warning(
+                self,
+                "Нельзя воспроизвести",
+                f"Не все биты заполнены нотами.\nПусто: такт {tact_index}, бит {bit_index}.",
+            )
+            return
+
+        self._playback_token += 1
+        self._metronome_active = True
+        self.play_started = False
         self.metronome_count = 0
         self.start_playhead_animation()
-        self.play_metronome_beat()
+        self.play_metronome_beat(self._playback_token)
 
-    def play_metronome_beat(self):
+    def play_metronome_beat(self, token: int):
+        if token != self._playback_token or not self._metronome_active:
+            return
+
         interval_ms = int(60 / self.lay.bpm * 1000)
         player.play_click()
         self.metronome_count += 1
+
         if self.metronome_count < self.metronome_beats:
-            QTimer.singleShot(interval_ms, self.play_metronome_beat)
-        elif self.playhead.isVisible():
-            if not self.play_started:
-                QTimer.singleShot(interval_ms - 50, self.lay.start_lesson)
-                QTimer.singleShot(interval_ms, self.start_playhead_animation)
-                QTimer.singleShot(interval_ms, lambda: self.animation_timer.start(50))
-            QTimer.singleShot(interval_ms, self.play_metronome_beat)
-            QTimer.singleShot(interval_ms - 50, lambda: setattr(self, "play_started", True))
+            QTimer.singleShot(interval_ms, lambda: self.play_metronome_beat(token))
+            return
+
+        if not self.playhead.isVisible():
+            self._metronome_active = False
+            return
+
+        if not self.play_started:
+            QTimer.singleShot(interval_ms - 50, lambda: self.lay.start_lesson(wait_for_input=self.practice_mode))
+            QTimer.singleShot(interval_ms, self.start_playhead_animation)
+            QTimer.singleShot(interval_ms, lambda: self.animation_timer.start(50))
+
+        QTimer.singleShot(interval_ms, lambda: self.play_metronome_beat(token))
+        QTimer.singleShot(interval_ms - 50, lambda: setattr(self, "play_started", True))
 
     def start_playhead_animation(self):
-        total_duration = 60 / self.lay.bpm * 4 * len(self.lay.tacts)
+        total_duration = 60 / self.lay.bpm * self.metronome_beats * len(self.lay.tacts)
         self.anim_total_duration = total_duration
         self.anim_start_time = time.time()
 
@@ -350,6 +394,7 @@ class CreatorController(QWidget):
         if elapsed >= self.anim_total_duration:
             self.animation_timer.stop()
             self.playhead.hide()
+            self._metronome_active = False
             return
 
         progress = elapsed / self.anim_total_duration
@@ -390,6 +435,7 @@ class CreatorController(QWidget):
         self.misses = 0
         self.metronome_count = 0
         self.play_started = False
+        self._metronome_active = False
         self.animation_timer.stop()
         self.playhead.hide()
         self.load_scene()

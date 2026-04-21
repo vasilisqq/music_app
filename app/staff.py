@@ -1151,8 +1151,9 @@ class StaffLayout:
                         player.play_chord(chord_notes, duration)
                     time.sleep(duration)
 
-    def start_lesson(self):
-        threading.Thread(target=self.touch_thread, daemon=True).start()
+    def start_lesson(self, wait_for_input: bool = True):
+        if wait_for_input:
+            threading.Thread(target=self.touch_thread, daemon=True).start()
         threading.Thread(target=self.sound_thread, daemon=True).start()
 
 

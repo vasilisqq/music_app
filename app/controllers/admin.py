@@ -1,7 +1,7 @@
 from PyQt6.QtWidgets import (
-    QMessageBox, QTableWidgetItem, QAbstractItemView, 
-    QDialog, QVBoxLayout, QHBoxLayout, QLabel, 
-    QLineEdit, QTextEdit, QPushButton, QMenu
+    QMessageBox, QTableWidgetItem, QAbstractItemView,
+    QDialog, QVBoxLayout, QHBoxLayout, QLabel,
+    QLineEdit, QTextEdit, QPushButton, QMenu, QComboBox
 )
 from PyQt6.QtCore import pyqtSignal
 from PyQt6.QtCore import Qt
@@ -9,8 +9,8 @@ from workers.topic_worker import TopicWorker
 from workers.auth_worker import AuthWorker
 from workers.lesson_worker import LessonWorker
 from schemas.topic import TopicCreate, TopicResponse
-from schemas.lesson import LessonResponse
-from PyQt6.QtWidgets import QMenu, QTableWidgetItem, QHeaderView
+from schemas.lesson import LessonResponse, LessonUpdate
+from PyQt6.QtWidgets import QHeaderView
 from PyQt6.QtGui import QColor, QBrush
 from controllers.creator import CreatorController
 
@@ -127,6 +127,51 @@ class AddTopicDialog(QDialog):
 
     def get_data(self):
         return self.name_edit.text().strip(), self.desc_edit.toPlainText().strip()
+
+class ChangeLessonTopicDialog(QDialog):
+    def __init__(self, parent, topics: list[tuple[int, str]], current_topic_id: int | None = None):
+        super().__init__(parent)
+        self.setWindowTitle("Сменить тему урока")
+        self.setMinimumSize(420, 160)
+
+        layout = QVBoxLayout(self)
+        layout.addWidget(QLabel("Выберите новую тему:"))
+
+        self.topic_combo = QComboBox()
+        for topic_id, topic_name in topics:
+            self.topic_combo.addItem(topic_name, topic_id)
+
+        if current_topic_id is not None:
+            idx = self.topic_combo.findData(current_topic_id)
+            if idx != -1:
+                self.topic_combo.setCurrentIndex(idx)
+
+        layout.addWidget(self.topic_combo)
+
+        btn_layout = QHBoxLayout()
+        self.btn_cancel = QPushButton("Отмена")
+        self.btn_apply = QPushButton("Сменить")
+
+        self.btn_apply.setStyleSheet(
+            "QPushButton { background: #3f8bde; color: white; border-radius: 8px; padding: 8px 15px; font-weight: bold; }"
+            "QPushButton:hover { background: #2968c0; }"
+        )
+        self.btn_cancel.setStyleSheet(
+            "QPushButton { background: #f0f0f0; color: #333; border-radius: 8px; padding: 8px 15px; font-weight: bold; border: 1px solid #ccc; }"
+            "QPushButton:hover { background: #e0e0e0; }"
+        )
+
+        btn_layout.addStretch()
+        btn_layout.addWidget(self.btn_cancel)
+        btn_layout.addWidget(self.btn_apply)
+        layout.addLayout(btn_layout)
+
+        self.btn_cancel.clicked.connect(self.reject)
+        self.btn_apply.clicked.connect(self.accept)
+
+    def get_selected_topic_id(self) -> int:
+        return int(self.topic_combo.currentData())
+
 
 class EditUserDialog(QDialog):
     save_requested = pyqtSignal(str, str)
@@ -287,7 +332,10 @@ class AdminController:
         self.ui.table_topics.cellClicked.connect(self.on_topic_selected)
         self.lesson_worker.lessons_by_topic_loaded_signal.connect(self.on_lessons_loaded)
         self.lesson_worker.lesson_deleted_signal.connect(self.on_lesson_deleted)
+        self.lesson_worker.lesson_updated_signal.connect(self.on_lesson_topic_changed)
         self.lesson_worker.lesson_error_sygnal.connect(self.show_error)
+
+        self._pending_lesson_topic_change_to: int | None = None
         self.setup_admin_panel()
         self.setup_users_table()
 
@@ -357,11 +405,14 @@ class AdminController:
         row = item.row()
         menu = QMenu(self.ui.centralwidget)
         edit_action = menu.addAction("✏️ Изменить")
+        change_topic_action = menu.addAction("📚 Сменить тему…")
         delete_action = menu.addAction("🗑️ Удалить")
         action = menu.exec(self.ui.table_lessons.viewport().mapToGlobal(pos))
 
         if action == edit_action:
             self.edit_lesson(row)
+        elif action == change_topic_action:
+            self.change_lesson_topic(row)
         elif action == delete_action:
             self.confirm_and_delete_lesson(row)
 
@@ -369,6 +420,60 @@ class AdminController:
         lesson = self.get_selected_lesson(row)
         time_signature = f"{int(float(lesson.rhythm) * 4)}/4"
         self.open_creator(time_signature, str(lesson.topic), lesson)
+
+    def _get_topics_from_table(self) -> list[tuple[int, str]]:
+        topics: list[tuple[int, str]] = []
+        for row in range(self.ui.table_topics.rowCount()):
+            id_item = self.ui.table_topics.item(row, 0)
+            name_item = self.ui.table_topics.item(row, 1)
+            if id_item is None or name_item is None:
+                continue
+            try:
+                topic_id = int(id_item.text())
+            except ValueError:
+                continue
+            topic_name = name_item.text()
+            topics.append((topic_id, topic_name))
+        return topics
+
+    def change_lesson_topic(self, row: int):
+        lesson = self.get_selected_lesson(row)
+        topics = self._get_topics_from_table()
+        if not topics:
+            QMessageBox.warning(self.ui.centralwidget, "Ошибка", "Список тем пуст.")
+            return
+
+        dialog = ChangeLessonTopicDialog(self.ui.centralwidget, topics, current_topic_id=lesson.topic)
+        if dialog.exec() != QDialog.DialogCode.Accepted:
+            return
+
+        new_topic_id = dialog.get_selected_topic_id()
+        if new_topic_id == lesson.topic:
+            return
+
+        self._pending_lesson_topic_change_to = new_topic_id
+        lesson_update = LessonUpdate(
+            name=lesson.name,
+            description=lesson.description,
+            difficult=lesson.difficult,
+            rhythm=float(lesson.rhythm),
+            notes=lesson.notes,
+            topic=new_topic_id,
+        )
+        self.lesson_worker.update_lesson(lesson.id, lesson_update)
+
+    def on_lesson_topic_changed(self, lesson: LessonResponse):
+        if self._pending_lesson_topic_change_to is None:
+            return
+
+        new_topic_id = self._pending_lesson_topic_change_to
+        self._pending_lesson_topic_change_to = None
+
+        self.selected_topic_id = new_topic_id
+        self.refresh_lessons(new_topic_id)
+        self.fetch_topics()
+
+        QMessageBox.information(self.ui.centralwidget, "Успех", "Тема урока изменена.")
 
     def confirm_and_delete_lesson(self, row: int):
         lesson = self.get_selected_lesson(row)
@@ -464,6 +569,15 @@ class AdminController:
             # Обращаемся к атрибутам через точку: topic.name, topic.id
             desc = topic.description if topic.description else ""
             self._insert_topic_row(row_index, topic.id, topic.name, desc, topic.lessons_count)
+
+        if self.selected_topic_id is None:
+            return
+
+        for row in range(self.ui.table_topics.rowCount()):
+            id_item = self.ui.table_topics.item(row, 0)
+            if id_item and id_item.text().isdigit() and int(id_item.text()) == self.selected_topic_id:
+                self.ui.table_topics.setCurrentCell(row, 1)
+                return
 
     def show_add_topic_dialog(self):
         dialog = AddTopicDialog(self.ui.centralwidget)
