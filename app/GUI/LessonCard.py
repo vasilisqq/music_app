@@ -3,12 +3,13 @@ from PyQt6.QtCore import Qt, QRect, QRectF, pyqtSignal, QSize, QPoint
 from PyQt6.QtGui import QPainter, QColor, QBrush, QPen, QLinearGradient, QPainterPath
 
 class LessonCard(QFrame):
-    clicked = pyqtSignal(str)
+    clicked = pyqtSignal(object)
 
-    def __init__(self, title="", progress=0.0, parent=None):
+    def __init__(self, title="", progress=0.0, payload=None, parent=None):
         super().__init__(parent)
         self._progress = progress
         self.title = title
+        self.payload = payload
         
         # Строго фиксированный размер, который не меняется
         self.setFixedSize(320, 200)
@@ -76,8 +77,8 @@ class LessonCard(QFrame):
     def mousePressEvent(self, event):
         if event.button() == Qt.MouseButton.LeftButton:
             self.shadow.setYOffset(2)
-            self.clicked.emit(self.title)
-            
+            self.clicked.emit(self.payload if self.payload is not None else self.title)
+
     def mouseReleaseEvent(self, event):
         if self.underMouse():
             self.shadow.setYOffset(8)

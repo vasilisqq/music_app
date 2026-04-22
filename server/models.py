@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, DECIMAL
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, DECIMAL, UniqueConstraint
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.sql import func
@@ -50,8 +50,23 @@ class Lesson(Base):
     topic = Column(Integer, nullable=False)
 
     topic_id = Column(Integer, ForeignKey("topic.id"), nullable=False)
+    order_in_topic = Column(Integer, nullable=False, index=True)
+
     topic_info = relationship("Topic", back_populates="lessons")
-    
 
 
-    
+class LessonProgress(Base):
+    __tablename__ = "lesson_progress"
+    __table_args__ = (UniqueConstraint("user_id", "lesson_id", name="uq_user_lesson"),)
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("user.id"), nullable=False, index=True)
+    lesson_id = Column(Integer, ForeignKey("lesson.id"), nullable=False, index=True)
+    completed_at = Column(DateTime(timezone=True), nullable=True)
+
+    user = relationship("User")
+    lesson = relationship("Lesson")
+
+
+
+

@@ -315,29 +315,30 @@ class NoteItem(QGraphicsEllipseItem):
 
 class HighlightableLineItem(QGraphicsLineItem):
     """Класс линии, которая подсвечивается при наведении"""
-    
+
     def __init__(self, line:QLineF, tact, y, note_name, transparent=False, parent=None):
         super().__init__(line, parent)
-        self.line_obj = line   
+        self.line_obj = line
         self.tact = tact
+        self.read_only = False
         self.y = y
         # Стандартные параметры линии
         self.normal_pen = QPen(Qt.GlobalColor.transparent) if transparent else  QPen(Qt.GlobalColor.black)
         self.normal_pen.setWidthF(LINE_WIDTH)
-        
+
         # Параметры при наведении
         self.hover_pen = QPen(QColor(255, 0, 0))  # Красный цвет
         self.hover_pen.setWidthF(LINE_WIDTH*1.5)  # Толще обычной линии
-        
+
         # Устанавливаем стандартное перо
         self.setPen(self.normal_pen)
-        
+
         # Включаем обработку событий наведения
         self.setAcceptHoverEvents(True)
         self.setAcceptTouchEvents(True)
         # Флаг наведения
         self.is_hovered = False
-        
+
         # Для отладки можно сохранить номер линии
         self.line_number = -1
         self.note_name = note_name
@@ -346,39 +347,39 @@ class HighlightableLineItem(QGraphicsLineItem):
         """Событие при наведении курсора"""
         self.is_hovered = True
         self.setPen(self.hover_pen)
-        # line = self.line_obj
-        # self.setLine(line.x1(), line.y1(), line.x2()+200, line.y2())
         self.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.update()  # Принудительное обновление
+        self.update()
         super().hoverEnterEvent(event)
-    
+
     def hoverLeaveEvent(self, event):
         """Событие при уходе курсора"""
         self.is_hovered = False
         self.setPen(self.normal_pen)
-        # self.setLine(self.line_obj)
         self.unsetCursor()
-        self.update()  # Принудительное обновление
+        self.update()
         super().hoverLeaveEvent(event)
 
     def mousePressEvent(self, event):
         """Обработка клика на линии"""
+        if self.read_only:
+            super().mousePressEvent(event)
+            return
+
         if event.button() == Qt.MouseButton.LeftButton and self.is_hovered:
-            # Получаем позицию клика
             pos = event.pos()
             scene_pos = self.mapToScene(pos)
-            # Сообщаем такту, что нужно добавить ноту на этой линии
             self.tact.add_note_at_position(scene_pos.x(), self)
-        
+
         super().mousePressEvent(event)
 
 
 class StaffSpaceItem(QGraphicsRectItem):
     """Класс для пространства между линиями нотного стана"""
-    
+
     def __init__(self, rect, space_number, tact, note_name, y, parent=None):
         super().__init__(rect, parent)
         self.tact = tact
+        self.read_only = False
         self.note_name = note_name
         self.y = y
         # Сохраняем номер пространства 
@@ -428,13 +429,15 @@ class StaffSpaceItem(QGraphicsRectItem):
 
     def mousePressEvent(self, event):
         """Обработка клика на линии"""
+        if self.read_only:
+            super().mousePressEvent(event)
+            return
+
         if event.button() == Qt.MouseButton.LeftButton and self.is_hovered:
-            # Получаем позицию клика
             pos = event.pos()
             scene_pos = self.mapToScene(pos)
-            # Сообщаем такту, что нужно добавить ноту на этой линии
             self.tact.add_note_at_position(scene_pos.x(), self)
-        
+
         super().mousePressEvent(event)
 
 
@@ -982,8 +985,9 @@ class Tact:
 
 
 class StaffLayout:
-    def __init__(self, scene, time_signature="4/4"):
+    def __init__(self, scene, time_signature="4/4", read_only: bool = False):
         self.left_hand = False
+        self.read_only = read_only
         self.tacts = []
         self.time_signature = time_signature
         self.tacts_per_rows = 0
@@ -1024,6 +1028,7 @@ class StaffLayout:
 
     def init_staff(self, scene):
         self.current_tact = Tact(self.y_bottom, scene, len(self.tacts), duration=self.current_duration, numerator=self.beats_per_measure)
+        self._apply_read_only_to_tact(self.current_tact)
         self.tacts.append(self.current_tact)
         self.tacts_per_rows = 1
         # Добавляем скрипичный ключ
@@ -1151,15 +1156,25 @@ class StaffLayout:
                         player.play_chord(chord_notes, duration)
                     time.sleep(duration)
 
-    def start_lesson(self, wait_for_input: bool = True):
+    def start_lesson(self, wait_for_input: bool = True, play_sound: bool = True):
         if wait_for_input:
             threading.Thread(target=self.touch_thread, daemon=True).start()
-        threading.Thread(target=self.sound_thread, daemon=True).start()
+        if play_sound:
+            threading.Thread(target=self.sound_thread, daemon=True).start()
 
 
     def change_accidental(self, data):
         self.accidental = data
 
+
+    def _apply_read_only_to_tact(self, tact):
+        try:
+            for item in getattr(tact, "lines", []) or []:
+                item.read_only = self.read_only
+            for item in getattr(tact, "spaces", []) or []:
+                item.read_only = self.read_only
+        except Exception:
+            pass
 
     def add_tact(self):
         pred_tact = self.tacts[-1]
@@ -1168,9 +1183,11 @@ class StaffLayout:
             self.x = X0
             self.y += (self.staff_height + 100)
             self.current_tact = Tact(self.y_bottom, self.scene, len(self.tacts), X0, self.y, self.current_duration,self.beats_per_measure)
-        else:    
-            self.x = new_x0 
+        else:
+            self.x = new_x0
             self.current_tact = Tact(self.y_bottom, self.scene, len(self.tacts), new_x0, self.y, self.current_duration,self.beats_per_measure)
+
+        self._apply_read_only_to_tact(self.current_tact)
         self.tacts.append(self.current_tact)
         current_rect = self.scene.sceneRect()
         # # Получаем реальные границы всех объектов

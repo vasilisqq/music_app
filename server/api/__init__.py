@@ -2,6 +2,7 @@ from fastapi import APIRouter
 from .auth import router as auth_router
 from .lesson import router as lesson_router
 from .topic import router as topic_router
+from .progress import router as progress_router
 # from .users import router as users_router
 
 api_router = APIRouter()
@@ -10,4 +11,5 @@ api_router = APIRouter()
 api_router.include_router(auth_router)
 api_router.include_router(lesson_router)
 api_router.include_router(topic_router)
+api_router.include_router(progress_router)
 

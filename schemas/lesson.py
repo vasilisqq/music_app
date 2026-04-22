@@ -8,6 +8,7 @@ class LessonBase(BaseModel):
     rhythm: float
     notes: dict
     topic: int
+    order_in_topic: int | None = None
 
     model_config = ConfigDict(from_attributes=True)
 
