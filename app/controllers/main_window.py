@@ -176,7 +176,7 @@ class Main(QMainWindow):
             prev_completed = is_completed
 
     def _on_lesson_clicked(self, item: QListWidgetItem):
-        # 1. ПРОВЕРКА: Если флаг ItemIsEnabled снят (урок заблокирован), прерываем переход
+        # Проверка на блокировку урока
         if not (item.flags() & Qt.ItemFlag.ItemIsEnabled):
             self._show_error("Этот урок пока заблокирован. Пройдите предыдущие упражнения в теме.")
             return
@@ -190,6 +190,9 @@ class Main(QMainWindow):
 
         from controllers.lesson_player import LessonPlayerController
 
+        # Скрываем боковое меню (как в CreatorController)
+        self.ui.drawerWidget.hide()
+
         self.lesson_player_page = LessonPlayerController(lesson)
         self.lesson_player_page.closed.connect(self._on_lesson_player_closed)
 
@@ -198,6 +201,9 @@ class Main(QMainWindow):
 
 
     def _on_lesson_player_closed(self, was_completed: bool):
+        # Возвращаем боковое меню при закрытии урока
+        self.ui.drawerWidget.show()
+
         if was_completed and self._selected_topic_id is not None:
             self.progress_worker.get_completed_lessons_for_topic(self._selected_topic_id)
 

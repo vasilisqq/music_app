@@ -25,15 +25,18 @@ class Ui_MainWindow(object):
 "QPushButton {\n"
 "  background: qlineargradient(x1:0,y1:0,x2:0,y2:1, stop:0 #3f8bde, stop:1 #2968c0);\n"
 "  border-radius: 8px;\n"
-"  padding: 6px 12px; /* Уменьшено с 10/20 */\n"
-"  font-size: 13px;\n"
+"  font-size: 15px;\n"
 "  font-weight: bold;\n"
 "  color: white;\n"
 "  border: none;\n"
-"  min-width: 80px; /* Уменьшено со 100 */\n"
+"  min-width: 120px;  /* Не сожмется меньше 100 пикселей */\n"
+"  max-width: 350px;  /* Не растянется больше 350 пикселей */\n"
+"  min-height: 45px;  /* Фиксируем высоту для кликабельности */\n"
 "}\n"
 "QPushButton#exit_button {\n"
-"  min-width: 35px;\n"
+"  min-width: 45px; /* Крестик тоже чуть увеличен */\n"
+"  min-height: 45px; /* Сделан квадратным для удобства нажатия */\n"
+"  border-radius: 8px;\n"
 "  background: #ff4444;\n"
 "}\n"
 "QComboBox {\n"
@@ -94,6 +97,12 @@ class Ui_MainWindow(object):
         self.reset_button = QtWidgets.QPushButton(parent=MainWindow)
         self.reset_button.setObjectName("reset_button")
         self.buttonsRow.addWidget(self.reset_button)
+        policy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Fixed)
+        self.start_button.setSizePolicy(policy)
+        self.add_tact_button.setSizePolicy(policy)
+        self.delete_tact_button.setSizePolicy(policy)
+        self.save_button.setSizePolicy(policy)
+        self.reset_button.setSizePolicy(policy)
         spacerItem = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum)
         self.buttonsRow.addItem(spacerItem)
         self.exit_button = QtWidgets.QPushButton(parent=MainWindow)
