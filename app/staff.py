@@ -322,29 +322,25 @@ class HighlightableLineItem(QGraphicsLineItem):
         self.tact = tact
         self.read_only = False
         self.y = y
-        # Стандартные параметры линии
-        self.normal_pen = QPen(Qt.GlobalColor.transparent) if transparent else  QPen(Qt.GlobalColor.black)
+        self.transparent = transparent
+        self.normal_pen = QPen(Qt.GlobalColor.transparent) if transparent else QPen(Qt.GlobalColor.black)
         self.normal_pen.setWidthF(LINE_WIDTH)
-
-        # Параметры при наведении
-        self.hover_pen = QPen(QColor(255, 0, 0))  # Красный цвет
-        self.hover_pen.setWidthF(LINE_WIDTH*1.5)  # Толще обычной линии
-
-        # Устанавливаем стандартное перо
+        self.hover_pen = QPen(QColor(255, 0, 0))
+        self.hover_pen.setWidthF(LINE_WIDTH * 1.5)
         self.setPen(self.normal_pen)
-
-        # Включаем обработку событий наведения
         self.setAcceptHoverEvents(True)
         self.setAcceptTouchEvents(True)
-        # Флаг наведения
         self.is_hovered = False
-
-        # Для отладки можно сохранить номер линии
         self.line_number = -1
         self.note_name = note_name
 
     def hoverEnterEvent(self, event):
         """Событие при наведении курсора"""
+        if self.read_only:
+            self.is_hovered = False
+            self.unsetCursor()
+            self.setPen(self.normal_pen)
+            return super().hoverEnterEvent(event)
         self.is_hovered = True
         self.setPen(self.hover_pen)
         self.setCursor(Qt.CursorShape.PointingHandCursor)
@@ -358,6 +354,16 @@ class HighlightableLineItem(QGraphicsLineItem):
         self.unsetCursor()
         self.update()
         super().hoverLeaveEvent(event)
+
+    def set_read_only(self, value: bool):
+        self.read_only = value
+        self.is_hovered = False
+        self.setPen(self.normal_pen)
+        self.unsetCursor()
+        self.update()
+
+    def set_highlight_enabled(self, enabled: bool):
+        self.set_read_only(not enabled)
 
     def mousePressEvent(self, event):
         """Обработка клика на линии"""
@@ -382,50 +388,47 @@ class StaffSpaceItem(QGraphicsRectItem):
         self.read_only = False
         self.note_name = note_name
         self.y = y
-        # Сохраняем номер пространства 
         self.space_number = space_number
-        
-        # Прозрачная заливка по умолчанию
         self.normal_brush = QBrush(Qt.GlobalColor.transparent)
         self.normal_pen = QPen(Qt.GlobalColor.transparent)
-        
-        # Заливка при наведении
-        self.hover_brush = QBrush(QColor(173, 216, 230, 80))  # Светло-голубой с прозрачностью
+        self.hover_brush = QBrush(QColor(173, 216, 230, 80))
         self.hover_pen = QPen(Qt.GlobalColor.transparent)
-        
-        # Устанавливаем стандартные параметры
         self.setBrush(self.normal_brush)
         self.setPen(self.normal_pen)
-        
-        # Включаем обработку событий наведения
         self.setAcceptHoverEvents(True)
-        
-        # Флаг наведения
         self.is_hovered = False
-    
+
     def hoverEnterEvent(self, event):
         """Событие при наведении курсора"""
+        if self.read_only:
+            self.is_hovered = False
+            self.setBrush(self.normal_brush)
+            self.setPen(self.normal_pen)
+            self.unsetCursor()
+            return super().hoverEnterEvent(event)
         self.is_hovered = True
         self.setBrush(self.hover_brush)
         self.setPen(self.hover_pen)
-        
-        # Меняем курсор на указатель
         self.setCursor(Qt.CursorShape.PointingHandCursor)
-        
         self.update()
         super().hoverEnterEvent(event)
-    
+
     def hoverLeaveEvent(self, event):
         """Событие при уходе курсора"""
         self.is_hovered = False
         self.setBrush(self.normal_brush)
         self.setPen(self.normal_pen)
-        
-        # Возвращаем стандартный курсор
         self.unsetCursor()
-        
         self.update()
         super().hoverLeaveEvent(event)
+
+    def set_read_only(self, value: bool):
+        self.read_only = value
+        self.is_hovered = False
+        self.setBrush(self.normal_brush)
+        self.setPen(self.normal_pen)
+        self.unsetCursor()
+        self.update()
 
     def mousePressEvent(self, event):
         """Обработка клика на линии"""
@@ -512,15 +515,22 @@ class Bits(QGraphicsRectItem):
         self.weigth = weigth
         self.full = False
         self.tact = tact
-        # self.y0 = Y0
-        # self.y1 = y1
-
         self.normal_brush = QBrush(Qt.GlobalColor.transparent)
-        self.normal_pen = QPen(QColor(100, 100, 100, 50),1.5, Qt.PenStyle.SolidLine)
-        # self.normal_pen.width()
-
+        self.normal_pen = QPen(QColor(100, 100, 100, 50), 1.5, Qt.PenStyle.SolidLine)
+        self.hidden_pen = QPen(Qt.GlobalColor.transparent)
+        self.read_only = False
         self.setBrush(self.normal_brush)
         self.setPen(self.normal_pen)
+
+    def set_read_only(self, value: bool):
+        self.read_only = value
+        self.setBrush(self.normal_brush)
+        self.setPen(self.hidden_pen if value else self.normal_pen)
+        self.update()
+
+    def setVisible(self, visible):
+        super().setVisible(visible)
+        self.update()
 
 
     def isExist_note(self, line: StaffSpaceItem | HighlightableLineItem):
@@ -1170,9 +1180,18 @@ class StaffLayout:
     def _apply_read_only_to_tact(self, tact):
         try:
             for item in getattr(tact, "lines", []) or []:
-                item.read_only = self.read_only
+                if hasattr(item, "set_read_only"):
+                    item.set_read_only(self.read_only)
+                else:
+                    item.read_only = self.read_only
             for item in getattr(tact, "spaces", []) or []:
-                item.read_only = self.read_only
+                if hasattr(item, "set_read_only"):
+                    item.set_read_only(self.read_only)
+                else:
+                    item.read_only = self.read_only
+            for item in getattr(tact, "bits", []) or []:
+                if hasattr(item, "set_read_only"):
+                    item.set_read_only(self.read_only)
         except Exception:
             pass
 
