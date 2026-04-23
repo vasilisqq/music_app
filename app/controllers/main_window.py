@@ -176,6 +176,11 @@ class Main(QMainWindow):
             prev_completed = is_completed
 
     def _on_lesson_clicked(self, item: QListWidgetItem):
+        # 1. ПРОВЕРКА: Если флаг ItemIsEnabled снят (урок заблокирован), прерываем переход
+        if not (item.flags() & Qt.ItemFlag.ItemIsEnabled):
+            self._show_error("Этот урок пока заблокирован. Пройдите предыдущие упражнения в теме.")
+            return
+
         lesson = item.data(Qt.ItemDataRole.UserRole + 1)
         if lesson is None:
             lesson_id = int(item.data(Qt.ItemDataRole.UserRole))

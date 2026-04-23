@@ -6,7 +6,7 @@ from core.dependencies import get_lesson_service, is_admin, get_current_active_u
 import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-from schemas.lesson import LessonCreate, LessonUpdate, LessonResponse
+from schemas.lesson import LessonCreate, LessonUpdate, LessonResponse, LessonWithStatusResponse
 
 
 router = APIRouter(tags=["lessons"], prefix="/lesson")
@@ -76,11 +76,12 @@ async def delete_lesson(
     return await lesson_service.delete_lesson(lesson_id)
 
 
-@router.get("/topic/{topic_id}", response_model=list[LessonResponse])
+@router.get("/topic/{topic_id}", response_model=list[LessonWithStatusResponse])
 async def get_lessons_by_topic(
     topic_id: int,
     lesson_service: LessonService = Depends(get_lesson_service),
     current_user = Depends(get_current_active_user)
 ):
-    lessons = await lesson_service.get_lessons_by_topic(topic_id)
+    # Теперь используем новый метод и передаем ID текущего пользователя
+    lessons = await lesson_service.get_lessons_with_status_by_topic(topic_id, current_user.id)
     return lessons

@@ -3,8 +3,7 @@ from typing import Optional
 from fastapi import HTTPException
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-
-from models import Lesson
+from models import Lesson, LessonProgress
 from schemas.lesson import LessonCreate, LessonUpdate
 
 
@@ -110,3 +109,44 @@ class LessonService:
             .order_by(Lesson.order_in_topic.asc())
         )
         return result.scalars().all()
+    
+
+    async def get_lessons_with_status_by_topic(self, topic_id: int, user_id: int):
+        # 1. Получаем все уроки темы, отсортированные по порядку
+        result = await self.db.execute(
+            select(Lesson)
+            .where(Lesson.topic_id == topic_id)
+            .order_by(Lesson.order_in_topic.asc())
+        )
+        lessons = result.scalars().all()
+
+        if not lessons:
+            return []
+
+        # 2. Получаем ID всех пройденных уроков пользователя в этой теме
+        progress_result = await self.db.execute(
+            select(LessonProgress.lesson_id)
+            .join(Lesson, Lesson.id == LessonProgress.lesson_id)
+            .where(LessonProgress.user_id == user_id)
+            .where(Lesson.topic_id == topic_id)
+            .where(LessonProgress.completed_at.is_not(None))
+        )
+        completed_lesson_ids = set(progress_result.scalars().all())
+
+        # 3. Находим максимальный order_in_topic среди пройденных уроков
+        max_completed_order = 0
+        for lesson in lessons:
+            if lesson.id in completed_lesson_ids:
+                if lesson.order_in_topic > max_completed_order:
+                    max_completed_order = lesson.order_in_topic
+
+        # 4. Присваиваем статусы "на лету"
+        for lesson in lessons:
+            if lesson.id in completed_lesson_ids:
+                lesson.status = "completed"
+            elif lesson.order_in_topic <= max_completed_order + 1:
+                lesson.status = "available"
+            else:
+                lesson.status = "locked"
+
+        return lessons
