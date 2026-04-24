@@ -3,13 +3,16 @@ from __future__ import annotations
 import time
 
 from PyQt6.QtCore import Qt, QTimer, pyqtSignal
-from PyQt6.QtGui import QColor, QPen
+from PyQt6.QtGui import QColor, QBrush, QPen
 from PyQt6.QtWidgets import (
+    QGraphicsEllipseItem,
     QGraphicsLineItem,
     QGraphicsScene,
+    QHBoxLayout,
     QLabel,
     QMessageBox,
     QPushButton,
+    QScrollArea,
     QSizePolicy,
     QVBoxLayout,
     QWidget,
@@ -51,10 +54,42 @@ class LessonPlayerController(QWidget):
         self.playhead_timer.setInterval(16)
         self.playhead_timer.timeout.connect(self._update_playhead)
 
+        self._setup_scroll_page()
         self._setup_readonly_ui()
         self._setup_scene()
         self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
         self.setFocus()
+
+    def _setup_scroll_page(self):
+        root_layout = self.layout()
+        self.page_widget = QWidget(self)
+        self.page_layout = QVBoxLayout(self.page_widget)
+        self.page_layout.setContentsMargins(20, 20, 20, 20)
+        self.page_layout.setSpacing(15)
+
+        items = []
+        while root_layout.count():
+            items.append(root_layout.takeAt(0))
+
+        for item in items:
+            if item.widget() is not None:
+                self.page_layout.addWidget(item.widget())
+            elif item.layout() is not None:
+                self.page_layout.addLayout(item.layout())
+            elif item.spacerItem() is not None:
+                self.page_layout.addItem(item.spacerItem())
+
+        self.page_widget.setSizePolicy(QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred))
+
+        self.scroll_area = QScrollArea(self)
+        self.scroll_area.setWidgetResizable(True)
+        self.scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        self.scroll_area.setStyleSheet("QScrollArea { background: transparent; border: none; }")
+        self.scroll_area.setWidget(self.page_widget)
+        root_layout.addWidget(self.scroll_area)
+
+        self.ui.verticalLayout = self.page_layout
 
     def _apply_equal_button_style(self, button: QPushButton):
         button.setSizePolicy(QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed))
@@ -63,9 +98,10 @@ class LessonPlayerController(QWidget):
         button.setCursor(Qt.CursorShape.PointingHandCursor)
 
     def _toggle_description(self, checked: bool):
+        self.description_preview_label.setVisible(not checked)
         self.description_label.setVisible(checked)
-        self.description_toggle.setText("Скрыть описание" if checked else "Показать описание")
-        self.adjustSize()
+        self.description_toggle.setText("▲" if checked else "▼")
+        self.page_widget.adjustSize()
 
     def _build_header(self) -> QWidget:
         header = QWidget(self)
@@ -79,19 +115,37 @@ class LessonPlayerController(QWidget):
 
         description = (self.lesson.description or "").strip()
         if description:
-            self.description_toggle = QPushButton("Показать описание")
+            preview = description if len(description) <= 80 else description[:79].rstrip() + "…"
+
+            preview_row = QHBoxLayout()
+            preview_row.setContentsMargins(0, 0, 0, 0)
+            preview_row.setSpacing(4)
+
+            self.description_preview_label = QLabel(preview)
+            self.description_preview_label.setWordWrap(False)
+            self.description_preview_label.setStyleSheet("font-size: 12px; color: rgba(26, 26, 26, 0.7);")
+            self.description_preview_label.setSizePolicy(QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred))
+
+            self.description_toggle = QPushButton("▼")
             self.description_toggle.setCheckable(True)
             self.description_toggle.setSizePolicy(QSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed))
-            self.description_toggle.setMinimumHeight(40)
+            self.description_toggle.setFixedSize(20, 20)
             self.description_toggle.setCursor(Qt.CursorShape.PointingHandCursor)
+            self.description_toggle.setStyleSheet(
+                "QPushButton { background: transparent; border: none; color: rgba(26, 26, 26, 0.5); font-size: 14px; padding: 0px; }"
+                "QPushButton:hover { color: rgba(26, 26, 26, 0.8); }"
+                "QPushButton:checked { color: rgba(26, 26, 26, 0.8); }"
+            )
 
             self.description_label = QLabel(description)
             self.description_label.setWordWrap(True)
             self.description_label.setVisible(False)
-            self.description_label.setStyleSheet("font-size: 12px; color: rgba(26, 26, 26, 0.7);")
+            self.description_label.setStyleSheet("font-size: 12px; color: rgba(26, 26, 26, 0.7); padding-left: 0px; margin-top: 2px;")
 
             self.description_toggle.toggled.connect(self._toggle_description)
-            header_layout.addWidget(self.description_toggle, 0, Qt.AlignmentFlag.AlignLeft)
+            preview_row.addWidget(self.description_preview_label, 1)
+            preview_row.addWidget(self.description_toggle, 0, Qt.AlignmentFlag.AlignTop)
+            header_layout.addLayout(preview_row)
             header_layout.addWidget(self.description_label)
 
         return header
@@ -124,13 +178,16 @@ class LessonPlayerController(QWidget):
         )
 
         self.ui.verticalLayout.insertWidget(0, self._build_header())
+        self.ui.verticalLayout.addStretch()
         self.ui.buttonsRow.insertWidget(1, self.repeat_button)
 
         self.ui.exit_button.clicked.connect(self._close)
         self.ui.start_button.clicked.connect(self._listen)
         self.repeat_button.clicked.connect(self._repeat)
 
-        self.ui.graphicsView.setMinimumHeight(520)
+        self.ui.graphicsView.setSizePolicy(QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred))
+        self.ui.graphicsView.setMinimumHeight(400)
+        self.ui.graphicsView.setMaximumHeight(560)
         self.ui.graphicsView.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.ui.graphicsView.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
 
@@ -221,7 +278,13 @@ class LessonPlayerController(QWidget):
 
         if remaining_beats == 1:
             player.play_click()
-            QTimer.singleShot(interval_ms - 50, lambda: self.staff_layout.start_lesson(wait_for_input=practice_mode, play_sound=True))
+            QTimer.singleShot(
+                interval_ms - 50,
+                lambda: self.staff_layout.start_lesson(
+                    wait_for_input=practice_mode,
+                    play_sound=not practice_mode,
+                ),
+            )
             QTimer.singleShot(interval_ms, lambda: self._start_synced_playback(token))
 
     def _start_synced_playback(self, token: int):
@@ -258,13 +321,36 @@ class LessonPlayerController(QWidget):
             return
         super().keyPressEvent(event)
 
-    def _on_note_correct(self, *_args):
-        if self._practice_mode:
-            self._correct += 1
+    def _create_feedback_circle(self, note_item, is_correct: bool):
+        if note_item is None:
+            return
+        x = float(getattr(note_item, "x", 0)) + 16
+        y = float(getattr(note_item, "y", 0)) - 18
+        circle = QGraphicsEllipseItem(x - 6, y - 6, 12, 12)
+        color = QColor("green") if is_correct else QColor("red")
+        circle.setBrush(QBrush(color))
+        circle.setPen(QPen(Qt.GlobalColor.transparent))
+        circle.setZValue(150)
+        self.scene.addItem(circle)
 
-    def _on_note_wrong(self, *_args):
-        if self._practice_mode:
-            self._wrong += 1
+    def _create_feedback_markers(self, note_item, is_correct: bool):
+        if note_item is None:
+            return
+        notes = getattr(getattr(note_item, "bit", None), "notes", None) or [note_item]
+        for bit_note in notes:
+            self._create_feedback_circle(bit_note, is_correct=is_correct)
+
+    def _on_note_correct(self, note_item, _note_name):
+        if not self._practice_mode:
+            return
+        self._correct += 1
+        self._create_feedback_markers(note_item, is_correct=True)
+
+    def _on_note_wrong(self, note_item, _note_name, _is_timeout):
+        if not self._practice_mode:
+            return
+        self._wrong += 1
+        self._create_feedback_markers(note_item, is_correct=False)
 
     def _finish_repeat(self):
         self._metronome_active = False

@@ -133,7 +133,7 @@ class Main(QMainWindow):
 
     def _render_lessons_with_locks(self):
         self.ui.topicsListWidget.clear()
-        self.ui.topicsListWidget.setSpacing(8)
+        self.ui.topicsListWidget.setSpacing(12)
         self.ui.topicsListWidget.setUniformItemSizes(False)
 
         prev_completed = True
@@ -153,7 +153,7 @@ class Main(QMainWindow):
 
             widget = LessonListItemWidget(
                 title=lesson.name,
-                description=truncate(getattr(lesson, "description", ""), 160),
+                difficulty=getattr(lesson, "difficult", 0),
                 icon=icon,
                 locked=not is_unlocked,
             )
@@ -169,11 +169,6 @@ class Main(QMainWindow):
             self.ui.topicsListWidget.setItemWidget(item, widget)
             prev_completed = is_completed
             item.setSizeHint(item.sizeHint().expandedTo(widget.sizeHint()))
-            
-
-            self.ui.topicsListWidget.addItem(item)
-            self.ui.topicsListWidget.setItemWidget(item, widget)
-            prev_completed = is_completed
 
     def _on_lesson_clicked(self, item: QListWidgetItem):
         # Проверка на блокировку урока
