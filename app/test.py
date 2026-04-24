@@ -101,6 +101,7 @@ class PianoPlayer(QObject):
 
     note_correct = pyqtSignal(object, str)   # передаёт объект ноты и её имя
     note_wrong = pyqtSignal(object, str, bool)
+    note_ignored = pyqtSignal()
 
     def __init__(self, note_cache, sample_rate):
         super().__init__()
@@ -237,8 +238,7 @@ class PianoPlayer(QObject):
     def check_space_press(self):
         """Вызывается при нажатии пробела извне"""
         if self.current_note_await_time is None:
-            print(self.current_note_item, "test")
-            self.note_wrong.emit(self.current_note_item, self.current_note_await, False)
+            self.note_ignored.emit()
             return False
         now = time.time()
         dt = now - self.current_note_await_time

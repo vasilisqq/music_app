@@ -43,8 +43,11 @@ class LessonPlayerController(QWidget):
         self._practice_mode = False
         self._correct = 0
         self._wrong = 0
+        self._idle_presses = 0
         self._playback_token = 0
         self._metronome_active = False
+        self._feedback_items = []
+        self._input_active = False
 
         self._repeat_timer = QTimer()
         self._repeat_timer.setSingleShot(True)
@@ -228,13 +231,17 @@ class LessonPlayerController(QWidget):
 
     def _start_sequence(self, practice_mode: bool):
         self._stop_practice_listeners()
+        self._clear_feedback_markers()
         self._practice_mode = practice_mode
+        self._input_active = False
         self._correct = 0
         self._wrong = 0
+        self._idle_presses = 0
 
         if practice_mode:
             player.note_correct.connect(self._on_note_correct)
             player.note_wrong.connect(self._on_note_wrong)
+            player.note_ignored.connect(self._on_note_ignored)
 
         self._playback_token += 1
         token = self._playback_token
@@ -247,6 +254,26 @@ class LessonPlayerController(QWidget):
         interval_ms = int((60.0 / bpm) * 1000)
         beats = int(getattr(self.staff_layout, "beats_per_measure", 4))
         self._count_in(beats, interval_ms, token, practice_mode)
+
+    def _clear_feedback_markers(self):
+        for item in self._feedback_items:
+            try:
+                self.scene.removeItem(item)
+            except Exception:
+                pass
+        self._feedback_items.clear()
+
+        current_note_await = getattr(player, "current_note_await", None)
+        if current_note_await is not None:
+            player.current_note_await = None
+            player.current_note_await_time = None
+            player.space_pressed_in_window = False
+            player.current_note_item = None
+        current_note_name = getattr(player, "current_note_name", None)
+        if current_note_name is not None:
+            player.current_note_name = None
+            player.current_note_start_time = None
+            player.pre_start_active = False
 
     def _update_playhead(self):
         elapsed = time.time() - self._playhead_start_time
@@ -278,18 +305,17 @@ class LessonPlayerController(QWidget):
 
         if remaining_beats == 1:
             player.play_click()
-            QTimer.singleShot(
-                interval_ms - 50,
-                lambda: self.staff_layout.start_lesson(
-                    wait_for_input=practice_mode,
-                    play_sound=not practice_mode,
-                ),
-            )
-            QTimer.singleShot(interval_ms, lambda: self._start_synced_playback(token))
+            QTimer.singleShot(interval_ms, lambda: self._start_synced_playback(token, practice_mode))
 
-    def _start_synced_playback(self, token: int):
+    def _start_synced_playback(self, token: int, practice_mode: bool):
         if token != self._playback_token:
             return
+
+        self._input_active = practice_mode
+        self.staff_layout.start_lesson(
+            wait_for_input=practice_mode,
+            play_sound=not practice_mode,
+        )
 
         self._metronome_active = True
         self._play_metronome_beat(token)
@@ -316,22 +342,39 @@ class LessonPlayerController(QWidget):
 
     def keyPressEvent(self, event):
         if self._practice_mode and event.key() == Qt.Key.Key_Space:
-            player.check_space_press()
+            if self._input_active:
+                player.check_space_press()
             event.accept()
             return
         super().keyPressEvent(event)
 
-    def _create_feedback_circle(self, note_item, is_correct: bool):
-        if note_item is None:
-            return
-        x = float(getattr(note_item, "x", 0)) + 16
-        y = float(getattr(note_item, "y", 0)) - 18
+    def _add_feedback_circle(self, x: float, y: float, is_correct: bool):
         circle = QGraphicsEllipseItem(x - 6, y - 6, 12, 12)
         color = QColor("green") if is_correct else QColor("red")
         circle.setBrush(QBrush(color))
         circle.setPen(QPen(Qt.GlobalColor.transparent))
         circle.setZValue(150)
         self.scene.addItem(circle)
+        self._feedback_items.append(circle)
+
+    def _create_feedback_circle(self, note_item, is_correct: bool):
+        if note_item is None:
+            return
+
+        note_rect = note_item.boundingRect()
+        note_center = note_item.mapToScene(note_rect.center())
+        x = note_center.x() + 10
+        y = note_center.y()
+        self._add_feedback_circle(x, y, is_correct=is_correct)
+
+    def _create_playhead_feedback_circle(self, is_correct: bool):
+        if not self.playhead_line.isVisible():
+            return
+
+        line = self.playhead_line.line()
+        x = line.x1()
+        y = line.y1() + 28
+        self._add_feedback_circle(x, y, is_correct=is_correct)
 
     def _create_feedback_markers(self, note_item, is_correct: bool):
         if note_item is None:
@@ -350,23 +393,43 @@ class LessonPlayerController(QWidget):
         if not self._practice_mode:
             return
         self._wrong += 1
-        self._create_feedback_markers(note_item, is_correct=False)
+        if _is_timeout:
+            self._create_feedback_markers(note_item, is_correct=False)
+        else:
+            self._create_playhead_feedback_circle(is_correct=False)
+
+    def _on_note_ignored(self):
+        if not self._practice_mode:
+            return
+        self._idle_presses += 1
+        self._create_playhead_feedback_circle(is_correct=False)
 
     def _finish_repeat(self):
         self._metronome_active = False
+        self._input_active = False
         self._stop_practice_listeners()
         self.playhead_timer.stop()
         self.playhead_line.hide()
 
+        player.current_note_await = None
+        player.current_note_await_time = None
+        player.space_pressed_in_window = False
+        player.current_note_item = None
+
         if not self._practice_mode:
             return
 
-        total = self._correct + self._wrong
-        accuracy = 0.0 if total == 0 else (self._correct / total) * 100.0
+        total_attempts = self._correct + self._wrong + self._idle_presses
+        accuracy = 0.0 if total_attempts == 0 else (self._correct / total_attempts) * 100.0
         QMessageBox.information(
             self,
-            "Результат",
-            f"Точность: {accuracy:.0f}% (correct: {self._correct}, wrong: {self._wrong})",
+            "Результат повтора",
+            (
+                f"Попаданий: {self._correct}\n"
+                f"Промахов: {self._wrong}\n"
+                f"Нажатий, когда нота не ожидалась: {self._idle_presses}\n"
+                f"Общая точность: {accuracy:.0f}%"
+            ),
         )
         if accuracy >= 80.0:
             self.progress_worker.complete_lesson(int(self.lesson.id))
@@ -380,6 +443,10 @@ class LessonPlayerController(QWidget):
             player.note_wrong.disconnect(self._on_note_wrong)
         except Exception:
             pass
+        try:
+            player.note_ignored.disconnect(self._on_note_ignored)
+        except Exception:
+            pass
 
     def _on_lesson_completed(self, _lesson_id: int):
         self._was_completed = True
@@ -389,12 +456,16 @@ class LessonPlayerController(QWidget):
         self.playhead_timer.stop()
         self.playhead_line.hide()
         self._metronome_active = False
+        self._input_active = False
         self._stop_practice_listeners()
+        self._clear_feedback_markers()
         self.closed.emit(self._was_completed)
 
     def closeEvent(self, event):
         self._metronome_active = False
+        self._input_active = False
         self._stop_practice_listeners()
+        self._clear_feedback_markers()
         super().closeEvent(event)
 
     def _show_error(self, msg: str):
