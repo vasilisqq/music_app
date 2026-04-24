@@ -685,46 +685,54 @@ class Tact:
 
 
     def init_bits(self):
-        # 1. Высчитываем общую длительность такта (например, 3/4 = 0.75)
         tact_total_duration = self.numerator / 4
-        
-        # 2. Разбиваем такт на куски (веса битов), учитывая остаток
         remaining = round(tact_total_duration, 4)
         grid_duration = round(self.duration, 4)
-        
+
         bit_weights = []
         while remaining > 0:
             if remaining >= grid_duration:
                 bit_weights.append(grid_duration)
                 remaining = round(remaining - grid_duration, 4)
             else:
-                # Если остаток меньше размера сетки (например, 0.25 при сетке 0.5)
                 bit_weights.append(remaining)
                 remaining = 0
 
-        # Отладка: покажет, например, [0.5, 0.25] для 3/4 с сеткой 0.5
+        self.set_bit_weights(bit_weights)
+
+    def set_bit_weights(self, bit_weights):
+        for bit in self.bits:
+            for note in bit.notes[:]:
+                self.scene.removeItem(note)
+            self.scene.removeItem(bit)
+        self.bits.clear()
+
+        tact_total_duration = self.numerator / 4
         print(f"Tact {self.tact_number} | Rhythm: {self.numerator/4} | Weights: {bit_weights}")
 
-        # 3. Распределяем биты пропорционально их весу
         x_start_offset = 100 if self.tact_number == 0 else 0
         usable_width = self.width - x_start_offset
         x_left = self.x0 + x_start_offset
 
         for weight in bit_weights:
-            # Ширина бита строго пропорциональна его доле от всего такта
             bit_width = usable_width * (weight / tact_total_duration)
             x1 = x_left + bit_width
-            
+
             bit = Bits(
-                QRectF(x_left, self.y0, bit_width, self.y_bottom - self.y0), 
-                x_left, 
+                QRectF(x_left, self.y0, bit_width, self.y_bottom - self.y0),
+                x_left,
                 x1,
-                tact=self, 
-                weigth=weight # Передаем реальный вес (0.5 или остаток 0.25)
+                tact=self,
+                weigth=weight,
             )
             x_left = x1
             self.bits.append(bit)
             self.scene.addItem(bit)
+
+        self.duration = min(bit_weights) if bit_weights else self.duration
+
+        self.update_beams()
+        self.scene.update()
 
 
     def add_bar_lines(self):
@@ -1112,38 +1120,38 @@ class StaffLayout:
     def display_lesson(self, lesson: LessonResponse):
         """Отрисовывает урок на нотном стане, полученный с сервера"""
         saved_tacts = lesson.notes.get("right_hand", [])
-        
-        # 1. Убедимся, что у нас на сцене достаточно пустых тактов
+
         while len(self.tacts) < len(saved_tacts):
             self.add_tact()
-            
-        # 2. Идем по тактам из JSON
+
         for tact_idx, saved_tact in enumerate(saved_tacts):
             tact = self.tacts[tact_idx]
+            bit_weights = [float(saved_bit.get("duration", tact.duration)) for saved_bit in saved_tact]
+            if bit_weights:
+                tact.set_bit_weights(bit_weights)
             lines_and_spaces = tact.lines + tact.spaces
-            
-            # 3. Идем по битам (долям) внутри такта
+
             for bit_idx, saved_bit in enumerate(saved_tact):
-                # Проверка, чтобы не выйти за пределы сетки битов
-                if bit_idx < len(tact.bits):
-                    bit = tact.bits[bit_idx]
-                    
-                    for note_name in saved_bit["notes"]:
-                        # Извлекаем "чистое" имя (например, "C4" из "C4#")
-                        base_name = note_name[:2]
-                        
-                        for item in lines_and_spaces:
-                            if item.note_name == base_name:
-                                # Устанавливаем знак альтерации перед отрисовкой
-                                if "#" in note_name:
-                                    settings.accidental = "sharp"
-                                elif "b" in note_name:
-                                    settings.accidental = "flat"
-                                else:
-                                    settings.accidental = "natural"
-                                    
-                                # Добавляем ноту, имитируя клик мышкой по позиции x0 бита
-                                tact.add_note_at_position(bit.x0 + 10, item)
+                if bit_idx >= len(tact.bits):
+                    continue
+                bit = tact.bits[bit_idx]
+
+                for note_name in saved_bit["notes"]:
+                    base_name = note_name[:2]
+
+                    for item in lines_and_spaces:
+                        if item.note_name == base_name:
+                            if "#" in note_name:
+                                settings.accidental = "sharp"
+                            elif "b" in note_name:
+                                settings.accidental = "flat"
+                            else:
+                                settings.accidental = "natural"
+
+                            note = bit.add_note(bit.weigth, item, self.scene)
+                            if note:
+                                self.scene.addItem(note)
+                            break
 
 
     def touch_thread(self):
