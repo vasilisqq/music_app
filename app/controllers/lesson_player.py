@@ -5,6 +5,7 @@ import time
 from PyQt6.QtCore import Qt, QTimer, pyqtSignal
 from PyQt6.QtGui import QColor, QBrush, QPen
 from PyQt6.QtWidgets import (
+    QComboBox,
     QGraphicsEllipseItem,
     QGraphicsLineItem,
     QGraphicsScene,
@@ -166,7 +167,22 @@ class LessonPlayerController(QWidget):
         ]:
             widget.hide()
 
+        self.bpm_label = QLabel("BPM:", self)
+        self.bpm_combo = QComboBox(self)
+        bpm_values = [40, 50, 60, 70, 80, 90, 100, 110, 120]
+        for bpm in bpm_values:
+            self.bpm_combo.addItem(str(bpm), bpm)
+        selected_bpm = int(getattr(self.lesson, "bpm", 60) or 60)
+        selected_index = self.bpm_combo.findData(selected_bpm)
+        if selected_index < 0:
+            selected_index = self.bpm_combo.findData(60)
+        self.bpm_combo.setCurrentIndex(selected_index)
+        self.bpm_combo.currentIndexChanged.connect(self._on_bpm_changed)
+        self.ui.settingsRow.insertWidget(0, self.bpm_label)
+        self.ui.settingsRow.insertWidget(1, self.bpm_combo)
+
         self.ui.start_button.setText("Слушать")
+        self._on_bpm_changed(self.bpm_combo.currentIndex())
         self.ui.exit_button.setText("Назад")
 
         self.repeat_button = QPushButton("Повторить", self)
@@ -194,6 +210,13 @@ class LessonPlayerController(QWidget):
         self.ui.graphicsView.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.ui.graphicsView.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
 
+    def _on_bpm_changed(self, _index: int):
+        bpm = self.bpm_combo.currentData()
+        if bpm is None:
+            bpm = int(self.bpm_combo.currentText())
+        if hasattr(self, "staff_layout") and self.staff_layout is not None:
+            self.staff_layout.bpm = int(bpm)
+
     def _setup_scene(self):
         self.scene = self.ui.graphicsView.scene()
         if self.scene is None:
@@ -210,6 +233,7 @@ class LessonPlayerController(QWidget):
 
         self.staff_layout = StaffLayout(self.scene, time_signature, read_only=True)
         self.staff_layout.display_lesson(self.lesson)
+        self._on_bpm_changed(self.bpm_combo.currentIndex())
 
         self.playhead_line = QGraphicsLineItem()
         self.playhead_line.setPen(QPen(QColor(255, 0, 0, 180), 3))
@@ -361,10 +385,8 @@ class LessonPlayerController(QWidget):
         if note_item is None:
             return
 
-        note_rect = note_item.boundingRect()
-        note_center = note_item.mapToScene(note_rect.center())
-        x = note_center.x() + 10
-        y = note_center.y()
+        x = note_item.x + 10
+        y = note_item.y
         self._add_feedback_circle(x, y, is_correct=is_correct)
 
     def _create_playhead_feedback_circle(self, is_correct: bool):

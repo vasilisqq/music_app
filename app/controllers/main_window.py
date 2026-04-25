@@ -15,6 +15,7 @@ from workers.progress_worker import ProgressWorker
 
 from controllers.admin import AdminController
 from controllers.profile import ProfileController
+from controllers.settings import SettingsController
 
 
 class Main(QMainWindow):
@@ -41,6 +42,7 @@ class Main(QMainWindow):
 
         self.admin_controller = AdminController(self.ui)
         self.profile_controller = ProfileController(self.ui, self.user_data, self.auth_worker)
+        self.settings_controller = SettingsController(self.ui)
 
         self.topic_worker = TopicWorker()
         self.lesson_worker = LessonWorker()
@@ -58,6 +60,7 @@ class Main(QMainWindow):
     def _setup_signals(self):
         self.ui.homeBtn.clicked.connect(self.show_home)
         self.ui.profileBtn.clicked.connect(self.show_profile)
+        self.ui.settingsBtn.clicked.connect(self.show_settings)
         self.ui.adminPanelBtn.clicked.connect(self.show_admin_panel)
         self.ui.logoutBtn.clicked.connect(self.logout)
 
@@ -228,6 +231,10 @@ class Main(QMainWindow):
 
     def show_profile(self):
         self._set_active_tab(self.ui.profileBtn, self.ui.profilePageWidget)
+
+    def show_settings(self):
+        self.settings_controller.refresh_midi_inputs()
+        self._set_active_tab(self.ui.settingsBtn, self.ui.settingsPageWidget)
 
     def show_admin_panel(self):
         self._set_active_tab(self.ui.adminPanelBtn, self.ui.adminPageWidget)
