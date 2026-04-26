@@ -1,33 +1,48 @@
-from sqlalchemy import select, func
+from sqlalchemy import select, func, case
 from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-from models import Topic, Lesson # Убедись в правильных импортах
+from models import Topic, Lesson, LessonProgress
 from schemas.topic import TopicCreate
 
 class TopicService:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def get_all_topics_with_counts(self):
-        """Возвращаем записи БД, эндпоинт сам превратит их в TopicResponse"""
+    async def get_all_topics_with_counts(self, user_id: int):
+        """Возвращаем темы с количеством уроков и прогрессом пользователя"""
+        completed_lessons = func.count(
+            case((LessonProgress.completed_at.is_not(None), Lesson.id))
+        ).label('completed_lessons_count')
+
         stmt = (
-            select(Topic, func.count(Lesson.id).label('lessons_count'))
-            .outerjoin(Lesson)
+            select(
+                Topic,
+                func.count(Lesson.id).label('lessons_count'),
+                completed_lessons,
+            )
+            .outerjoin(Lesson, Lesson.topic_id == Topic.id)
+            .outerjoin(
+                LessonProgress,
+                (LessonProgress.lesson_id == Lesson.id) & (LessonProgress.user_id == user_id),
+            )
             .group_by(Topic.id)
             .order_by(Topic.id)
         )
-        
+
         result = await self.db.execute(stmt)
         topics_with_counts = result.all()
-        
+
         res_list = []
-        for topic_obj, count in topics_with_counts:
-            # Магия здесь! Динамически добавляем атрибут к объекту SQLAlchemy.
-            # Pydantic (в эндпоинте) легко его прочитает благодаря from_attributes=True
-            topic_obj.lessons_count = count
-            res_list.append(topic_obj) 
-            
-        return res_list # Возвращаем чистые ORM объекты!
+        for topic_obj, lessons_count, completed_count in topics_with_counts:
+            topic_obj.lessons_count = int(lessons_count or 0)
+            topic_obj.progress = (
+                float(completed_count) / topic_obj.lessons_count
+                if topic_obj.lessons_count > 0
+                else 0.0
+            )
+            res_list.append(topic_obj)
+
+        return res_list
 
     async def create_topic(self, topic_data: TopicCreate):
         stmt = select(Topic).where(Topic.name == topic_data.name)
@@ -41,10 +56,10 @@ class TopicService:
         await self.db.commit()
         await self.db.refresh(new_topic)
         
-        # Для Pydantic указываем, что уроков пока 0
-        new_topic.lessons_count = 0 
-        
-        return new_topic # Снова возвращаем ORM объект!
+        new_topic.lessons_count = 0
+        new_topic.progress = 0.0
+
+        return new_topic
 
     async def update_topic(self, topic_id: int, topic_data: TopicCreate):
         topic = await self.db.get(Topic, topic_id)
@@ -62,11 +77,11 @@ class TopicService:
         await self.db.commit()
         await self.db.refresh(topic)
 
-        # Считаем количество уроков для корректного ответа
         stmt_count = select(func.count(Lesson.id)).where(Lesson.topic_id == topic_id)
         l_count = await self.db.scalar(stmt_count) or 0
-        
+
         topic.lessons_count = l_count
+        topic.progress = 0.0
 
         return topic
     

@@ -114,7 +114,7 @@ class Main(QMainWindow):
                 item.widget().deleteLater()
 
         for topic in topics:
-            card = LessonCard(title=topic.name, progress=0.0, payload=topic.id)
+            card = LessonCard(title=topic.name, progress=topic.progress, payload=topic.id)
             card.clicked.connect(self._on_topic_selected)
             self.flow_layout.addWidget(card)
 

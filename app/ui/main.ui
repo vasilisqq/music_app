@@ -764,7 +764,124 @@ QPushButton#cardPlayBtn:pressed {
              </item>
             </layout>
            </widget>
-           
+           <widget class="QWidget" name="tab_stats">
+            <attribute name="title">
+             <string>📊 Статистика</string>
+            </attribute>
+            <layout class="QVBoxLayout" name="verticalLayout_tab_stats">
+             <property name="spacing">
+              <number>16</number>
+             </property>
+             <item>
+              <layout class="QHBoxLayout" name="statsToolbarLayout">
+               <item>
+                <widget class="QLabel" name="statsPeriodLabel">
+                 <property name="text">
+                  <string>Период:</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QComboBox" name="statsPeriodCombo"/>
+               </item>
+               <item>
+                <widget class="QPushButton" name="statsRefreshBtn">
+                 <property name="text">
+                  <string>Обновить</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <spacer name="statsToolbarSpacer">
+                 <property name="orientation">
+                  <enum>Qt::Horizontal</enum>
+                 </property>
+                 <property name="sizeHint" stdset="0">
+                  <size>
+                   <width>40</width>
+                   <height>20</height>
+                  </size>
+                 </property>
+                </spacer>
+               </item>
+              </layout>
+             </item>
+             <item>
+              <layout class="QGridLayout" name="statsSummaryGrid">
+               <item row="0" column="0"><widget class="QFrame" name="statsCardCourses"><layout class="QVBoxLayout" name="statsCardCoursesLayout"><item><widget class="QLabel" name="statsCoursesTitle"><property name="text"><string>Курсов</string></property></widget></item><item><widget class="QLabel" name="statsCoursesValue"><property name="text"><string>0</string></property></widget></item></layout></widget></item>
+               <item row="0" column="1"><widget class="QFrame" name="statsCardLessons"><layout class="QVBoxLayout" name="statsCardLessonsLayout"><item><widget class="QLabel" name="statsLessonsTitle"><property name="text"><string>Уроков</string></property></widget></item><item><widget class="QLabel" name="statsLessonsValue"><property name="text"><string>0</string></property></widget></item></layout></widget></item>
+               <item row="0" column="2"><widget class="QFrame" name="statsCardUsers"><layout class="QVBoxLayout" name="statsCardUsersLayout"><item><widget class="QLabel" name="statsUsersTitle"><property name="text"><string>Пользователей</string></property></widget></item><item><widget class="QLabel" name="statsUsersValue"><property name="text"><string>0</string></property></widget></item></layout></widget></item>
+               <item row="0" column="3"><widget class="QFrame" name="statsCardActiveUsers"><layout class="QVBoxLayout" name="statsCardActiveUsersLayout"><item><widget class="QLabel" name="statsActiveUsersTitle"><property name="text"><string>Активных</string></property></widget></item><item><widget class="QLabel" name="statsActiveUsersValue"><property name="text"><string>0</string></property></widget></item></layout></widget></item>
+               <item row="1" column="0"><widget class="QFrame" name="statsCardCompletions"><layout class="QVBoxLayout" name="statsCardCompletionsLayout"><item><widget class="QLabel" name="statsCompletionsTitle"><property name="text"><string>Завершений</string></property></widget></item><item><widget class="QLabel" name="statsCompletionsValue"><property name="text"><string>0</string></property></widget></item></layout></widget></item>
+               <item row="1" column="1"><widget class="QFrame" name="statsCardAvgProgress"><layout class="QVBoxLayout" name="statsCardAvgProgressLayout"><item><widget class="QLabel" name="statsAvgProgressTitle"><property name="text"><string>Средний прогресс</string></property></widget></item><item><widget class="QLabel" name="statsAvgProgressValue"><property name="text"><string>0%</string></property></widget></item></layout></widget></item>
+               <item row="1" column="2"><widget class="QFrame" name="statsCardCompletedCourses"><layout class="QVBoxLayout" name="statsCardCompletedCoursesLayout"><item><widget class="QLabel" name="statsCompletedCoursesTitle"><property name="text"><string>Завершённых курсов</string></property></widget></item><item><widget class="QLabel" name="statsCompletedCoursesValue"><property name="text"><string>0</string></property></widget></item></layout></widget></item>
+              </layout>
+             </item>
+             <item>
+              <widget class="QFrame" name="statsChartFrame">
+               <layout class="QVBoxLayout" name="statsChartLayout">
+                <item>
+                 <widget class="QLabel" name="statsChartTitle">
+                  <property name="text">
+                   <string>Динамика завершений</string>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QWidget" name="statsChartPlaceholder" native="true"/>
+                </item>
+               </layout>
+              </widget>
+             </item>
+             <item>
+              <widget class="QSplitter" name="statsTablesSplitter">
+               <property name="orientation">
+                <enum>Qt::Horizontal</enum>
+               </property>
+               <widget class="QWidget" name="statsPopularityContainer">
+                <layout class="QVBoxLayout" name="statsPopularityLayout">
+                 <item>
+                  <widget class="QLabel" name="statsPopularityTitle">
+                   <property name="text">
+                    <string>Популярность курсов</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QTableWidget" name="table_stats_popularity">
+                   <column><property name="text"><string>Курс</string></property></column>
+                   <column><property name="text"><string>Завершений</string></property></column>
+                  </widget>
+                 </item>
+                </layout>
+               </widget>
+               <widget class="QWidget" name="statsProgressContainer">
+                <layout class="QVBoxLayout" name="statsProgressLayout">
+                 <item>
+                  <widget class="QLabel" name="statsProgressTitle">
+                   <property name="text">
+                    <string>Эффективность курсов</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QTableWidget" name="table_stats_progress">
+                   <column><property name="text"><string>Курс</string></property></column>
+                   <column><property name="text"><string>Уроков</string></property></column>
+                   <column><property name="text"><string>Средний прогресс</string></property></column>
+                   <column><property name="text"><string>Начали</string></property></column>
+                   <column><property name="text"><string>25%</string></property></column>
+                   <column><property name="text"><string>50%</string></property></column>
+                   <column><property name="text"><string>75%</string></property></column>
+                   <column><property name="text"><string>100%</string></property></column>
+                  </widget>
+                 </item>
+                </layout>
+               </widget>
+              </widget>
+             </item>
+            </layout>
+           </widget>
           </widget>
          </item>
         </layout>

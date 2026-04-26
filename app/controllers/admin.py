@@ -1,18 +1,83 @@
 from PyQt6.QtWidgets import (
     QMessageBox, QTableWidgetItem, QAbstractItemView,
     QDialog, QVBoxLayout, QHBoxLayout, QLabel,
-    QLineEdit, QTextEdit, QPushButton, QMenu, QComboBox
+    QLineEdit, QTextEdit, QPushButton, QMenu, QComboBox,
+    QFrame, QWidget
 )
 from PyQt6.QtCore import pyqtSignal
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, QRectF
 from workers.topic_worker import TopicWorker
 from workers.auth_worker import AuthWorker
 from workers.lesson_worker import LessonWorker
+from workers.admin_stats_worker import AdminStatsWorker
 from schemas.topic import TopicCreate, TopicResponse
 from schemas.lesson import LessonResponse, LessonUpdate
 from PyQt6.QtWidgets import QHeaderView
-from PyQt6.QtGui import QColor, QBrush
+from PyQt6.QtGui import QColor, QBrush, QPainter, QPen, QPainterPath
 from controllers.creator import CreatorController
+
+
+class StatsLineChart(QWidget):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self._points = []
+        self.setMinimumHeight(220)
+
+    def set_points(self, points):
+        self._points = points
+        self.update()
+
+    def paintEvent(self, event):
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+
+        rect = self.rect().adjusted(16, 16, -16, -28)
+        painter.fillRect(self.rect(), QColor("#ffffff"))
+
+        if not self._points:
+            painter.setPen(QColor("#667085"))
+            painter.drawText(self.rect(), Qt.AlignmentFlag.AlignCenter, "Нет данных")
+            return
+
+        max_value = max((point.completions_count for point in self._points), default=0)
+        max_value = max(max_value, 1)
+
+        painter.setPen(QPen(QColor("#dfe7f3"), 1))
+        painter.drawRoundedRect(QRectF(rect), 12, 12)
+
+        count = len(self._points)
+        step_x = rect.width() / max(count - 1, 1)
+        path = QPainterPath()
+        label_y = rect.bottom() + 18
+
+        coords = []
+        for idx, point in enumerate(self._points):
+            x = rect.left() + idx * step_x
+            y = rect.bottom() - ((point.completions_count / max_value) * rect.height())
+            coords.append((x, y, point))
+            if idx == 0:
+                path.moveTo(x, y)
+            else:
+                path.lineTo(x, y)
+
+        painter.setPen(QPen(QColor("#3f8bde"), 3))
+        painter.drawPath(path)
+
+        painter.setPen(QPen(QColor("#3f8bde"), 1))
+        painter.setBrush(QColor("#3f8bde"))
+        for x, y, point in coords:
+            painter.drawEllipse(QRectF(x - 3, y - 3, 6, 6))
+
+        painter.setPen(QColor("#667085"))
+        tick_step = max(1, count // 6)
+        for idx, (x, _y, point) in enumerate(coords):
+            if idx % tick_step == 0 or idx == count - 1:
+                painter.drawText(QRectF(x - 20, label_y, 40, 16), Qt.AlignmentFlag.AlignCenter, point.label)
+
+        painter.setPen(QColor("#98a2b3"))
+        painter.drawText(QRectF(rect.left(), 0, 80, 14), Qt.AlignmentFlag.AlignLeft, str(max_value))
+        painter.drawText(QRectF(rect.left(), rect.bottom() - 8, 80, 14), Qt.AlignmentFlag.AlignLeft, "0")
+
 
 class AddTopicDialog(QDialog):
     # Стили для обычного состояния и состояния ошибки
@@ -318,6 +383,9 @@ class AdminController:
         self.worker = TopicWorker()
         self.auth_worker = AuthWorker()
         self.lesson_worker = LessonWorker()
+        self.stats_worker = AdminStatsWorker()
+        self.stats_chart = StatsLineChart(self.ui.statsChartPlaceholder)
+        self._current_stats_period = 30
         # Сигналы
         self.ui.btn_add_topic.clicked.connect(self.show_add_topic_dialog)
         self.worker.topics_loaded_signal.connect(self.on_topics_loaded)
@@ -334,13 +402,19 @@ class AdminController:
         self.lesson_worker.lesson_deleted_signal.connect(self.on_lesson_deleted)
         self.lesson_worker.lesson_updated_signal.connect(self.on_lesson_topic_changed)
         self.lesson_worker.lesson_error_sygnal.connect(self.show_error)
+        self.stats_worker.stats_loaded_signal.connect(self.on_stats_loaded)
+        self.stats_worker.error_signal.connect(self.show_error)
+        self.ui.statsRefreshBtn.clicked.connect(self.refresh_stats)
+        self.ui.statsPeriodCombo.currentIndexChanged.connect(self._on_stats_period_changed)
 
         self._pending_lesson_topic_change_to: int | None = None
         self.setup_admin_panel()
         self.setup_users_table()
+        self.setup_stats_tab()
 
         # Загружаем пользователей
         self.auth_worker.get_all_users()
+        self.refresh_stats()
         
     def _toggle_lesson_btn(self):
         # Активируем кнопку "Добавить урок", если в таблице тем что-то выбрано
@@ -502,11 +576,9 @@ class AdminController:
         self.creator_page = None
 
     def setup_admin_panel(self):
-        # Настройка внешнего вида таблиц (используем твой стиль)
         table_style = self.ui.table_topics.styleSheet()
         self.ui.table_lessons.setStyleSheet(table_style)
-        
-        # Настройка колонок для таблицы уроков
+
         l_header = self.ui.table_lessons.horizontalHeader()
         l_header.setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)
         l_header.setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
@@ -515,8 +587,7 @@ class AdminController:
         self.ui.table_lessons.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.ui.table_lessons.customContextMenuRequested.connect(self.show_lesson_context_menu)
         self.ui.table_lessons.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
-        
-        # Темы (стандартная настройка)
+
         header = self.ui.table_topics.horizontalHeader()
         header.setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
         table = self.ui.table_topics
@@ -527,12 +598,783 @@ class AdminController:
         table.setEditTriggers(table.EditTrigger.NoEditTriggers)
         self.fetch_topics()
 
+    def setup_stats_tab(self):
+        self.ui.statsPeriodCombo.clear()
+        self.ui.statsPeriodCombo.addItem("7 дней", 7)
+        self.ui.statsPeriodCombo.addItem("30 дней", 30)
+        self.ui.statsPeriodCombo.addItem("90 дней", 90)
+        idx = self.ui.statsPeriodCombo.findData(30)
+        if idx != -1:
+            self.ui.statsPeriodCombo.setCurrentIndex(idx)
+
+        button_style = self.ui.btn_add_topic.styleSheet()
+        self.ui.statsRefreshBtn.setStyleSheet(button_style)
+
+        card_frames = [
+            self.ui.statsCardCourses,
+            self.ui.statsCardLessons,
+            self.ui.statsCardUsers,
+            self.ui.statsCardActiveUsers,
+            self.ui.statsCardCompletions,
+            self.ui.statsCardAvgProgress,
+            self.ui.statsCardCompletedCourses,
+        ]
+        for frame in card_frames:
+            frame.setStyleSheet(
+                "QFrame { background: #f8fbff; border: 1px solid rgba(63, 139, 222, 0.18); border-radius: 16px; }"
+                "QLabel { background: transparent; }"
+            )
+
+        value_labels = [
+            self.ui.statsCoursesValue,
+            self.ui.statsLessonsValue,
+            self.ui.statsUsersValue,
+            self.ui.statsActiveUsersValue,
+            self.ui.statsCompletionsValue,
+            self.ui.statsAvgProgressValue,
+            self.ui.statsCompletedCoursesValue,
+        ]
+        title_labels = [
+            self.ui.statsCoursesTitle,
+            self.ui.statsLessonsTitle,
+            self.ui.statsUsersTitle,
+            self.ui.statsActiveUsersTitle,
+            self.ui.statsCompletionsTitle,
+            self.ui.statsAvgProgressTitle,
+            self.ui.statsCompletedCoursesTitle,
+            self.ui.statsPopularityTitle,
+            self.ui.statsProgressTitle,
+            self.ui.statsChartTitle,
+        ]
+        for label in title_labels:
+            label.setStyleSheet("color: #667085; font-size: 13px; font-weight: 600;")
+        for label in value_labels:
+            label.setStyleSheet("color: #1d2939; font-size: 28px; font-weight: 800;")
+
+        chart_layout = QVBoxLayout(self.ui.statsChartPlaceholder)
+        chart_layout.setContentsMargins(0, 0, 0, 0)
+        chart_layout.addWidget(self.stats_chart)
+        self.ui.statsChartFrame.setStyleSheet(
+            "QFrame { background: #ffffff; border: 1px solid #e4e7ec; border-radius: 16px; }"
+        )
+
+        self.ui.table_stats_popularity.setStyleSheet(self.ui.table_topics.styleSheet())
+        self.ui.table_stats_progress.setStyleSheet(self.ui.table_topics.styleSheet())
+        self.ui.table_stats_popularity.verticalHeader().setVisible(False)
+        self.ui.table_stats_progress.verticalHeader().setVisible(False)
+        self.ui.table_stats_popularity.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
+        self.ui.table_stats_progress.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
+        self.ui.table_stats_popularity.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
+        self.ui.table_stats_progress.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
+
+        popularity_header = self.ui.table_stats_popularity.horizontalHeader()
+        popularity_header.setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
+        popularity_header.setSectionResizeMode(1, QHeaderView.ResizeMode.ResizeToContents)
+
+        progress_header = self.ui.table_stats_progress.horizontalHeader()
+        progress_header.setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
+        for col in range(1, 8):
+            progress_header.setSectionResizeMode(col, QHeaderView.ResizeMode.ResizeToContents)
+
+    def _on_stats_period_changed(self):
+        current_data = self.ui.statsPeriodCombo.currentData()
+        if current_data:
+            self._current_stats_period = int(current_data)
+            self.refresh_stats()
+
+    def refresh_stats(self):
+        self.ui.statsRefreshBtn.setEnabled(False)
+        self.stats_worker.get_dashboard_stats(self._current_stats_period)
+
+    def on_stats_loaded(self, stats):
+        self.ui.statsRefreshBtn.setEnabled(True)
+        summary = stats.summary
+        self.ui.statsCoursesValue.setText(str(summary.total_courses))
+        self.ui.statsLessonsValue.setText(str(summary.total_lessons))
+        self.ui.statsUsersValue.setText(str(summary.total_users))
+        self.ui.statsActiveUsersValue.setText(str(summary.active_users))
+        self.ui.statsCompletionsValue.setText(str(summary.completions_in_period))
+        self.ui.statsAvgProgressValue.setText(f"{summary.avg_course_progress * 100:.0f}%")
+        self.ui.statsCompletedCoursesValue.setText(str(summary.completed_courses))
+
+        self.stats_chart.set_points(stats.timeline)
+
+        self.ui.table_stats_popularity.setRowCount(len(stats.popularity))
+        for row, item in enumerate(stats.popularity):
+            self.ui.table_stats_popularity.setItem(row, 0, QTableWidgetItem(item.topic_name))
+            self.ui.table_stats_popularity.setItem(row, 1, QTableWidgetItem(str(item.completions_count)))
+
+        self.ui.table_stats_progress.setRowCount(len(stats.course_progress))
+        for row, item in enumerate(stats.course_progress):
+            self.ui.table_stats_progress.setItem(row, 0, QTableWidgetItem(item.topic_name))
+            self.ui.table_stats_progress.setItem(row, 1, QTableWidgetItem(str(item.lessons_count)))
+            self.ui.table_stats_progress.setItem(row, 2, QTableWidgetItem(f"{item.average_progress * 100:.0f}%"))
+            self.ui.table_stats_progress.setItem(row, 3, QTableWidgetItem(str(item.learners_started)))
+            self.ui.table_stats_progress.setItem(row, 4, QTableWidgetItem(str(item.reached_25)))
+            self.ui.table_stats_progress.setItem(row, 5, QTableWidgetItem(str(item.reached_50)))
+            self.ui.table_stats_progress.setItem(row, 6, QTableWidgetItem(str(item.reached_75)))
+            self.ui.table_stats_progress.setItem(row, 7, QTableWidgetItem(str(item.reached_100)))
+
+        self.ui.statsChartTitle.setText(f"Динамика завершений за {stats.period_days} дней")
+        self.ui.statsPopularityTitle.setText(f"Популярность курсов за {stats.period_days} дней")
+        self.ui.statsProgressTitle.setText("Эффективность курсов")
+
+    def _show_error(self, message: str):
+        self.ui.statsRefreshBtn.setEnabled(True)
+        self.show_error(message)
+
     def on_topic_selected(self, row, column):
         """Обработка клика по теме: загрузка уроков"""
         topic_id = int(self.ui.table_topics.item(row, 0).text())
         self.selected_topic_id = topic_id
         self.ui.btn_add_lesson.setEnabled(True)
         self.refresh_lessons(topic_id)
+
+    def on_lesson_created(self, topic_id: int):
+        self.selected_topic_id = topic_id
+        self.close_creator()
+        self.refresh_lessons(topic_id)
+        self.fetch_topics()
+
+    def on_lesson_updated(self, topic_id: int):
+        self.selected_topic_id = topic_id
+        self.close_creator()
+        self.refresh_lessons(topic_id)
+        self.fetch_topics()
+
+    def on_lessons_loaded(self, lessons):
+        """Отображение полученных уроков в таблице"""
+        self.ui.table_lessons.setRowCount(len(lessons))
+        for row, lesson in enumerate(lessons):
+            self.ui.table_lessons.setItem(row, 0, QTableWidgetItem(str(lesson.id)))
+            name_item = QTableWidgetItem(lesson.name)
+            name_item.setData(Qt.ItemDataRole.UserRole, lesson.description)
+            name_item.setData(Qt.ItemDataRole.UserRole + 1, lesson.difficult)
+            name_item.setData(Qt.ItemDataRole.UserRole + 2, float(lesson.rhythm))
+            name_item.setData(Qt.ItemDataRole.UserRole + 3, lesson.notes)
+            name_item.setData(Qt.ItemDataRole.UserRole + 4, lesson.topic)
+            self.ui.table_lessons.setItem(row, 1, name_item)
+
+    def fetch_topics(self):
+        self.ui.table_topics.setRowCount(0)
+        self.worker.get_topics()
+
+    def on_topics_loaded(self, topics: list[TopicResponse]): # Type hinting!
+        self.ui.table_topics.setRowCount(len(topics))
+        for row_index, topic in enumerate(topics):
+            desc = topic.description if topic.description else ""
+            self._insert_topic_row(row_index, topic.id, topic.name, desc, topic.lessons_count)
+
+        if self.selected_topic_id is None:
+            return
+
+        for row in range(self.ui.table_topics.rowCount()):
+            id_item = self.ui.table_topics.item(row, 0)
+            if id_item and id_item.text().isdigit() and int(id_item.text()) == self.selected_topic_id:
+                self.ui.table_topics.setCurrentCell(row, 1)
+                return
+
+    def show_add_topic_dialog(self):
+        dialog = AddTopicDialog(self.ui.centralwidget)
+        if dialog.exec() == QDialog.DialogCode.Accepted:
+            topic_name, topic_desc = dialog.get_data()
+            topic_data = TopicCreate(name=topic_name, description=topic_desc)
+            self.ui.btn_add_topic.setEnabled(False)
+            self.worker.create_topic(topic_data)
+
+    def show_edit_topic_dialog(self, row):
+        topic_id = int(self.ui.table_topics.item(row, 0).text())
+        topic_name = self.ui.table_topics.item(row, 1).text()
+        topic_desc = self.ui.table_topics.item(row, 1).data(Qt.ItemDataRole.UserRole)
+
+        dialog = AddTopicDialog(self.ui.centralwidget, topic_name=topic_name, topic_desc=topic_desc)
+        if dialog.exec() == QDialog.DialogCode.Accepted:
+            new_name, new_desc = dialog.get_data()
+
+            if new_name == topic_name and new_desc == topic_desc:
+                return
+
+            topic_data = TopicCreate(name=new_name, description=new_desc)
+            self.worker.edit_topic(topic_id, topic_data)
+            self.editing_row = row
+
+    def on_topic_added(self, new_topic: TopicResponse):
+        self.ui.btn_add_topic.setEnabled(True)
+        current_rows = self.ui.table_topics.rowCount()
+        self.ui.table_topics.insertRow(current_rows)
+
+        desc = new_topic.description if new_topic.description else ""
+        self._insert_topic_row(current_rows, new_topic.id, new_topic.name, desc, new_topic.lessons_count)
+
+    def on_topic_updated(self, updated_topic: TopicResponse):
+        if hasattr(self, "editing_row"):
+            name_item = self.ui.table_topics.item(self.editing_row, 1)
+            name_item.setText(updated_topic.name)
+
+            desc = updated_topic.description if updated_topic.description else ""
+            name_item.setData(Qt.ItemDataRole.UserRole, desc)
+
+            QMessageBox.information(self.ui.centralwidget, "Успех", f"Тема '{updated_topic.name}' успешно обновлена!")
+
+    def show_context_menu(self, pos):
+        """Отображает меню при клике ПКМ по таблице"""
+        item = self.ui.table_topics.itemAt(pos)
+        if item is None:
+            return
+
+        row = item.row()
+        menu = QMenu(self.ui.centralwidget)
+        edit_action = menu.addAction("✏️ Изменить")
+        delete_action = menu.addAction("🗑️ Удалить")
+
+        action = menu.exec(self.ui.table_topics.viewport().mapToGlobal(pos))
+
+        if action == edit_action:
+            self.show_edit_topic_dialog(row)
+        elif action == delete_action:
+            self.confirm_and_delete_topic(row)
+
+    def confirm_and_delete_topic(self, row):
+        """Проверяет уроки и запрашивает подтверждение на удаление"""
+        topic_id = int(self.ui.table_topics.item(row, 0).text())
+        topic_name = self.ui.table_topics.item(row, 1).text()
+        lessons_count = int(self.ui.table_topics.item(row, 2).text())
+
+        if lessons_count > 0:
+            msg = (f"Вы уверены, что хотите удалить тему <b>«{topic_name}»</b>?<br><br>"
+                   f"⚠️ В этой теме содержится <b>{lessons_count} уроков</b>. "
+                   f"Они будут удалены безвозвратно вместе с темой!")
+        else:
+            msg = f"Вы уверены, что хотите удалить пустую тему <b>«{topic_name}»</b>?"
+
+        reply = QMessageBox.question(
+            self.ui.centralwidget,
+            "Подтверждение удаления",
+            msg,
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No
+        )
+
+        if reply == QMessageBox.StandardButton.Yes:
+            self.worker.delete_topic(topic_id)
+
+    def on_topic_deleted(self, deleted_topic_id: int):
+        """Находит строку с удаленной темой и стирает её из таблицы"""
+        for row in range(self.ui.table_topics.rowCount()):
+            item = self.ui.table_topics.item(row, 0)
+            if item and int(item.text()) == deleted_topic_id:
+                self.ui.table_topics.removeRow(row)
+                QMessageBox.information(self.ui.centralwidget, "Успех", "Тема успешно удалена.")
+                break
+
+    def show_error(self, message: str):
+        self.ui.btn_add_topic.setEnabled(True)
+        if hasattr(self.ui, "statsRefreshBtn"):
+            self.ui.statsRefreshBtn.setEnabled(True)
+        QMessageBox.warning(self.ui.centralwidget, "Ошибка", message)
+
+    def _insert_topic_row(self, row_index, topic_id, name, description, lessons_count):
+        self.ui.table_topics.setItem(row_index, 0, QTableWidgetItem(str(topic_id)))
+        name_item = QTableWidgetItem(name)
+        name_item.setData(Qt.ItemDataRole.UserRole, description)
+        self.ui.table_topics.setItem(row_index, 1, name_item)
+        self.ui.table_topics.setItem(row_index, 2, QTableWidgetItem(str(lessons_count)))
+
+    def setup_users_table(self):
+        """Настройка внешнего вида таблицы пользователей"""
+        table = self.ui.table_users
+        table.setColumnCount(5)
+        table.setHorizontalHeaderLabels(["ID", "Логин", "Email", "Роль", "Статус"])
+
+        header = table.horizontalHeader()
+        header.setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)
+        header.setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
+        header.setSectionResizeMode(2, QHeaderView.ResizeMode.Stretch)
+        header.setSectionResizeMode(3, QHeaderView.ResizeMode.ResizeToContents)
+        header.setSectionResizeMode(4, QHeaderView.ResizeMode.ResizeToContents)
+
+        table.verticalHeader().setVisible(False)
+        table.setColumnHidden(0, True)
+
+        table.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        table.customContextMenuRequested.connect(self.show_user_context_menu)
+        table.setSelectionBehavior(table.SelectionBehavior.SelectRows)
+        table.setEditTriggers(table.EditTrigger.NoEditTriggers)
+
+        table.setStyleSheet(self.ui.table_topics.styleSheet())
+
+    def on_users_loaded(self, users):
+        table = self.ui.table_users
+        table.setRowCount(0)
+
+        sorted_users = sorted(users, key=lambda x: x['is_active'], reverse=True)
+
+        for user in sorted_users:
+            self._add_or_update_user_row(user)
+
+    def _add_or_update_user_row(self, user, update_row=None):
+        """Универсальный метод добавления или обновления строки"""
+        table = self.ui.table_users
+        row = table.rowCount() if update_row is None else update_row
+
+        if update_row is None:
+            table.insertRow(row)
+
+        id_item = QTableWidgetItem(str(user['id']))
+        name_item = QTableWidgetItem(user['username'])
+        email_item = QTableWidgetItem(user['email'])
+        role_item = QTableWidgetItem(user['role'])
+        status_text = "🟢 Активен" if user['is_active'] else "🔴 Заблокирован"
+        status_item = QTableWidgetItem(status_text)
+
+        table.setItem(row, 0, id_item)
+        table.setItem(row, 1, name_item)
+        table.setItem(row, 2, email_item)
+        table.setItem(row, 3, role_item)
+        table.setItem(row, 4, status_item)
+
+        self._paint_row(row, inactive=not user['is_active'])
+
+    def _paint_row(self, row, inactive=False):
+        color = QColor("#a0a0a0") if inactive else QColor("#000000")
+        brush = QBrush(color)
+        for col in range(self.ui.table_users.columnCount()):
+            item = self.ui.table_users.item(row, col)
+            if item:
+                item.setForeground(brush)
+
+    def show_user_context_menu(self, pos):
+        item = self.ui.table_users.itemAt(pos)
+        if not item:
+            return
+
+        row = item.row()
+        user_id = int(self.ui.table_users.item(row, 0).text())
+        is_active = "Активен" in self.ui.table_users.item(row, 4).text()
+
+        menu = QMenu()
+        edit_action = menu.addAction("✏️ Изменить")
+        toggle_action = menu.addAction("🚫 Заблокировать" if is_active else "✅ Разблокировать")
+
+        action = menu.exec(self.ui.table_users.viewport().mapToGlobal(pos))
+
+        if action == toggle_action:
+            self.auth_worker.toggle_user_status(user_id)
+        elif action == edit_action:
+            username = self.ui.table_users.item(row, 1).text()
+            email = self.ui.table_users.item(row, 2).text()
+
+            self.editing_user_row = row
+            self.current_edit_dialog = EditUserDialog(self.ui.centralwidget, username=username, email=email)
+            self.current_edit_dialog.save_requested.connect(
+                lambda u, e: self.process_user_edit(user_id, username, email, u, e)
+            )
+            self.current_edit_dialog.exec()
+
+    def process_user_edit(self, user_id, old_username, old_email, new_username, new_email):
+        if new_username == old_username and new_email == old_email:
+            self.current_edit_dialog.close()
+            return
+
+        update_data = {}
+        if new_username != old_username:
+            update_data["username"] = new_username
+        if new_email != old_email:
+            update_data["email"] = new_email
+
+        self.editing_user_row = self.ui.table_users.currentRow()
+        self.auth_worker.edit_user(user_id, update_data)
+
+    def on_user_edited(self, updated_user):
+        if hasattr(self, "current_edit_dialog") and self.current_edit_dialog:
+            self.current_edit_dialog.close_success()
+
+        if hasattr(self, "editing_user_row"):
+            self._add_or_update_user_row(updated_user, update_row=self.editing_user_row)
+            QMessageBox.information(self.ui.centralwidget, "Успех", "Данные пользователя обновлены!")
+
+    def on_user_status_updated(self, updated_user):
+        self.auth_worker.get_all_users()
+
+
+from PyQt6.QtWidgets import QDialog, QVBoxLayout, QLabel, QComboBox, QDialogButtonBox
+
+class TimeSignatureDialog(QDialog):
+    """Диалоговое окно для выбора музыкального размера перед созданием урока."""
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Настройка нового урока")
+        self.setFixedSize(300, 150)
+
+        layout = QVBoxLayout(self)
+        label = QLabel("Выберите размер такта (ритм) для нового урока:", self)
+        layout.addWidget(label)
+
+        self.combo = QComboBox(self)
+        self.combo.addItems(["4/4", "3/4", "2/4", "6/8"])
+        self.combo.setCurrentText("4/4")
+        layout.addWidget(self.combo)
+
+        self.buttons = QDialogButtonBox(
+            QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel,
+            self
+        )
+        self.buttons.accepted.connect(self.accept)
+        self.buttons.rejected.connect(self.reject)
+        layout.addWidget(self.buttons)
+
+    def get_signature(self) -> str:
+        return self.combo.currentText()
+
+    def on_lesson_created(self, topic_id: int):
+        self.selected_topic_id = topic_id
+        self.close_creator()
+        self.refresh_lessons(topic_id)
+        self.fetch_topics()
+
+    def on_lesson_updated(self, topic_id: int):
+        self.selected_topic_id = topic_id
+        self.close_creator()
+        self.refresh_lessons(topic_id)
+        self.fetch_topics()
+
+    def on_lessons_loaded(self, lessons):
+        """Отображение полученных уроков в таблице"""
+        self.ui.table_lessons.setRowCount(len(lessons))
+        for row, lesson in enumerate(lessons):
+            self.ui.table_lessons.setItem(row, 0, QTableWidgetItem(str(lesson.id)))
+            name_item = QTableWidgetItem(lesson.name)
+            name_item.setData(Qt.ItemDataRole.UserRole, lesson.description)
+            name_item.setData(Qt.ItemDataRole.UserRole + 1, lesson.difficult)
+            name_item.setData(Qt.ItemDataRole.UserRole + 2, float(lesson.rhythm))
+            name_item.setData(Qt.ItemDataRole.UserRole + 3, lesson.notes)
+            name_item.setData(Qt.ItemDataRole.UserRole + 4, lesson.topic)
+            self.ui.table_lessons.setItem(row, 1, name_item)
+
+    def fetch_topics(self):
+        self.ui.table_topics.setRowCount(0)
+        self.worker.get_topics()
+
+    def on_topics_loaded(self, topics: list[TopicResponse]): # Type hinting!
+        self.ui.table_topics.setRowCount(len(topics))
+        for row_index, topic in enumerate(topics):
+            # Обращаемся к атрибутам через точку: topic.name, topic.id
+            desc = topic.description if topic.description else ""
+            self._insert_topic_row(row_index, topic.id, topic.name, desc, topic.lessons_count)
+
+        if self.selected_topic_id is None:
+            return
+
+        for row in range(self.ui.table_topics.rowCount()):
+            id_item = self.ui.table_topics.item(row, 0)
+            if id_item and id_item.text().isdigit() and int(id_item.text()) == self.selected_topic_id:
+                self.ui.table_topics.setCurrentCell(row, 1)
+                return
+
+    def show_add_topic_dialog(self):
+        dialog = AddTopicDialog(self.ui.centralwidget)
+        if dialog.exec() == QDialog.DialogCode.Accepted:
+            topic_name, topic_desc = dialog.get_data()
+
+            # Упаковываем данные в схему Pydantic перед отправкой!
+            topic_data = TopicCreate(name=topic_name, description=topic_desc)
+
+            self.ui.btn_add_topic.setEnabled(False)
+            self.worker.create_topic(topic_data)
+
+    def show_edit_topic_dialog(self, row):
+        topic_id = int(self.ui.table_topics.item(row, 0).text())
+        topic_name = self.ui.table_topics.item(row, 1).text()
+        topic_desc = self.ui.table_topics.item(row, 1).data(Qt.ItemDataRole.UserRole)
+
+        dialog = AddTopicDialog(self.ui.centralwidget, topic_name=topic_name, topic_desc=topic_desc)
+        if dialog.exec() == QDialog.DialogCode.Accepted:
+            new_name, new_desc = dialog.get_data()
+
+            if new_name == topic_name and new_desc == topic_desc:
+                return
+
+            # Формируем объект Pydantic
+            topic_data = TopicCreate(name=new_name, description=new_desc)
+            self.worker.edit_topic(topic_id, topic_data)
+            self.editing_row = row
+
+    def on_topic_added(self, new_topic: TopicResponse):
+        self.ui.btn_add_topic.setEnabled(True)
+        current_rows = self.ui.table_topics.rowCount()
+        self.ui.table_topics.insertRow(current_rows)
+
+        desc = new_topic.description if new_topic.description else ""
+        self._insert_topic_row(current_rows, new_topic.id, new_topic.name, desc, new_topic.lessons_count)
+
+    def on_topic_updated(self, updated_topic: TopicResponse):
+        if hasattr(self, "editing_row"):
+            name_item = self.ui.table_topics.item(self.editing_row, 1)
+            name_item.setText(updated_topic.name)
+
+            desc = updated_topic.description if updated_topic.description else ""
+            name_item.setData(Qt.ItemDataRole.UserRole, desc)
+
+            QMessageBox.information(self.ui.centralwidget, "Успех", f"Тема '{updated_topic.name}' успешно обновлена!")
+
+    def show_context_menu(self, pos):
+        """Отображает меню при клике ПКМ по таблице"""
+        item = self.ui.table_topics.itemAt(pos)
+        if item is None:
+            return
+
+        row = item.row()
+        menu = QMenu(self.ui.centralwidget)
+
+        # Добавляем действия в меню
+        edit_action = menu.addAction("✏️ Изменить")
+        delete_action = menu.addAction("🗑️ Удалить") # Новая кнопка
+
+        action = menu.exec(self.ui.table_topics.viewport().mapToGlobal(pos))
+
+        if action == edit_action:
+            self.show_edit_topic_dialog(row)
+        elif action == delete_action:
+            self.confirm_and_delete_topic(row) # Вызываем новый метод
+
+    def confirm_and_delete_topic(self, row):
+        """Проверяет уроки и запрашивает подтверждение на удаление"""
+        # Считываем данные из таблицы
+        topic_id = int(self.ui.table_topics.item(row, 0).text())
+        topic_name = self.ui.table_topics.item(row, 1).text()
+        lessons_count = int(self.ui.table_topics.item(row, 2).text())
+
+        # Формируем текст предупреждения в зависимости от наличия уроков
+        if lessons_count > 0:
+            msg = (f"Вы уверены, что хотите удалить тему <b>«{topic_name}»</b>?<br><br>"
+                   f"⚠️ В этой теме содержится <b>{lessons_count} уроков</b>. "
+                   f"Они будут удалены безвозвратно вместе с темой!")
+        else:
+            msg = f"Вы уверены, что хотите удалить пустую тему <b>«{topic_name}»</b>?"
+
+        # Показываем диалог
+        reply = QMessageBox.question(
+            self.ui.centralwidget,
+            "Подтверждение удаления",
+            msg,
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No # По умолчанию "Нет", чтобы избежать случайных удалений
+        )
+
+        if reply == QMessageBox.StandardButton.Yes:
+            self.worker.delete_topic(topic_id)
+
+    def on_topic_deleted(self, deleted_topic_id: int):
+        """Находит строку с удаленной темой и стирает её из таблицы"""
+        # Проходимся по всем строкам и ищем нужный ID
+        for row in range(self.ui.table_topics.rowCount()):
+            item = self.ui.table_topics.item(row, 0)
+            if item and int(item.text()) == deleted_topic_id:
+                self.ui.table_topics.removeRow(row)
+                QMessageBox.information(self.ui.centralwidget, "Успех", "Тема успешно удалена.")
+                break
+
+
+    def show_error(self, message: str):
+        self.ui.btn_add_topic.setEnabled(True)
+        QMessageBox.warning(self.ui.centralwidget, "Ошибка", message)
+
+    def _insert_topic_row(self, row_index, topic_id, name, description, lessons_count):
+        # ID
+        self.ui.table_topics.setItem(row_index, 0, QTableWidgetItem(str(topic_id)))
+
+        # Имя (И здесь же прячем описание в UserRole!)
+        name_item = QTableWidgetItem(name)
+        name_item.setData(Qt.ItemDataRole.UserRole, description)
+        self.ui.table_topics.setItem(row_index, 1, name_item)
+
+        # Количество уроков
+        self.ui.table_topics.setItem(row_index, 2, QTableWidgetItem(str(lessons_count)))
+
+
+    def setup_users_table(self):
+        """Настройка внешнего вида таблицы пользователей"""
+        table = self.ui.table_users
+
+        # Добавляем 5-ю колонку 'Статус'
+        table.setColumnCount(5)
+        table.setHorizontalHeaderLabels(["ID", "Логин", "Email", "Роль", "Статус"])
+
+        header = table.horizontalHeader()
+        header.setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)
+        header.setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
+        header.setSectionResizeMode(2, QHeaderView.ResizeMode.Stretch)
+        header.setSectionResizeMode(3, QHeaderView.ResizeMode.ResizeToContents)
+        header.setSectionResizeMode(4, QHeaderView.ResizeMode.ResizeToContents) # Статус
+
+        # 1. Убираем "номер строки" (вертикальный хедер)
+        table.verticalHeader().setVisible(False)
+        # 2. Прячем колонку ID, так как она админу не нужна визуально, но нужна нам для логики
+        table.setColumnHidden(0, True)
+
+        table.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        table.customContextMenuRequested.connect(self.show_user_context_menu)
+        table.setSelectionBehavior(table.SelectionBehavior.SelectRows)
+        table.setEditTriggers(table.EditTrigger.NoEditTriggers)
+
+        table.setStyleSheet(self.ui.table_topics.styleSheet())
+
+    def on_users_loaded(self, users):
+        table = self.ui.table_users
+        table.setRowCount(0)
+
+        # МАГИЯ СОРТИРОВКИ: True (активные) идут первыми, False (заблокированные) улетают в самый низ!
+        sorted_users = sorted(users, key=lambda x: x['is_active'], reverse=True)
+
+        for user in sorted_users:
+            self._add_or_update_user_row(user)
+
+
+    def _add_or_update_user_row(self, user, update_row=None):
+        """Универсальный метод добавления или обновления строки"""
+        table = self.ui.table_users
+        row = table.rowCount() if update_row is None else update_row
+
+        if update_row is None:
+            table.insertRow(row)
+
+        id_item = QTableWidgetItem(str(user['id']))
+        name_item = QTableWidgetItem(user['username'])
+        email_item = QTableWidgetItem(user['email'])
+        role_item = QTableWidgetItem(user['role'])
+
+        # Текстовое отображение статуса
+        status_text = "🟢 Активен" if user['is_active'] else "🔴 Заблокирован"
+        status_item = QTableWidgetItem(status_text)
+
+        table.setItem(row, 0, id_item)
+        table.setItem(row, 1, name_item)
+        table.setItem(row, 2, email_item)
+        table.setItem(row, 3, role_item)
+        table.setItem(row, 4, status_item) # Новая колонка
+
+        # Применяем бледный цвет к неактивным
+        self._paint_row(row, inactive=not user['is_active'])
+
+    def _paint_row(self, row, inactive=False):
+        # Если неактивен - делаем светло-серым
+        color = QColor("#a0a0a0") if inactive else QColor("#000000")
+        brush = QBrush(color)
+        for col in range(self.ui.table_users.columnCount()):
+            item = self.ui.table_users.item(row, col)
+            if item:
+                item.setForeground(brush)
+
+    def show_user_context_menu(self, pos):
+        item = self.ui.table_users.itemAt(pos)
+        if not item: return
+
+        row = item.row()
+        user_id = int(self.ui.table_users.item(row, 0).text())
+
+        # Определяем статус по 5-й колонке
+        is_active = "Активен" in self.ui.table_users.item(row, 4).text()
+
+        menu = QMenu()
+        edit_action = menu.addAction("✏️ Изменить")
+        toggle_action = menu.addAction("🚫 Заблокировать" if is_active else "✅ Разблокировать")
+
+        action = menu.exec(self.ui.table_users.viewport().mapToGlobal(pos))
+
+        if action == toggle_action:
+            self.auth_worker.toggle_user_status(user_id)
+        elif action == edit_action:
+            # Получаем текущие данные из таблицы
+            username = self.ui.table_users.item(row, 1).text()
+            email = self.ui.table_users.item(row, 2).text()
+
+            # Сохраняем строку, которую редактируем
+            self.editing_user_row = row
+
+            # Создаем диалог и подключаем сигнал
+            self.current_edit_dialog = EditUserDialog(self.ui.centralwidget, username=username, email=email)
+            self.current_edit_dialog.save_requested.connect(
+                lambda u, e: self.process_user_edit(user_id, username, email, u, e)
+            )
+
+            # Открываем диалог. Теперь он не закроется, пока мы не вызовем close_success()
+            self.current_edit_dialog.exec()
+
+    def process_user_edit(self, user_id, old_username, old_email, new_username, new_email):
+        """Метод для формирования и отправки запроса"""
+        if new_username == old_username and new_email == old_email:
+            self.current_edit_dialog.close()
+            return
+
+        update_data = {}
+        if new_username != old_username: update_data["username"] = new_username
+        if new_email != old_email: update_data["email"] = new_email
+
+        self.editing_user_row = self.ui.table_users.currentRow()
+        self.auth_worker.edit_user(user_id, update_data)
+
+    def on_user_edited(self, updated_user):
+        """Вызывается только при УДАЧНОМ ответе сервера"""
+        if hasattr(self, "current_edit_dialog") and self.current_edit_dialog:
+            self.current_edit_dialog.close_success() # Закрываем окно
+
+        if hasattr(self, "editing_user_row"):
+            self._add_or_update_user_row(updated_user, update_row=self.editing_user_row)
+            QMessageBox.information(self.ui.centralwidget, "Успех", "Данные пользователя обновлены!")
+
+    def show_error(self, message: str):
+        """Обновленный метод показа ошибок"""
+        # Если окно редактирования открыто, разблокируем в нем кнопку обратно
+        if hasattr(self, "current_edit_dialog") and self.current_edit_dialog.isVisible():
+            self.current_edit_dialog.btn_save.setEnabled(True)
+            self.current_edit_dialog.btn_save.setText("Сохранить")
+
+        QMessageBox.warning(self.ui.centralwidget, "Ошибка", message)
+
+    def on_user_status_updated(self, updated_user):
+        """Когда статус меняется, проще всего перезапросить список, чтобы таблица отсортировалась сама!"""
+        self.auth_worker.get_all_users()
+
+
+
+# app/GUI/dialogs.py (или внутри admin.py)
+from PyQt6.QtWidgets import QDialog, QVBoxLayout, QLabel, QComboBox, QDialogButtonBox
+
+class TimeSignatureDialog(QDialog):
+    """Диалоговое окно для выбора музыкального размера перед созданием урока."""
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Настройка нового урока")
+        self.setFixedSize(300, 150)
+
+        # Основной слой
+        layout = QVBoxLayout(self)
+
+        # Текст
+        label = QLabel("Выберите размер такта (ритм) для нового урока:", self)
+        layout.addWidget(label)
+
+        # Выпадающий список с размерами
+        self.combo = QComboBox(self)
+        self.combo.addItems(["4/4", "3/4", "2/4", "6/8"])
+        # Можно сделать 4/4 по умолчанию
+        self.combo.setCurrentText("4/4")
+        layout.addWidget(self.combo)
+
+        # Кнопки Ок/Отмена
+        self.buttons = QDialogButtonBox(
+            QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel,
+            self
+        )
+        self.buttons.accepted.connect(self.accept)
+        self.buttons.rejected.connect(self.reject)
+        layout.addWidget(self.buttons)
+
+    def get_signature(self) -> str:
+        """Возвращает выбранный размер такта."""
+        return self.combo.currentText()
 
     def on_lesson_created(self, topic_id: int):
         self.selected_topic_id = topic_id

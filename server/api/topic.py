@@ -3,17 +3,19 @@ from typing import List
 
 from schemas.topic import TopicCreate, TopicResponse
 from services.topic_service import TopicService
-from core.dependencies import get_topic_service
+from core.dependencies import get_topic_service, get_current_active_user
 
 # Создаем роутер с префиксом
 router = APIRouter(prefix="/topics", tags=["Topics"])
 
 
 @router.get("/", response_model=List[TopicResponse])
-async def get_topics(topic_service: TopicService = Depends(get_topic_service)):
-    """Получить список всех тем с количеством уроков в каждой"""
-    # Сервис возвращает список ORM-объектов, а FastAPI сам превратит их в List[TopicResponse]
-    return await topic_service.get_all_topics_with_counts()
+async def get_topics(
+    topic_service: TopicService = Depends(get_topic_service),
+    current_user=Depends(get_current_active_user),
+):
+    """Получить список всех тем с количеством уроков и прогрессом пользователя"""
+    return await topic_service.get_all_topics_with_counts(current_user.id)
 
 
 @router.post("/", response_model=TopicResponse)
