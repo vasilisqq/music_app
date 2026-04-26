@@ -40,13 +40,13 @@ class Main(QMainWindow):
         self.scroll_area.setWidget(self.topics_container)
         self.ui.topicsPageLayout.addWidget(self.scroll_area)
 
-        self.admin_controller = AdminController(self.ui)
-        self.profile_controller = ProfileController(self.ui, self.user_data, self.auth_worker)
-        self.settings_controller = SettingsController(self.ui)
-
         self.topic_worker = TopicWorker()
         self.lesson_worker = LessonWorker()
         self.progress_worker = ProgressWorker()
+
+        self.admin_controller = AdminController(self.ui)
+        self.profile_controller = ProfileController(self.ui, self.user_data, self.auth_worker, self.progress_worker)
+        self.settings_controller = SettingsController(self.ui)
 
         self._selected_topic_id: int | None = None
         self._topics_subview: str = "topics"  # topics | lessons
@@ -202,8 +202,10 @@ class Main(QMainWindow):
         # Возвращаем боковое меню при закрытии урока
         self.ui.drawerWidget.show()
 
-        if was_completed and self._selected_topic_id is not None:
-            self.progress_worker.get_completed_lessons_for_topic(self._selected_topic_id)
+        if was_completed:
+            if self._selected_topic_id is not None:
+                self.progress_worker.get_completed_lessons_for_topic(self._selected_topic_id)
+            self.progress_worker.get_profile_stats()
 
         self.ui.stackedWidget.setCurrentWidget(self.ui.topicsPageWidget)
         if hasattr(self, "lesson_player_page"):

@@ -1,14 +1,19 @@
 import json
+import os
+import sys
 
 from PyQt6.QtCore import QUrl, pyqtSignal, QObject
 from PyQt6.QtNetwork import QNetworkAccessManager, QNetworkRequest, QNetworkReply
 
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+from schemas.profile_stats import ProfileStatsResponse
 from loader import settings
 
 
 class ProgressWorker(QObject):
-    completed_lessons_loaded_signal = pyqtSignal(list)  # list[int]
-    lesson_completed_signal = pyqtSignal(int)  # lesson_id
+    completed_lessons_loaded_signal = pyqtSignal(list)
+    lesson_completed_signal = pyqtSignal(int)
+    profile_stats_loaded_signal = pyqtSignal(object)
     error_signal = pyqtSignal(str)
 
     def __init__(self):
@@ -35,6 +40,16 @@ class ProgressWorker(QObject):
         reply = self.manager.post(request, b"")
         reply.finished.connect(lambda: self._on_complete_reply(reply, lesson_id))
 
+    def get_profile_stats(self) -> None:
+        url = QUrl("http://localhost:8000/progress/profile/stats")
+        request = QNetworkRequest(url)
+        token = settings.value("token")
+        if token:
+            request.setRawHeader(b"Authorization", f"Bearer {token}".encode("utf-8"))
+
+        reply = self.manager.get(request)
+        reply.finished.connect(lambda: self._on_profile_stats_reply(reply))
+
     def _on_get_completed_reply(self, reply: QNetworkReply) -> None:
         if reply.error() == QNetworkReply.NetworkError.NoError:
             data = json.loads(reply.readAll().data().decode("utf-8"))
@@ -48,6 +63,14 @@ class ProgressWorker(QObject):
             self.lesson_completed_signal.emit(lesson_id)
         else:
             self._handle_error(reply, "Ошибка отметки урока")
+        reply.deleteLater()
+
+    def _on_profile_stats_reply(self, reply: QNetworkReply) -> None:
+        if reply.error() == QNetworkReply.NetworkError.NoError:
+            data = json.loads(reply.readAll().data().decode("utf-8"))
+            self.profile_stats_loaded_signal.emit(ProfileStatsResponse.model_validate(data))
+        else:
+            self._handle_error(reply, "Ошибка загрузки статистики профиля")
         reply.deleteLater()
 
     def _handle_error(self, reply: QNetworkReply, default_msg: str) -> None:

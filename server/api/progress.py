@@ -4,6 +4,7 @@ from core.dependencies import get_current_active_user
 from services.progress_service import ProgressService
 from db import get_db
 from sqlalchemy.ext.asyncio import AsyncSession
+from schemas.profile_stats import ProfileStatsResponse
 
 
 router = APIRouter(tags=["progress"], prefix="/progress")
@@ -32,3 +33,11 @@ async def complete_lesson(
 ):
     await progress_service.mark_lesson_completed(user_id=current_user.id, lesson_id=lesson_id)
     return None
+
+
+@router.get("/profile/stats", response_model=ProfileStatsResponse)
+async def get_profile_stats(
+    progress_service: ProgressService = Depends(get_progress_service),
+    current_user=Depends(get_current_active_user),
+):
+    return await progress_service.get_profile_stats(user_id=current_user.id)
