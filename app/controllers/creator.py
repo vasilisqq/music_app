@@ -234,7 +234,7 @@ class CreatorController(QWidget):
         y = Y0 + 200
         self.create_feedback_circle(x, y, is_correct=True)
 
-    def on_note_wrong_graphic(self, note_item, _note_name, is_timeout):
+    def on_note_wrong_graphic(self, note_item, _expected_note_name, _played_note_name, is_timeout):
         if not self.practice_mode:
             return
 

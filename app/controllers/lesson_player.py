@@ -19,10 +19,12 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 
+from loader import settings
+
 from GUI.creator import Ui_MainWindow
 from schemas.lesson import LessonResponse
-from staff import StaffLayout
-from test import player
+from staff import LINE_SPACING, StaffLayout
+from test import normalize_note_name, player
 from workers.progress_worker import ProgressWorker
 
 
@@ -49,9 +51,13 @@ class LessonPlayerController(QWidget):
         self._metronome_active = False
         self._feedback_items = []
         self._input_active = False
+        self._midi_input_port = None
 
         self._repeat_timer = QTimer()
         self._repeat_timer.setSingleShot(True)
+        self._midi_poll_timer = QTimer()
+        self._midi_poll_timer.setInterval(15)
+        self._midi_poll_timer.timeout.connect(self._poll_midi_input)
         self._repeat_timer.timeout.connect(self._finish_repeat)
 
         self.playhead_timer = QTimer()
@@ -253,9 +259,57 @@ class LessonPlayerController(QWidget):
     def _repeat(self):
         self._start_sequence(practice_mode=True)
 
+    def _open_selected_midi_input(self) -> bool:
+        device_name = settings.value("midi/input_device_name", None)
+        if not device_name:
+            QMessageBox.information(self, "Тренировка", "Сначала выбери MIDI-устройство в настройках.")
+            return False
+
+        try:
+            import mido
+        except Exception:
+            QMessageBox.warning(self, "Тренировка", "Библиотека mido недоступна в текущем окружении.")
+            return False
+
+        try:
+            self._midi_input_port = mido.open_input(device_name)
+        except Exception as exc:
+            QMessageBox.warning(self, "Тренировка", f"Не удалось открыть MIDI-устройство:\n{device_name}\n\n{exc}")
+            self._midi_input_port = None
+            return False
+
+        self._midi_poll_timer.start()
+        return True
+
+    def _close_midi_input(self):
+        self._midi_poll_timer.stop()
+        port = self._midi_input_port
+        self._midi_input_port = None
+        if port is None:
+            return
+        try:
+            port.close()
+        except Exception:
+            pass
+
+    def _poll_midi_input(self):
+        port = self._midi_input_port
+        if port is None or not self._practice_mode or not self._input_active:
+            return
+        try:
+            messages = list(port.iter_pending())
+        except Exception:
+            self._close_midi_input()
+            return
+        for message in messages:
+            if getattr(message, "type", None) != "note_on" or getattr(message, "velocity", 0) <= 0:
+                continue
+            player.check_midi_note_number(int(message.note))
+
     def _start_sequence(self, practice_mode: bool):
         self._stop_practice_listeners()
         self._clear_feedback_markers()
+        self._close_midi_input()
         self._practice_mode = practice_mode
         self._input_active = False
         self._correct = 0
@@ -263,6 +317,9 @@ class LessonPlayerController(QWidget):
         self._idle_presses = 0
 
         if practice_mode:
+            if not self._open_selected_midi_input():
+                self._practice_mode = False
+                return
             player.note_correct.connect(self._on_note_correct)
             player.note_wrong.connect(self._on_note_wrong)
             player.note_ignored.connect(self._on_note_ignored)
@@ -365,11 +422,6 @@ class LessonPlayerController(QWidget):
         QTimer.singleShot(interval_ms, lambda: self._play_metronome_beat(token))
 
     def keyPressEvent(self, event):
-        if self._practice_mode and event.key() == Qt.Key.Key_Space:
-            if self._input_active:
-                player.check_space_press()
-            event.accept()
-            return
         super().keyPressEvent(event)
 
     def _add_feedback_circle(self, x: float, y: float, is_correct: bool):
@@ -405,18 +457,59 @@ class LessonPlayerController(QWidget):
         for bit_note in notes:
             self._create_feedback_circle(bit_note, is_correct=is_correct)
 
+    def _get_staff_y_for_note(self, note_name: str) -> float | None:
+        normalized_note = normalize_note_name(note_name)
+        if not normalized_note:
+            return None
+        if not hasattr(self, "staff_layout") or self.staff_layout is None:
+            return None
+        if not getattr(self.staff_layout, "tacts", None):
+            return None
+
+        first_tact = self.staff_layout.tacts[0]
+        if not getattr(first_tact, "lines", None):
+            return None
+
+        letter = normalized_note[0]
+        octave_text = normalized_note[2:] if len(normalized_note) > 2 and normalized_note[1] in {"#", "b"} else normalized_note[1:]
+        try:
+            octave = int(octave_text)
+        except ValueError:
+            return None
+
+        diatonic_steps = {"C": 0, "D": 1, "E": 2, "F": 3, "G": 4, "A": 5, "B": 6}
+        note_step = (octave * 7) + diatonic_steps[letter]
+        top_line_step = (5 * 7) + diatonic_steps["F"]
+        step_delta = top_line_step - note_step
+
+        top_line_y = first_tact.lines[0].y
+        return top_line_y + (step_delta * (LINE_SPACING / 2))
+
+    def _create_played_note_feedback_circle(self, note_name: str, is_correct: bool):
+        if not self.playhead_line.isVisible():
+            return
+        y = self._get_staff_y_for_note(note_name)
+        if y is None:
+            self._create_playhead_feedback_circle(is_correct=is_correct)
+            return
+        line = self.playhead_line.line()
+        x = line.x1()
+        self._add_feedback_circle(x, y, is_correct=is_correct)
+
     def _on_note_correct(self, note_item, _note_name):
         if not self._practice_mode:
             return
         self._correct += 1
         self._create_feedback_markers(note_item, is_correct=True)
 
-    def _on_note_wrong(self, note_item, _note_name, _is_timeout):
+    def _on_note_wrong(self, note_item, _expected_note_name, played_note_name, is_timeout):
         if not self._practice_mode:
             return
         self._wrong += 1
-        if _is_timeout:
+        if is_timeout:
             self._create_feedback_markers(note_item, is_correct=False)
+        elif played_note_name:
+            self._create_played_note_feedback_circle(played_note_name, is_correct=False)
         else:
             self._create_playhead_feedback_circle(is_correct=False)
 
@@ -429,6 +522,7 @@ class LessonPlayerController(QWidget):
     def _finish_repeat(self):
         self._metronome_active = False
         self._input_active = False
+        self._close_midi_input()
         self._stop_practice_listeners()
         self.playhead_timer.stop()
         self.playhead_line.hide()
@@ -479,6 +573,7 @@ class LessonPlayerController(QWidget):
         self.playhead_line.hide()
         self._metronome_active = False
         self._input_active = False
+        self._close_midi_input()
         self._stop_practice_listeners()
         self._clear_feedback_markers()
         self.closed.emit(self._was_completed)
@@ -486,6 +581,7 @@ class LessonPlayerController(QWidget):
     def closeEvent(self, event):
         self._metronome_active = False
         self._input_active = False
+        self._close_midi_input()
         self._stop_practice_listeners()
         self._clear_feedback_markers()
         super().closeEvent(event)

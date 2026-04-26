@@ -1,16 +1,16 @@
-import numpy as np
-import sounddevice as sd
-from scipy.io import wavfile
-from scipy.ndimage import zoom
 import os
+import re
 import threading
 import time
+from typing import Optional
+
+import numpy as np
+import sounddevice as sd
 from PyQt6.QtCore import QTimer, QThread, pyqtSignal, QObject, Qt
 from PyQt6.QtGui import QPen, QColor
 from PyQt6.QtWidgets import QWidget
-import time
-import threading
-from typing import Optional
+from scipy.io import wavfile
+from scipy.ndimage import zoom
 from scipy.signal import butter, lfilter
 
 # Загружаем ОДИН реальный сэмпл пианино C4
@@ -52,6 +52,36 @@ NOTE_FREQ = {
 
 # Кеш для всех нот (предвычисляется при старте)
 note_cache = {}
+
+_MIDI_NOTE_NAMES = ("C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B")
+_FLAT_TO_SHARP = {
+    "Db": "C#",
+    "Eb": "D#",
+    "Gb": "F#",
+    "Ab": "G#",
+    "Bb": "A#",
+}
+_NOTE_NAME_PATTERN = re.compile(r"^([A-G])([#b]?)(-?\d+)$")
+
+
+def normalize_note_name(note_name: str | None) -> str | None:
+    if not note_name:
+        return None
+    normalized = (note_name or "").strip()
+    match = _NOTE_NAME_PATTERN.match(normalized)
+    if not match:
+        return normalized
+    letter, accidental, octave = match.groups()
+    accidental_pair = f"{letter}{accidental}"
+    canonical = _FLAT_TO_SHARP.get(accidental_pair, accidental_pair)
+    return f"{canonical}{octave}"
+
+
+def midi_note_to_name(note_number: int) -> str:
+    octave = (int(note_number) // 12) - 1
+    note_name = _MIDI_NOTE_NAMES[int(note_number) % 12]
+    return f"{note_name}{octave}"
+
 
 def save_cache(filename='piano_cache.npz'):
     """Сохраняет note_cache в сжатый .npz файл."""
@@ -100,7 +130,7 @@ precompute_all()
 class PianoPlayer(QObject):
 
     note_correct = pyqtSignal(object, str)   # передаёт объект ноты и её имя
-    note_wrong = pyqtSignal(object, str, bool)
+    note_wrong = pyqtSignal(object, str, str, bool)
     note_ignored = pyqtSignal()
 
     def __init__(self, note_cache, sample_rate):
@@ -118,7 +148,7 @@ class PianoPlayer(QObject):
         self.on_note_correct = None
         self.on_note_wrong = None
 
-        self.space_pressed_in_window = False   # флаг: был ли пробел в окне
+        self.space_pressed_in_window = False   # флаг: было ли попадание в окне
 
         self.stream = sd.OutputStream(
             samplerate=sample_rate,
@@ -235,19 +265,26 @@ class PianoPlayer(QObject):
             outdata[:] *= gain
 
 
-    def check_space_press(self):
-        """Вызывается при нажатии пробела извне"""
+    def check_note_press(self, note_name: str):
         if self.current_note_await_time is None:
             self.note_ignored.emit()
             return False
         now = time.time()
         dt = now - self.current_note_await_time
-        print(dt)
-        if dt <= self.hit_window and not self.space_pressed_in_window:
+        expected_note = normalize_note_name(self.current_note_await)
+        played_note = normalize_note_name(note_name)
+        if dt <= self.hit_window and not self.space_pressed_in_window and played_note == expected_note:
             self.space_pressed_in_window = True
             self.note_correct.emit(self.current_note_item, self.current_note_await)
             return True
-        self.note_wrong.emit(self.current_note_item, self.current_note_await, False)
+        self.note_wrong.emit(self.current_note_item, self.current_note_await, played_note or note_name, False)
+        return False
+
+    def check_midi_note_number(self, note_number: int):
+        return self.check_note_press(midi_note_to_name(note_number))
+
+    def check_space_press(self):
+        self.note_ignored.emit()
         return False
 
 
@@ -255,8 +292,7 @@ class PianoPlayer(QObject):
         time.sleep(self.hit_window)
         with self.lock:
             if not self.space_pressed_in_window:
-                # Если пробел не был нажат, генерируем сигнал wrong
-                self.note_wrong.emit(self.current_note_item, self.current_note_await, True)
+                self.note_wrong.emit(self.current_note_item, self.current_note_await, None, True)
             self.current_note_await_time = None
             self.space_pressed_in_window = False
             self.current_note_item = None

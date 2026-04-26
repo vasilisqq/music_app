@@ -13,6 +13,11 @@ _DEVICE_PORT_SUFFIX = re.compile(r"\s+port\s+\d+$", re.IGNORECASE)
 _DEVICE_EXTRA_SPACES = re.compile(r"\s+")
 
 
+def _is_virtual_midi_input(name: str) -> bool:
+    normalized = _normalize_midi_device_name(name).casefold()
+    return normalized.startswith("midi through")
+
+
 def _normalize_midi_device_name(name: str) -> str:
     normalized = (name or "").strip()
     normalized = _DEVICE_ID_SUFFIX.sub("", normalized)
@@ -33,6 +38,8 @@ def _display_midi_device_name(name: str) -> str:
 def _dedupe_midi_inputs(input_names: list[str]) -> list[str]:
     unique_inputs: dict[str, str] = {}
     for name in sorted(input_names, key=_device_sort_key):
+        if _is_virtual_midi_input(name):
+            continue
         key = _normalize_midi_device_name(name).casefold()
         unique_inputs.setdefault(key, name)
     return list(unique_inputs.values())
