@@ -168,8 +168,10 @@ class LessonPlayerController(QWidget):
             self.ui.reset_button,
             self.ui.duration_combo,
             self.ui.accidental_combo,
+            self.ui.input_mode_combo,
             self.ui.label_time_signature,
             self.ui.label_accidental,
+            self.ui.label_input_mode,
         ]:
             widget.hide()
 

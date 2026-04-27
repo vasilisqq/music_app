@@ -1,6 +1,7 @@
 from PyQt6.QtCore import Qt, QRectF, QLineF, QPointF
 from PyQt6.QtGui import QPen, QBrush, QFont, QPixmap,QColor, QPainterPath
 from PyQt6.QtWidgets import (
+    QGraphicsItem,
     QGraphicsLineItem,
     QGraphicsScene,
     QGraphicsTextItem,
@@ -45,9 +46,128 @@ def is_dotted_duration(duration: float) -> bool:
 class LaySettings:
     def __init__(self):
         self.accidental = "natural"
+        self.input_mode = "note"
         self.scene = None
 
 settings = LaySettings()
+
+
+class RestItem(QGraphicsItem):
+    SVG_PATHS = {
+        0.25: "app/photos/quarter_pause.svg",
+        0.125: "app/photos/eight_pause.svg",
+    }
+
+    def __init__(self, x: float, y: float, duration: float, scene, bit=None):
+        super().__init__(parent=bit)
+        self.x = x
+        self.y = y
+        self.duration = duration
+        self.base_duration = get_base_duration(duration)
+        self.is_dotted = is_dotted_duration(duration)
+        self.scene = scene
+        self.bit = bit
+        self.svg_item = None
+        self.rect = QRectF()
+        self.dot_rect = QRectF()
+        self.setZValue(10)
+        self.setAcceptedMouseButtons(Qt.MouseButton.LeftButton | Qt.MouseButton.RightButton)
+        self._update_geometry()
+
+    def _update_geometry(self):
+        whole_or_half_width = 18
+        whole_or_half_height = 6
+        line_y = self.y
+
+        if durations_equal(self.base_duration, 1):
+            self.rect = QRectF(self.x - whole_or_half_width / 2, line_y, whole_or_half_width, whole_or_half_height)
+            self._clear_svg_item()
+        elif durations_equal(self.base_duration, 0.5):
+            self.rect = QRectF(self.x - whole_or_half_width / 2, line_y - whole_or_half_height, whole_or_half_width, whole_or_half_height)
+            self._clear_svg_item()
+        else:
+            self.rect = QRectF(self.x - 10, line_y - 20, 20, 40)
+            self._ensure_svg_item()
+            self._position_svg_item()
+
+        if self.is_dotted:
+            self.dot_rect = QRectF(self.rect.right() + 4, self.rect.center().y() - 2, 4, 4)
+        else:
+            self.dot_rect = QRectF()
+
+    def _ensure_svg_item(self):
+        if self.svg_item is not None:
+            return
+        svg_path = self.SVG_PATHS.get(self.base_duration)
+        if not svg_path:
+            return
+        self.svg_item = QGraphicsSvgItem(svg_path, self)
+        self.svg_item.setAcceptedMouseButtons(Qt.MouseButton.NoButton)
+
+    def _clear_svg_item(self):
+        if self.svg_item is None:
+            return
+        self.scene.removeItem(self.svg_item)
+        self.svg_item = None
+
+    def _position_svg_item(self):
+        if self.svg_item is None:
+            return
+        original_rect = self.svg_item.boundingRect()
+        if original_rect.isEmpty():
+            return
+
+        if durations_equal(self.base_duration, 0.25):
+            target_height = 32.0
+        else:
+            target_height = 26.0
+
+        y_offset = -18.0
+
+        scale_factor = target_height / original_rect.height()
+        self.svg_item.setScale(scale_factor)
+        scaled_width = original_rect.width() * scale_factor
+        self.svg_item.setPos(self.x - scaled_width / 2, self.y + y_offset)
+        self.rect = self.svg_item.mapRectToParent(self.svg_item.boundingRect())
+
+    @classmethod
+    def create_for_bit(cls, bit, duration, scene):
+        center_x = (bit.x0 + bit.x1) / 2
+        base_duration = get_base_duration(duration)
+        if durations_equal(base_duration, 1):
+            line_y = bit.tact.lines[1].y
+        elif durations_equal(base_duration, 0.5):
+            line_y = bit.tact.lines[2].y
+        else:
+            line_y = bit.tact.lines[2].y
+        return cls(center_x, line_y, duration, scene, bit=bit)
+
+    def sync_to_bit(self):
+        self.prepareGeometryChange()
+        self.x = (self.bit.x0 + self.bit.x1) / 2
+        self._update_geometry()
+        self.update()
+
+    def mousePressEvent(self, event):
+        if event.button() == Qt.MouseButton.RightButton and self.bit is not None:
+            self.bit.remove_rest()
+            return
+        super().mousePressEvent(event)
+
+    def boundingRect(self):
+        if self.dot_rect.isNull():
+            return self.rect.adjusted(-2, -2, 2, 2)
+        return self.rect.united(self.dot_rect).adjusted(-2, -2, 2, 2)
+
+    def paint(self, painter: QPainter, option, widget):
+        if durations_equal(self.base_duration, 1) or durations_equal(self.base_duration, 0.5):
+            painter.setPen(QPen(Qt.GlobalColor.black, 1.4))
+            painter.setBrush(QBrush(Qt.GlobalColor.black))
+            painter.drawRect(self.rect)
+        if self.is_dotted:
+            painter.setPen(Qt.PenStyle.NoPen)
+            painter.setBrush(QBrush(Qt.GlobalColor.black))
+            painter.drawEllipse(self.dot_rect)
 
 
 class NoteItem(QGraphicsEllipseItem):
@@ -404,7 +524,7 @@ class HighlightableLineItem(QGraphicsLineItem):
         if event.button() == Qt.MouseButton.LeftButton and self.is_hovered:
             pos = event.pos()
             scene_pos = self.mapToScene(pos)
-            self.tact.add_note_at_position(scene_pos.x(), self)
+            self.tact.add_item_at_position(scene_pos.x(), self)
 
         super().mousePressEvent(event)
 
@@ -469,7 +589,7 @@ class StaffSpaceItem(QGraphicsRectItem):
         if event.button() == Qt.MouseButton.LeftButton and self.is_hovered:
             pos = event.pos()
             scene_pos = self.mapToScene(pos)
-            self.tact.add_note_at_position(scene_pos.x(), self)
+            self.tact.add_item_at_position(scene_pos.x(), self)
 
         super().mousePressEvent(event)
 
@@ -540,6 +660,7 @@ class Bits(QGraphicsRectItem):
     def __init__(self, rect, x0, x1, tact=None, weigth=0.25, parent=None):
         super().__init__(rect, parent)
         self.notes = []
+        self.rest_item = None
         self.x0 = x0
         self.x1 = x1
         self.weigth = weigth
@@ -551,6 +672,52 @@ class Bits(QGraphicsRectItem):
         self.read_only = False
         self.setBrush(self.normal_brush)
         self.setPen(self.normal_pen)
+
+    @property
+    def is_filled(self) -> bool:
+        return bool(self.notes) or self.rest_item is not None
+
+    def sync_rest(self):
+        if self.rest_item is not None:
+            self.rest_item.sync_to_bit()
+
+    def add_rest(self, duration, scene):
+        if not durations_equal(duration, self.weigth):
+            return False
+        if self.notes or self.rest_item is not None:
+            return False
+        self.rest_item = RestItem.create_for_bit(self, duration, scene)
+        scene.addItem(self.rest_item)
+        self.update()
+        return self.rest_item
+
+    def remove_rest(self):
+        if self.rest_item is None:
+            return
+        self.scene().removeItem(self.rest_item)
+        self.rest_item = None
+        self.tact.change_bits(self)
+        self.tact.update_beams()
+        self.update()
+
+    def clear_contents(self):
+        for note in self.notes[:]:
+            self.scene().removeItem(note)
+        self.notes.clear()
+        if self.rest_item is not None:
+            self.scene().removeItem(self.rest_item)
+            self.rest_item = None
+        self.update()
+
+    def setRect(self, rect):
+        super().setRect(rect)
+        self.sync_rest()
+        self.update()
+
+    def itemChange(self, change, value):
+        result = super().itemChange(change, value)
+        self.sync_rest()
+        return result
 
     def set_read_only(self, value: bool):
         self.read_only = value
@@ -602,7 +769,7 @@ class Bits(QGraphicsRectItem):
             last_note.create_shtil()
             last_note.next_note = linked_note_next
             last_note.prev_note = linked_note_prev
-        else:
+        elif self.rest_item is None:
             self.tact.change_bits(self)
         self.tact.update_beams()
         
@@ -610,6 +777,8 @@ class Bits(QGraphicsRectItem):
 
     def add_note(self, duration, line, scene):
         if not durations_equal(duration, self.weigth):
+            return False
+        if self.rest_item is not None:
             return False
         if self.isExist_note(line):
             return False
@@ -738,6 +907,8 @@ class Tact:
         for bit in self.bits:
             for note in bit.notes[:]:
                 self.scene.removeItem(note)
+            if bit.rest_item is not None:
+                self.scene.removeItem(bit.rest_item)
             self.scene.removeItem(bit)
         self.bits.clear()
 
@@ -783,8 +954,7 @@ class Tact:
 
 
 
-    def add_note_at_position(self, click_x, line):
-        """Добавляет ноту на ближайшую доступную позицию"""
+    def add_item_at_position(self, click_x, line):
         if not self.x0 <= click_x <= self.x0 + self.width:
             return
         for bit in self.bits:
@@ -793,9 +963,17 @@ class Tact:
                 break
         else:
             return
+
+        if settings.input_mode == "rest":
+            item.add_rest(self.duration, self.scene)
+            return
+
         if len(item.notes) == 5:
             return
         item.add_note(self.duration, line, self.scene)
+
+    def add_note_at_position(self, click_x, line):
+        self.add_item_at_position(click_x, line)
 
 
     def update_beams(self):
@@ -988,6 +1166,8 @@ class Tact:
         for bit in self.bits:
             for note in bit.notes[:]:
                 self.scene.removeItem(note)
+            if bit.rest_item is not None:
+                self.scene.removeItem(bit.rest_item)
             self.scene.removeItem(bit)
         self.bits.clear()
 
@@ -1075,7 +1255,7 @@ class StaffLayout:
         empty_group_duration = 0.0
 
         for bit in tact.bits:
-            if bit.notes:
+            if bit.is_filled:
                 if empty_group_duration > DURATION_EPSILON:
                     for weight in build_bit_weights(empty_group_duration, duration):
                         rebuilt_entries.append({"weight": weight})
@@ -1089,7 +1269,7 @@ class StaffLayout:
                 rebuilt_entries.append({"weight": weight})
 
         for bit in tact.bits:
-            if not bit.notes:
+            if not bit.is_filled:
                 self.scene.removeItem(bit)
 
         tact_total_duration = tact.numerator / 4
@@ -1109,6 +1289,7 @@ class StaffLayout:
                     note.x = current_x + 15
                     note.stem_x = int(note.x + note.width / 2) if not note.reversing else int(note.x - note.width / 2)
                     note.update()
+                bit.sync_rest()
                 tact.bits.append(bit)
                 current_x += bit_width
                 continue
@@ -1183,8 +1364,11 @@ class StaffLayout:
             tact_data = []
             for bit in tact.bits:
                 note_names = []
-                for note in bit.notes:
-                    note_names.append(note.note_name)
+                if bit.rest_item is not None:
+                    note_names.append("REST")
+                else:
+                    for note in bit.notes:
+                        note_names.append(note.note_name)
 
                 tact_data.append({
                     "duration": bit.weigth,
@@ -1227,6 +1411,10 @@ class StaffLayout:
                 bit = tact.bits[bit_idx]
 
                 for note_name in saved_bit["notes"]:
+                    if note_name == "REST":
+                        bit.add_rest(bit.weigth, self.scene)
+                        continue
+
                     base_name = note_name[:2]
 
                     for item in lines_and_spaces:
@@ -1238,28 +1426,25 @@ class StaffLayout:
                             else:
                                 settings.accidental = "natural"
 
-                            note = bit.add_note(bit.weigth, item, self.scene)
-                            if note:
-                                self.scene.addItem(note)
+                            bit.add_note(bit.weigth, item, self.scene)
                             break
 
 
     def touch_thread(self):
         for tact in self.tacts:
             for bit in tact.bits:
+                duration = 60 / self.bpm * bit.weigth * 4
                 if bit.notes:
-                    # Берём первую ноту в бите (для простоты)
                     note_item = bit.notes[0]
                     player.start_waiting_for_note(note_item.note_name, note_item)
-                    duration = 60/self.bpm * bit.weigth * 4
-                    time.sleep(duration)
+                time.sleep(duration)
 
     def sound_thread(self):
             time.sleep(0.05)
             for tact in self.tacts:
                 for bit in tact.bits:
+                    duration = 60 / self.bpm * bit.weigth * 4
                     if bit.notes:
-                        duration = 60/self.bpm * bit.weigth * 4
                         chord_notes = [note.note_name for note in bit.notes]
                         player.play_chord(chord_notes, duration)
                     time.sleep(duration)

@@ -125,6 +125,12 @@ class Ui_MainWindow(object):
         self.accidental_combo = QtWidgets.QComboBox(parent=MainWindow)
         self.accidental_combo.setObjectName("accidental_combo")
         self.settingsRow.addWidget(self.accidental_combo)
+        self.label_input_mode = QtWidgets.QLabel(parent=MainWindow)
+        self.label_input_mode.setObjectName("label_input_mode")
+        self.settingsRow.addWidget(self.label_input_mode)
+        self.input_mode_combo = QtWidgets.QComboBox(parent=MainWindow)
+        self.input_mode_combo.setObjectName("input_mode_combo")
+        self.settingsRow.addWidget(self.input_mode_combo)
         spacerItem1 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum)
         self.settingsRow.addItem(spacerItem1)
         self.verticalLayout.addLayout(self.settingsRow)
@@ -146,4 +152,5 @@ class Ui_MainWindow(object):
         self.exit_button.setText(_translate("MainWindow", "✕"))
         self.label_time_signature.setText(_translate("MainWindow", "Длительность:"))
         self.label_accidental.setText(_translate("MainWindow", "Знак:"))
+        self.label_input_mode.setText(_translate("MainWindow", "Режим:"))
 from app.GUI.helpful import ScalableGraphicsView

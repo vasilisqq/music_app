@@ -212,8 +212,15 @@ class CreatorController(QWidget):
         accidental_combo.setCurrentIndex(0)
         accidental_combo.currentIndexChanged.connect(self.on_accidental_changed)
 
+        input_mode_combo = self.ui.input_mode_combo
+        input_mode_combo.addItem("Нота", "note")
+        input_mode_combo.addItem("Пауза", "rest")
+        input_mode_combo.setCurrentIndex(0)
+        input_mode_combo.currentIndexChanged.connect(self.on_input_mode_changed)
+
         self.load_scene()
         self.init_playhead()
+        self.on_input_mode_changed(self.ui.input_mode_combo.currentIndex())
 
         self.api.lesson_created_sygnal.connect(self.on_lesson_created)
         self.api.lesson_updated_signal.connect(self.on_lesson_updated)
@@ -227,6 +234,11 @@ class CreatorController(QWidget):
 
     def on_accidental_changed(self, _index):
         settings.accidental = self.ui.accidental_combo.currentData()
+
+    def on_input_mode_changed(self, _index):
+        settings.input_mode = self.ui.input_mode_combo.currentData()
+        is_note_mode = settings.input_mode == "note"
+        self.ui.accidental_combo.setEnabled(is_note_mode)
 
     def on_note_correct_graphic(self, note_item, _note_name):
         if not self.practice_mode:
@@ -325,7 +337,7 @@ class CreatorController(QWidget):
     def _find_first_unfilled_bit(self) -> tuple[int, int] | None:
         for tact_index, tact in enumerate(self.lay.tacts, start=1):
             for bit_index, bit in enumerate(tact.bits, start=1):
-                if not getattr(bit, "notes", None):
+                if not getattr(bit, "is_filled", False):
                     return tact_index, bit_index
         return None
 
