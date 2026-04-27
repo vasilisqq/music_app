@@ -1,5 +1,5 @@
 from PyQt6.QtCore import Qt, QRectF, QLineF, QPointF
-from PyQt6.QtGui import QPen, QBrush, QFont, QPixmap,QColor, QPainterPath
+from PyQt6.QtGui import QPen, QBrush, QFont, QPixmap, QColor, QPainter, QPainterPath
 from PyQt6.QtWidgets import (
     QGraphicsItem,
     QGraphicsLineItem,
@@ -205,61 +205,139 @@ class NoteItem(QGraphicsEllipseItem):
         self.next_note = None
         self.stem_x = int(self.x + self.width/2) if not self.reversing else int(self.x - self.width/2)
 
+    def get_stem_group_notes(self):
+        if self.bit is None:
+            return [self]
+        return [note for note in self.bit.notes if note.reversing == self.reversing] or [self]
+
+    def has_split_upward_chord(self) -> bool:
+        if self.bit is None or self.reversing or len(self.bit.notes) < 2:
+            return False
+        upward_notes = [note for note in self.bit.notes if not note.reversing]
+        if len(upward_notes) < 2:
+            return False
+        ordered_notes = sorted(upward_notes, key=lambda note: note.y, reverse=True)
+        return any(abs(current.y - following.y) > 12 for current, following in zip(ordered_notes, ordered_notes[1:]))
+
+    def get_stem_start_y(self) -> float:
+        group_notes = self.get_stem_group_notes()
+        if self.reversing:
+            return min(note.y for note in group_notes)
+        return max(note.y for note in group_notes)
+
+    def get_stem_top_y(self) -> float:
+        stem_top_y = self.get_stem_start_y() - 32
+        if self.has_split_upward_chord():
+            upward_notes = sorted(
+                [note for note in self.bit.notes if not note.reversing],
+                key=lambda note: note.y,
+                reverse=True,
+            )
+            lowest_note = upward_notes[0]
+            highest_note = upward_notes[-1]
+            if self is lowest_note:
+                return min(stem_top_y, highest_note.y - 32)
+        return stem_top_y
+
+    def is_stem_leader(self) -> bool:
+        group_notes = self.get_stem_group_notes()
+        if self.reversing:
+            return self.y == min(note.y for note in group_notes)
+        return self.y == max(note.y for note in group_notes)
+
+    def get_dot_bounds(self) -> QRectF:
+        return QRectF(self.x + self.width / 2 + 4, self.y - 1.5, 4, 4)
+
+    def update_stem_x(self):
+        self.stem_x = int(self.x + self.width / 2) if not self.reversing else int(self.x - self.width / 2)
+
+    def sync_geometry(self):
+        self.update_stem_x()
+        self.update()
+
+    def refresh_group_geometry(self):
+        if self.bit is None:
+            self.sync_geometry()
+            return
+        for note in self.bit.notes:
+            note.sync_geometry()
 
     def delete_accidental(self):
         if self.accidental_item:
             self.scene.removeItem(self.accidental_item)
             self.accidental_item = None
 
-    def draw_accidental(self, index):
-        # Удаляем старый знак, если был
-        if self.accidental_item is not None:
-            self.scene.removeItem(self.accidental_item)
-            self.accidental_item = None
-        if self.accidental == "natural" and index == 0:
-            return
-        # Обычные знаки (sharp, flat)
-        symbol = self._accidental_to_symbol(self.accidental)
-        if not self.note_name.endswith(symbol):
-            self.note_name += symbol
-        svg_path = f"app/photos/{self.accidental}.svg"
-        acc_item = QGraphicsSvgItem(svg_path)
-        # Масштабирование и позиционирование (твой существующий код)
-        original_rect = acc_item.boundingRect()
-        if self.accidental == "sharp":
-            target_height = 15.0
-            x_pos = self.x - 20
-            y_pos = self.y - 8
-        else:
-            target_height = 25.0
-            x_pos = self.x - 18
-            y_pos = self.y - 17
+    def draw_stem(self, painter: QPainter):
+        stem_top_y = self.get_stem_top_y()
+        painter.drawLine(QLineF(float(self.stem_x), float(self.y), float(self.stem_x), float(stem_top_y)))
 
-        scale_factor = target_height / original_rect.height()
-        acc_item.setScale(scale_factor)
-        acc_item.setPos(x_pos, y_pos)
-        acc_item.setAcceptHoverEvents(False)
-        self.scene.addItem(acc_item)
-        self.accidental_item = acc_item
+    def draw_beam(self, painter: QPainter):
+        if self.next_note is None:
+            return
+        beam_pen = QPen(Qt.GlobalColor.black, 3.2)
+        beam_pen.setCapStyle(Qt.PenCapStyle.FlatCap)
+        painter.setPen(beam_pen)
+        painter.drawLine(
+            QLineF(
+                float(self.stem_x),
+                float(self.get_stem_top_y()),
+                float(self.next_note.stem_x),
+                float(self.next_note.get_stem_top_y()),
+            )
+        )
+
+    def draw_dot(self, painter: QPainter):
+        painter.drawEllipse(self.get_dot_bounds())
+
+    def get_visual_bounds(self) -> QRectF:
+        rect = QRectF(self.x - self.width, self.y - self.height, self.width * 2, self.height * 2)
+        if not durations_equal(self.base_duration, 1):
+            stem_top_y = self.get_stem_top_y()
+            rect = rect.united(QRectF(self.stem_x - 2, min(self.y, stem_top_y), 4, abs(self.y - stem_top_y)))
+        if durations_equal(self.base_duration, 0.125) and self.shtil:
+            rect = rect.united(QRectF(self.stem_x, self.get_stem_top_y(), 12, 22))
+        if self.next_note is not None:
+            min_x = min(self.stem_x, self.next_note.stem_x)
+            max_x = max(self.stem_x, self.next_note.stem_x)
+            min_y = min(self.get_stem_top_y(), self.next_note.get_stem_top_y())
+            max_y = max(self.get_stem_top_y(), self.next_note.get_stem_top_y())
+            rect = rect.united(QRectF(min_x, min_y - 2, max_x - min_x, (max_y - min_y) + 4))
+        if self.is_dotted:
+            rect = rect.united(self.get_dot_bounds())
+        return rect.adjusted(-5, -5, 5, 5)
+
+    def reverse(self, reverse):
+        if self.reversing == reverse:
+            return
+        self.reversing = reverse
+        self.x += self.width if self.reversing else -self.width
+        self.update_stem_x()
         self.update()
 
+    def remove_shtil(self):
+        self.shtil = False
+        self.update()
 
-    def delete(self):
-        self.bit.remove_note(self)   # внутри remove_note вызовется пересчёт
-        self.scene.removeItem(self)
-        self.scene.removeItem(self.accidental_item)
-        self.scene.update()
+    def create_shtil(self):
+        self.shtil = True
+        self.update()
 
-    def mousePressEvent(self, event):
-        if event.button() == Qt.MouseButton.RightButton:
-            self.delete()
-            return
-        self.accidental = settings.accidental
-        self.bit.recalculate_accidental(self)
+    def boundingRect(self):
+        return self.get_visual_bounds()
 
+    def shape(self):
+        path = QPainterPath()
+        path.addEllipse(QRectF(self.x - self.width/2, self.y - self.height/2, self.width, self.height))
+        return path
+
+    def get_base_note_name(self):
+        if self.accidental:
+            symbol = self._accidental_to_symbol(self.accidental)
+            if self.note_name.endswith(symbol):
+                return self.note_name[:-len(symbol)]
+        return self.note_name
 
     def paint(self, painter: QPainter, option, widget):
-        # Рисуем головку ноты с наклоном
         painter.save()
         painter.translate(self.x, self.y)
         painter.rotate(self.tilt_angle)
@@ -269,62 +347,42 @@ class NoteItem(QGraphicsEllipseItem):
         painter.restore()
 
         if not durations_equal(self.base_duration, 1):
-            # Рисуем штиль и бим (без наклона)
-            stem_y_top = self.y - 32
-            painter.drawLine(QLineF(float(self.stem_x), float(self.y), float(self.stem_x), float(stem_y_top)))
+            painter.setPen(self.pen())
+            self.draw_stem(painter)
             if durations_equal(self.base_duration, 0.125):
                 if self.shtil:
                     self.flag_path = self.computeFlagPath()
                     painter.drawPath(self.flag_path)
                 elif self.next_note:
-                    beam_pen = QPen(Qt.GlobalColor.black, 3.2)
-                    beam_pen.setCapStyle(Qt.PenCapStyle.FlatCap)
-                    painter.setPen(beam_pen)
-                    painter.drawLine(QLineF(float(self.stem_x), float(self.y - 32), float(self.next_note.stem_x), float(self.next_note.y - 32)))
+                    self.draw_beam(painter)
 
         if self.is_dotted:
-            painter.drawEllipse(QRectF(self.x + self.width / 2 + 4, self.y - 1.5, 4, 4))
-
-    # Остальные методы (boundingRect, computeFlagPath, mousePressEvent и т.д.) без изменений
+            self.draw_dot(painter)
 
     def computeFlagPath(self):
-        """Строит QPainterPath для флажка (восьмая нота)."""
         ax = self.stem_x
-        ay = self.y - 32
+        ay = self.get_stem_top_y()
         sign_x = 1
-        sign_y = 1 
-        # ---- Верхняя кривая (A -> B) ----
-        # Координаты B
+        sign_y = 1
         bx = ax + sign_x * 10
         by = ay + sign_y * 20
-        # Контрольные точки верхней
         up_c1 = (ax + sign_x * 0, ay + sign_y * 20)
         up_c2 = (ax + sign_x * 10, ay + sign_y * 10)
-        # ---- Нижняя кривая (B -> A) ----
-        # Контрольные точки (абсолютные координаты от A)
-        low_c1 = (ax + sign_x * 8, ay + sign_y * 10)   # первая контрольная (от B)
-        low_c2 = (ax + sign_x * 0, ay + sign_y * 23)   # вторая контрольная (от A)
-        # Конечная точка - A (ax, ay)
-        # ---- Замкнутый путь ----
+        low_c1 = (ax + sign_x * 8, ay + sign_y * 10)
+        low_c2 = (ax + sign_x * 0, ay + sign_y * 23)
         path = QPainterPath()
         path.moveTo(ax, ay)
-        # Верхняя сторона
         path.cubicTo(up_c1[0], up_c1[1], up_c2[0], up_c2[1], bx, by)
-        # Нижняя сторона (обратно к A)
         path.cubicTo(low_c1[0], low_c1[1], low_c2[0], low_c2[1], ax, ay)
         path.closeSubpath()
         return path
 
-
-
     def _add_accidental(self, acc_type, display=True):
-        # Удаляем старый знак, если был
         if self.accidental_item is not None:
             self.scene.removeItem(self.accidental_item)
             self.accidental_item = None
 
         if acc_type == "natural":
-            # Бекар – только если display=True (пользователь явно поставил)
             if display:
                 svg_path = "app/photos/natural.svg"
                 acc_item = QGraphicsSvgItem(svg_path)
@@ -338,12 +396,9 @@ class NoteItem(QGraphicsEllipseItem):
                 self.scene.addItem(acc_item)
                 self.accidental_item = acc_item
             self.accidental = "natural"
-            # Убираем символ из имени ноты (natural не добавляет символ)
-            # ... (код удаления символа, если был)
             self.update()
             return
 
-        # Обычные знаки (sharp, flat)
         symbol = self._accidental_to_symbol(acc_type)
         if not self.note_name.endswith(symbol):
             self.note_name += symbol
@@ -352,8 +407,6 @@ class NoteItem(QGraphicsEllipseItem):
         if display:
             svg_path = f"app/photos/{acc_type}.svg"
             acc_item = QGraphicsSvgItem(svg_path)
-
-            # Масштабирование и позиционирование (твой существующий код)
             original_rect = acc_item.boundingRect()
             if acc_type == "sharp":
                 target_height = 15.0
@@ -372,24 +425,19 @@ class NoteItem(QGraphicsEllipseItem):
             self.accidental_item = acc_item
         self.update()
 
-
-
     def _set_accidental_without_display(self, acc_type):
-        """Устанавливает знак на ноту без отображения."""
         self._add_accidental(acc_type, display=False)
 
     def _remove_accidental(self):
         if self.accidental_item is not None:
             self.scene.removeItem(self.accidental_item)
             self.accidental_item = None
-        # Убираем символ из имени ноты
         if self.accidental and self.accidental != "natural":
             symbol = self._accidental_to_symbol(self.accidental)
             if self.note_name.endswith(symbol):
                 self.note_name = self.note_name[:-len(symbol)]
         self.accidental = None
         self.update()
-
 
     def _accidental_to_symbol(self, acc_type):
         mapping = {
@@ -399,69 +447,48 @@ class NoteItem(QGraphicsEllipseItem):
         }
         return mapping.get(acc_type, "")
 
-    def reverse(self, reverse):
-        if self.reversing == reverse:
+    def delete(self):
+        self.bit.remove_note(self)
+        self.scene.removeItem(self)
+        if self.accidental_item is not None:
+            self.scene.removeItem(self.accidental_item)
+        self.scene.update()
+
+    def mousePressEvent(self, event):
+        if event.button() == Qt.MouseButton.RightButton:
+            self.delete()
             return
-        self.reversing = reverse
-        if self.reversing:
-            self.x += self.width
+        self.accidental = settings.accidental
+        self.bit.recalculate_accidental(self)
+
+    def draw_accidental(self, index):
+        if self.accidental_item is not None:
+            self.scene.removeItem(self.accidental_item)
+            self.accidental_item = None
+        if self.accidental == "natural" and index == 0:
+            return
+        symbol = self._accidental_to_symbol(self.accidental)
+        if not self.note_name.endswith(symbol):
+            self.note_name += symbol
+        svg_path = f"app/photos/{self.accidental}.svg"
+        acc_item = QGraphicsSvgItem(svg_path)
+        original_rect = acc_item.boundingRect()
+        if self.accidental == "sharp":
+            target_height = 15.0
+            x_pos = self.x - 20
+            y_pos = self.y - 8
         else:
-            self.x -= self.width
-        self.setRect(QRectF(self.x - self.width/2, self.y - self.height/2, 
-                           self.width, self.height))
+            target_height = 25.0
+            x_pos = self.x - 18
+            y_pos = self.y - 17
+
+        scale_factor = target_height / original_rect.height()
+        acc_item.setScale(scale_factor)
+        acc_item.setPos(x_pos, y_pos)
+        acc_item.setAcceptHoverEvents(False)
+        self.scene.addItem(acc_item)
+        self.accidental_item = acc_item
         self.update()
-
-
-    def remove_shtil(self):
-        self.shtil = False
-        self.update()
-
-    def create_shtil(self):
-        self.shtil = True
-        self.update()
-
-    def boundingRect(self):
-        """Сообщает Qt реальные границы отрисовки элемента (включая штили и флаги)"""
-        min_x = self.x - self.width
-        max_x = self.x + self.width
-        min_y = self.y - self.height
-        max_y = self.y + self.height
-        
-        # Учитываем высоту штиля
-        if not durations_equal(self.base_duration, 1):
-            min_y = min(min_y, self.y - 35)
-
-        # Учитываем ширину флага и длину ребра (beam)
-        if durations_equal(self.base_duration, 0.125):
-            if self.shtil:
-                max_x = max(max_x, self.stem_x + 55)
-            if self.next_note:
-                max_x = max(max_x, self.next_note.stem_x + 55)
-                min_y = min(min_y, self.next_note.y - 35)
-
-        if self.is_dotted:
-            max_x = max(max_x, self.x + self.width / 2 + 12)
-
-        # Возвращаем прямоугольник с небольшим запасом (padding = 5px)
-        return QRectF(min_x - 5, min_y - 5, (max_x - min_x) + 10, (max_y - min_y) + 10)
-
-    def shape(self):
-        """Определяет область для коллизий и кликов мыши (только головка ноты)"""
-        path = QPainterPath()
-        # Кликабельной остается только область самой головки ноты
-        path.addEllipse(QRectF(self.x - self.width/2, self.y - self.height/2, self.width, self.height))
-        return path
-
-
-    def get_base_note_name(self):
-        """Возвращает имя ноты без знака альтерации."""
-        if self.accidental:
-            symbol = self._accidental_to_symbol(self.accidental)
-            if self.note_name.endswith(symbol):
-                return self.note_name[:-len(symbol)]
-        return self.note_name
-
-
 
 class HighlightableLineItem(QGraphicsLineItem):
     """Класс линии, которая подсвечивается при наведении"""
