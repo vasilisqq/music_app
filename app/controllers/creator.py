@@ -197,9 +197,12 @@ class CreatorController(QWidget):
         combo = self.ui.duration_combo
         combo.addItem("Целая", 1.0)
         combo.addItem("Половинная", 0.5)
+        combo.addItem("Половинная с точкой", 0.75)
         combo.addItem("Четверть", 0.25)
+        combo.addItem("Четверть с точкой", 0.375)
         combo.addItem("Восьмая", 0.125)
-        combo.setCurrentIndex(2)
+        combo.addItem("Восьмая с точкой", 0.1875)
+        combo.setCurrentIndex(3)
         combo.currentIndexChanged.connect(self.on_duration_changed)
 
         accidental_combo = self.ui.accidental_combo

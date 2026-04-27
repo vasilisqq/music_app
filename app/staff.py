@@ -19,6 +19,29 @@ from test import player
 import threading
 
 
+DURATION_EPSILON = 1e-6
+
+
+def durations_equal(left: float, right: float, epsilon: float = DURATION_EPSILON) -> bool:
+    return abs(left - right) <= epsilon
+
+
+def get_base_duration(duration: float) -> float:
+    dotted_bases = {
+        0.75: 0.5,
+        0.375: 0.25,
+        0.1875: 0.125,
+    }
+    for dotted_duration, base_duration in dotted_bases.items():
+        if durations_equal(duration, dotted_duration):
+            return base_duration
+    return duration
+
+
+def is_dotted_duration(duration: float) -> bool:
+    return not durations_equal(get_base_duration(duration), duration)
+
+
 class LaySettings:
     def __init__(self):
         self.accidental = "natural"
@@ -39,6 +62,8 @@ class NoteItem(QGraphicsEllipseItem):
                  bit=None):
         super().__init__(parent=bit)
         self.note_lenght = duration
+        self.base_duration = get_base_duration(duration)
+        self.is_dotted = is_dotted_duration(duration)
         self.note_name = name
         self.x = x
         self.y = y
@@ -53,7 +78,7 @@ class NoteItem(QGraphicsEllipseItem):
         self.accidental = settings.accidental
         self.accidental_item = None
         self.setZValue(10)
-        if duration < 0.5:
+        if self.base_duration < 0.5:
             self.setBrush(QBrush(Qt.GlobalColor.black))
         self.setPen(NORMAL_PEN)
         self.prev_note = None
@@ -123,20 +148,22 @@ class NoteItem(QGraphicsEllipseItem):
         painter.drawEllipse(QRectF(-self.width/2, -self.height/2, self.width, self.height))
         painter.restore()
 
-        if self.note_lenght != 1:
+        if not durations_equal(self.base_duration, 1):
             # Рисуем штиль и бим (без наклона)
             stem_y_top = self.y - 32
-            painter.drawLine(self.stem_x, self.y, self.stem_x, stem_y_top)
-            match self.note_lenght:
-                case 0.125:
-                    if self.shtil:
-                        self.flag_path = self.computeFlagPath()
-                        painter.drawPath(self.flag_path)
-                    elif self.next_note:
-                        beam_pen = QPen(Qt.GlobalColor.black, 3.2)
-                        beam_pen.setCapStyle(Qt.PenCapStyle.FlatCap)
-                        painter.setPen(beam_pen)
-                        painter.drawLine(self.stem_x, self.y-32, self.next_note.stem_x, self.next_note.y-32)
+            painter.drawLine(QLineF(float(self.stem_x), float(self.y), float(self.stem_x), float(stem_y_top)))
+            if durations_equal(self.base_duration, 0.125):
+                if self.shtil:
+                    self.flag_path = self.computeFlagPath()
+                    painter.drawPath(self.flag_path)
+                elif self.next_note:
+                    beam_pen = QPen(Qt.GlobalColor.black, 3.2)
+                    beam_pen.setCapStyle(Qt.PenCapStyle.FlatCap)
+                    painter.setPen(beam_pen)
+                    painter.drawLine(QLineF(float(self.stem_x), float(self.y - 32), float(self.next_note.stem_x), float(self.next_note.y - 32)))
+
+        if self.is_dotted:
+            painter.drawEllipse(QRectF(self.x + self.width / 2 + 4, self.y - 1.5, 4, 4))
 
     # Остальные методы (boundingRect, computeFlagPath, mousePressEvent и т.д.) без изменений
 
@@ -281,17 +308,20 @@ class NoteItem(QGraphicsEllipseItem):
         max_y = self.y + self.height
         
         # Учитываем высоту штиля
-        if self.note_lenght != 1:
+        if not durations_equal(self.base_duration, 1):
             min_y = min(min_y, self.y - 35)
-            
+
         # Учитываем ширину флага и длину ребра (beam)
-        if self.note_lenght == 0.125:
+        if durations_equal(self.base_duration, 0.125):
             if self.shtil:
-                max_x = max(max_x, self.stem_x + 55) # Запас для флага
+                max_x = max(max_x, self.stem_x + 55)
             if self.next_note:
                 max_x = max(max_x, self.next_note.stem_x + 55)
                 min_y = min(min_y, self.next_note.y - 35)
-                
+
+        if self.is_dotted:
+            max_x = max(max_x, self.x + self.width / 2 + 12)
+
         # Возвращаем прямоугольник с небольшим запасом (padding = 5px)
         return QRectF(min_x - 5, min_y - 5, (max_x - min_x) + 10, (max_y - min_y) + 10)
 
@@ -579,7 +609,7 @@ class Bits(QGraphicsRectItem):
 
 
     def add_note(self, duration, line, scene):
-        if duration != self.weigth:
+        if not durations_equal(duration, self.weigth):
             return False
         if self.isExist_note(line):
             return False
@@ -593,7 +623,7 @@ class Bits(QGraphicsRectItem):
 
     def remove_note(self, note):
         self.notes.remove(note)
-        if note.note_lenght == 0.125:
+        if durations_equal(note.base_duration, 0.125):
             if next_note := note.next_note:
                 next_note.prev_note = None
                 next_note.shtil = True
@@ -609,6 +639,22 @@ class Bits(QGraphicsRectItem):
 
     def recalculate_accidental(self, note):
         self.tact.recalculate_all_accidentals(note)
+
+
+def build_bit_weights(total_duration: float, step_duration: float) -> list[float]:
+    remaining = round(total_duration, 6)
+    step = round(step_duration, 6)
+    bit_weights: list[float] = []
+
+    while remaining > DURATION_EPSILON:
+        if remaining + DURATION_EPSILON >= step:
+            bit_weights.append(step)
+            remaining = round(remaining - step, 6)
+        else:
+            bit_weights.append(round(remaining, 6))
+            remaining = 0.0
+
+    return bit_weights
 
 
 class Tact:
@@ -686,19 +732,7 @@ class Tact:
 
     def init_bits(self):
         tact_total_duration = self.numerator / 4
-        remaining = round(tact_total_duration, 4)
-        grid_duration = round(self.duration, 4)
-
-        bit_weights = []
-        while remaining > 0:
-            if remaining >= grid_duration:
-                bit_weights.append(grid_duration)
-                remaining = round(remaining - grid_duration, 4)
-            else:
-                bit_weights.append(remaining)
-                remaining = 0
-
-        self.set_bit_weights(bit_weights)
+        self.set_bit_weights(build_bit_weights(tact_total_duration, self.duration))
 
     def set_bit_weights(self, bit_weights):
         for bit in self.bits:
@@ -730,6 +764,7 @@ class Tact:
             self.scene.addItem(bit)
 
         self.duration = min(bit_weights) if bit_weights else self.duration
+        self.current_bit = 0
 
         self.update_beams()
         self.scene.update()
@@ -760,8 +795,7 @@ class Tact:
             return
         if len(item.notes) == 5:
             return
-        if note := item.add_note(self.duration, line, self.scene):
-            self.scene.addItem(note)
+        item.add_note(self.duration, line, self.scene)
 
 
     def update_beams(self):
@@ -769,7 +803,7 @@ class Tact:
         for bit in self.bits:
             if bit.notes:
                 if pred_bit:
-                    if bit.weigth == pred_bit.weigth == 0.125:
+                    if durations_equal(bit.weigth, 0.125) and durations_equal(pred_bit.weigth, 0.125):
                         pred_note = pred_bit.notes[-1]
                         current_note = bit.notes[-1]
                         if pred_note.prev_note:
@@ -1031,14 +1065,70 @@ class StaffLayout:
 
 
     def set_duration(self, duration):
-        if duration > self.current_duration:
-            self.current_duration = duration
-            for tact in self.tacts:
-                tact.increase_duration(duration)
-        else:
-            self.current_duration = duration
-            for tact in self.tacts:
-                tact.decrease_duration(duration)
+        self.current_duration = duration
+        for tact in self.tacts:
+            self._rebuild_empty_bits_for_duration(tact, duration)
+        self.scene.update()
+
+    def _rebuild_empty_bits_for_duration(self, tact: Tact, duration: float):
+        rebuilt_entries: list[Bits | dict[str, float]] = []
+        empty_group_duration = 0.0
+
+        for bit in tact.bits:
+            if bit.notes:
+                if empty_group_duration > DURATION_EPSILON:
+                    for weight in build_bit_weights(empty_group_duration, duration):
+                        rebuilt_entries.append({"weight": weight})
+                    empty_group_duration = 0.0
+                rebuilt_entries.append(bit)
+            else:
+                empty_group_duration = round(empty_group_duration + bit.weigth, 6)
+
+        if empty_group_duration > DURATION_EPSILON:
+            for weight in build_bit_weights(empty_group_duration, duration):
+                rebuilt_entries.append({"weight": weight})
+
+        for bit in tact.bits:
+            if not bit.notes:
+                self.scene.removeItem(bit)
+
+        tact_total_duration = tact.numerator / 4
+        x_start_offset = 100 if tact.tact_number == 0 else 0
+        usable_width = tact.width - x_start_offset
+        current_x = tact.x0 + x_start_offset
+        tact.bits = []
+
+        for entry in rebuilt_entries:
+            if isinstance(entry, Bits):
+                bit = entry
+                bit_width = usable_width * (bit.weigth / tact_total_duration)
+                bit.x0 = current_x
+                bit.x1 = current_x + bit_width
+                bit.setRect(QRectF(current_x, tact.y0, bit_width, tact.y_bottom - tact.y0))
+                for note in bit.notes:
+                    note.x = current_x + 15
+                    note.stem_x = int(note.x + note.width / 2) if not note.reversing else int(note.x - note.width / 2)
+                    note.update()
+                tact.bits.append(bit)
+                current_x += bit_width
+                continue
+
+            weight = entry["weight"]
+            bit_width = usable_width * (weight / tact_total_duration)
+            bit = Bits(
+                QRectF(current_x, tact.y0, bit_width, tact.y_bottom - tact.y0),
+                current_x,
+                current_x + bit_width,
+                tact=tact,
+                weigth=weight,
+            )
+            tact.bits.append(bit)
+            self.scene.addItem(bit)
+            current_x += bit_width
+
+        tact.duration = duration
+        tact.current_bit = 0
+        tact.update_beams()
         self.scene.update()
                         
 
@@ -1249,22 +1339,13 @@ class StaffLayout:
         segments = []
         cum_length = 0.0
 
-        # Предполагаем, что такты хранятся в self.tacts в порядке добавления
-        # и что они уже размещены с правильными координатами x0, y0
-        # Для разбиения на строки можно сгруппировать такты по y0 (или хранить rows)
-        # Упрощённо: идём по всем тактам подряд, но при изменении y добавляем разрыв
-        prev_y = None
         for tact in self.tacts:
-            y = tact.y0  # вертикальная координата стана
-            if prev_y is not None and y != prev_y:
-                # Переход на новую строку – разрыв, но мы просто продолжаем,
-                # так как playhead "перепрыгнет" – координата y изменится
-                pass
-            # Начало такта: x0, конец такта: x0 + width
-            x_start = tact.bits[0].notes[0].x
-            x_end = tact.bits[-1].x1 + 15
-            length = x_end - x_start
-            segments.append((x_start, y, x_end, y, length, cum_length))
-            cum_length += length
-            prev_y = y
+            y = tact.y0
+            for bit in tact.bits:
+                x_start = bit.x0 + 15
+                x_end = bit.x1 + 15
+                length = x_end - x_start
+                segments.append((x_start, y, x_end, y, length, cum_length))
+                cum_length += length
+
         return segments, cum_length
