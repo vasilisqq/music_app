@@ -854,7 +854,7 @@ def build_bit_weights(total_duration: float, step_duration: float) -> list[float
 
 
 class Tact:
-    def __init__(self,y_bottom,scene,number,x0=X0, y=Y0, duration=0.25, numerator=4):
+    def __init__(self,y_bottom,scene,number,x0=X0, y=Y0, duration=0.25, numerator=4, hand="right"):
         self.tact_number = number
         self.numerator = numerator
         self.x0 = x0
@@ -872,58 +872,49 @@ class Tact:
         self.displayed_accidentals = set()
         self.current_bit = 0
         self.duration = duration
+        self.hand = hand
         self.init_bits()
         self.init_tact()
     
 
     def init_tact(self):
-    # Сначала создаем пространства между линиями (4 пространства между 5 линиями)
+        # Сначала создаем пространства между линиями (4 пространства между 5 линиями)
+        if self.hand == "right":
+            # Для правой руки: E5, C5, A4, F4, D4
+            space_notes = ["E5", "C5", "A4", "F4", "D4"]
+            # Для правой руки: F5, D5, B4, G4, E4, C4
+            line_notes = ["F5", "D5", "B4", "G4", "E4", "C4"]
+        else:
+            # Для левой руки: B3 - верхняя нота на стане
+            space_notes = ["D4", "B3", "G3", "E3", "C3"]
+            line_notes = ["E4", "C4", "A3", "F3", "D3", "B2"]
+        
         for i in range(5):
             y_top = self.y0 + i * LINE_SPACING
             space_rect = QRectF(self.x0, y_top, self.width, LINE_SPACING)
-            match i:
-                case 0:
-                    note_name = "E5"
-                case 1:
-                    note_name = "C5"
-                case 2:
-                    note_name = "A4"
-                case 3:
-                    note_name = "F4"
-                case 4:
-                    note_name = "D4"
+            note_name = space_notes[i]
             space_item = StaffSpaceItem(space_rect, i, self, note_name, int(y_top+LINE_SPACING/2))
             self.scene.addItem(space_item)
             self.spaces.append(space_item)
+        
         # Затем создаем 5 линий стана
         for i in range(6):
             y = self.y0 + i * LINE_SPACING
-            match i:
-                case 0:
-                    note_name = "F5"
-                case 1: 
-                    note_name = "D5"
-                case 2: 
-                    note_name = "B4"
-                case 3: 
-                    note_name = "G4"
-                case 4: 
-                    note_name = "E4"
-                case 5: 
-                    note_name = "C4"
-                    line_item = HighlightableLineItem(
-                    QLineF(self.x0, y, self.x0 + self.width, y),
-                    self,y, note_name, transparent=True
-                )
+            note_name = line_notes[i]
             if i != 5:
                 line_item = HighlightableLineItem(
                     QLineF(self.x0, y, self.x0 + self.width, y),
-                    self,y, note_name
+                    self, y, note_name
+                )
+            else:
+                line_item = HighlightableLineItem(
+                    QLineF(self.x0, y, self.x0 + self.width, y),
+                    self, y, note_name, transparent=True
                 )
             line_item.line_number = i
             self.scene.addItem(line_item)
             self.lines.append(line_item)
-            self.add_bar_lines()
+        self.add_bar_lines()
 
 
     def init_bits(self):
@@ -1244,8 +1235,9 @@ class Tact:
 
 
 class StaffLayout:
-    def __init__(self, scene, time_signature="4/4", read_only: bool = False):
-        self.left_hand = False
+    def __init__(self, scene, time_signature="4/4", read_only: bool = False, hand: str = "right"):
+        self.left_hand = hand == "left"
+        self.hand = hand
         self.read_only = read_only
         self.tacts = []
         self.time_signature = time_signature
@@ -1343,7 +1335,7 @@ class StaffLayout:
 
 
     def init_staff(self, scene):
-        self.current_tact = Tact(self.y_bottom, scene, len(self.tacts), duration=self.current_duration, numerator=self.beats_per_measure)
+        self.current_tact = Tact(self.y_bottom, scene, len(self.tacts), duration=self.current_duration, numerator=self.beats_per_measure, hand=self.hand)
         self._apply_read_only_to_tact(self.current_tact)
         self.tacts.append(self.current_tact)
         self.tacts_per_rows = 1
@@ -1359,12 +1351,19 @@ class StaffLayout:
         print(self.beats_per_measure)
 
     def add_treble_clef(self, scene):
-        """Добавляет изображение скрипичного ключа на нотный стан"""
-        clef_item = QGraphicsSvgItem("app/photos/scrip.svg")
+        """Добавляет скрипичный или басовый ключ на нотный стан в зависимости от руки"""
+        # Выбираем правильный ключ в зависимости от руки
+        if self.hand == "left":
+            clef_file = "app/photos/bass.svg"
+            target_height = LINE_SPACING * 3.4
+            y_pos = Y0 + 1.3 * LINE_SPACING - target_height / 2.5
+        else:
+            clef_file = "app/photos/scrip.svg"
+            target_height = LINE_SPACING * 7
+            y_pos = Y0 + 1.5 * LINE_SPACING - target_height / 2.5
+        clef_item = QGraphicsSvgItem(clef_file)
         original_rect = clef_item.boundingRect()
         original_height = original_rect.height()
-        
-        target_height = LINE_SPACING * 7
         
         # Вычисляем коэффициент масштабирования
         scale_factor = target_height / original_height
@@ -1374,7 +1373,7 @@ class StaffLayout:
 
         # Корректируем позицию
         x_pos = X0 + 5
-        y_pos = Y0 + 1.5 * LINE_SPACING - target_height / 2.5
+        
         clef_item.setPos(x_pos, y_pos)
         
         # Отключаем интерактивность
@@ -1383,9 +1382,10 @@ class StaffLayout:
         # Добавляем на сцену
         scene.addItem(clef_item)
 
-    def save_lesson(self, name: str, description: str, difficult: int, topic_id: int):
+    def save_lesson(self, name: str, description: str, difficult: int, topic_id: int, hand: str = "right"):
         """Собирает ноты с нотного стана и формирует lesson payload для бэкенда"""
-        lesson_notes = {"right_hand": []}
+        hand_key = "right_hand" if hand == "right" else "left_hand"
+        lesson_notes = {hand_key: []}
 
         for tact in self.tacts:
             tact_data = []
@@ -1402,7 +1402,7 @@ class StaffLayout:
                     "notes": note_names
                 })
 
-            lesson_notes["right_hand"].append(tact_data)
+            lesson_notes[hand_key].append(tact_data)
 
         rhythm_val = self.beats_per_measure / 4.0
 
@@ -1412,7 +1412,8 @@ class StaffLayout:
             difficult=difficult,
             rhythm=rhythm_val,
             notes=lesson_notes,
-            topic=topic_id
+            topic=topic_id,
+            hand=hand
         )
 
 
@@ -1420,7 +1421,9 @@ class StaffLayout:
 
     def display_lesson(self, lesson: LessonResponse):
         """Отрисовывает урок на нотном стане, полученный с сервера"""
-        saved_tacts = lesson.notes.get("right_hand", [])
+        # Получаем ноты в зависимости от руки
+        hand_key = "left_hand" if hasattr(lesson, 'hand') and lesson.hand == "left" else "right_hand"
+        saved_tacts = lesson.notes.get(hand_key, lesson.notes.get("right_hand", []))
 
         while len(self.tacts) < len(saved_tacts):
             self.add_tact()
@@ -1511,10 +1514,10 @@ class StaffLayout:
         if new_x0 + WIDTH > SCENE_WIDTH:
             self.x = X0
             self.y += (self.staff_height + 100)
-            self.current_tact = Tact(self.y_bottom, self.scene, len(self.tacts), X0, self.y, self.current_duration,self.beats_per_measure)
+            self.current_tact = Tact(self.y_bottom, self.scene, len(self.tacts), X0, self.y, self.current_duration, self.beats_per_measure, hand=self.hand)
         else:
             self.x = new_x0
-            self.current_tact = Tact(self.y_bottom, self.scene, len(self.tacts), new_x0, self.y, self.current_duration,self.beats_per_measure)
+            self.current_tact = Tact(self.y_bottom, self.scene, len(self.tacts), new_x0, self.y, self.current_duration, self.beats_per_measure, hand=self.hand)
 
         self._apply_read_only_to_tact(self.current_tact)
         self.tacts.append(self.current_tact)

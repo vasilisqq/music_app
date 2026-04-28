@@ -2,7 +2,7 @@ from PyQt6.QtWidgets import (
     QMessageBox, QTableWidgetItem, QAbstractItemView,
     QDialog, QVBoxLayout, QHBoxLayout, QLabel,
     QLineEdit, QTextEdit, QPushButton, QMenu, QComboBox,
-    QFrame, QWidget
+    QFrame, QWidget, QDialogButtonBox
 )
 from PyQt6.QtCore import pyqtSignal
 from PyQt6.QtCore import Qt, QRectF
@@ -430,17 +430,18 @@ class AdminController:
         # Берем текст из 0-й колонки (ID)
         topic_id = self.ui.table_topics.item(selected_row, 0).text()
 
-        # 2. Показываем диалог выбора ритма (как в предыдущем шаге)
+        # 2. Показываем диалог выбора ритма и руки
         dialog = TimeSignatureDialog()
         if dialog.exec():
             selected_signature = dialog.get_signature()
-            # 3. Передаем и ритм, и ID темы
-            self.open_creator(selected_signature, topic_id)
+            selected_hand = dialog.get_hand()
+            # 3. Передаем ритм, ID темы и руку
+            self.open_creator(selected_signature, topic_id, hand=selected_hand)
 
-    def open_creator(self, time_signature: str, topic_id: str, lesson: LessonResponse | None = None):
+    def open_creator(self, time_signature: str, topic_id: str, lesson: LessonResponse | None = None, hand: str = "right"):
         self.ui.drawerWidget.hide()
 
-        self.creator_page = CreatorController(time_signature, topic_id, lesson)
+        self.creator_page = CreatorController(time_signature, topic_id, lesson, hand=hand)
         self.creator_page.lesson_created.connect(self.on_lesson_created)
         self.creator_page.lesson_updated.connect(self.on_lesson_updated)
 
@@ -493,7 +494,8 @@ class AdminController:
     def edit_lesson(self, row: int):
         lesson = self.get_selected_lesson(row)
         time_signature = f"{int(float(lesson.rhythm) * 4)}/4"
-        self.open_creator(time_signature, str(lesson.topic), lesson)
+        hand = getattr(lesson, 'hand', 'right')
+        self.open_creator(time_signature, str(lesson.topic), lesson, hand=hand)
 
     def _get_topics_from_table(self) -> list[tuple[int, str]]:
         topics: list[tuple[int, str]] = []
@@ -1691,17 +1693,17 @@ class TimeSignatureDialog(QDialog):
 from PyQt6.QtWidgets import QDialog, QVBoxLayout, QLabel, QComboBox, QDialogButtonBox
 
 class TimeSignatureDialog(QDialog):
-    """Диалоговое окно для выбора музыкального размера перед созданием урока."""
+    """Диалоговое окно для выбора музыкального размера и руки перед созданием урока."""
     
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Настройка нового урока")
-        self.setFixedSize(300, 150)
+        self.setFixedSize(300, 220)
 
         # Основной слой
         layout = QVBoxLayout(self)
 
-        # Текст
+        # Текст для ритма
         label = QLabel("Выберите размер такта (ритм) для нового урока:", self)
         layout.addWidget(label)
 
@@ -1711,6 +1713,17 @@ class TimeSignatureDialog(QDialog):
         # Можно сделать 4/4 по умолчанию
         self.combo.setCurrentText("4/4") 
         layout.addWidget(self.combo)
+
+        # Текст для руки
+        hand_label = QLabel("Выберите руку:", self)
+        layout.addWidget(hand_label)
+
+        # Выпадающий список для выбора руки
+        self.hand_combo = QComboBox(self)
+        self.hand_combo.addItem("Правая рука", "right")
+        self.hand_combo.addItem("Левая рука", "left")
+        self.hand_combo.setCurrentIndex(0)
+        layout.addWidget(self.hand_combo)
 
         # Кнопки Ок/Отмена
         self.buttons = QDialogButtonBox(
@@ -1724,3 +1737,7 @@ class TimeSignatureDialog(QDialog):
     def get_signature(self) -> str:
         """Возвращает выбранный размер такта."""
         return self.combo.currentText()
+
+    def get_hand(self) -> str:
+        """Возвращает выбранную руку."""
+        return self.hand_combo.currentData()
