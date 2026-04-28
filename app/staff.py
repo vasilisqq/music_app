@@ -456,7 +456,9 @@ class NoteItem(QGraphicsEllipseItem):
 
     def mousePressEvent(self, event):
         if event.button() == Qt.MouseButton.RightButton:
-            self.delete()
+            # Безопасное удаление через QTimer.singleShot, чтобы не удалять себя в процессе mousePressEvent
+            from PyQt6.QtCore import QTimer
+            QTimer.singleShot(0, self.delete)
             return
         self.accidental = settings.accidental
         self.bit.recalculate_accidental(self)
