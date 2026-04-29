@@ -4,7 +4,7 @@ import re
 
 from PyQt6.QtCore import QObject
 from PyQt6.QtWidgets import QMessageBox
-
+import mido
 from loader import settings
 
 
@@ -70,12 +70,7 @@ class SettingsController(QObject):
         saved_name = settings.value(self.MIDI_INPUT_KEY, None)
         current_name = self.ui.midiInputCombo.currentData()
 
-        try:
-            import mido
-            raw_input_names = list(mido.get_input_names())
-        except Exception:
-            raw_input_names = []
-
+        raw_input_names = list(mido.get_input_names())
         input_names = _dedupe_midi_inputs(raw_input_names)
         available_names = set(input_names)
         if saved_name and saved_name not in available_names:
@@ -131,21 +126,23 @@ class SettingsController(QObject):
         if not device_name:
             QMessageBox.information(self.ui.centralwidget, "Проверка MIDI", "Сначала выбери подключённое MIDI-устройство.")
             return
-
-        try:
-            import mido
-        except Exception:
-            QMessageBox.warning(self.ui.centralwidget, "Проверка MIDI", "Библиотека mido недоступна в текущем окружении.")
-            return
-
         try:
             with mido.open_input(device_name):
                 pass
-        except Exception as exc:
+        except OSError as exc:
             QMessageBox.warning(
                 self.ui.centralwidget,
                 "Проверка MIDI",
-                f"Не удалось открыть устройство:\n{device_name}\n\n{exc}",
+                f"Не удалось открыть устройство:\n{device_name}\n\n{exc}"
+            )
+            return
+        except Exception as exc:
+            import logging
+            logging.error(f"Неожиданная ошибка при проверке MIDI: {exc}")
+            QMessageBox.warning(
+                self.ui.centralwidget,
+                "Ошибка",
+                f"Неожиданная ошибка: {exc}"
             )
             return
 

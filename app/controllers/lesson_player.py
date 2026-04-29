@@ -18,7 +18,7 @@ from PyQt6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
-
+import mido
 from loader import settings
 
 from GUI.creator import Ui_MainWindow
@@ -266,13 +266,6 @@ class LessonPlayerController(QWidget):
         if not device_name:
             QMessageBox.information(self, "Тренировка", "Сначала выбери MIDI-устройство в настройках.")
             return False
-
-        try:
-            import mido
-        except Exception:
-            QMessageBox.warning(self, "Тренировка", "Библиотека mido недоступна в текущем окружении.")
-            return False
-
         try:
             self._midi_input_port = mido.open_input(device_name)
         except Exception as exc:
