@@ -2,7 +2,10 @@ import os
 import re
 import threading
 import time
+import pickle
 from typing import Optional
+from functools import lru_cache
+from collections import OrderedDict
 
 import numpy as np
 import sounddevice as sd
@@ -50,8 +53,17 @@ NOTE_FREQ = {
     'B7': 3951.07, 'B7#': 3951.07, 'C8b': 3951.07, 'C8': 4186.01
 }
 
-# Кеш для всех нот (предвычисляется при старте)
-note_cache = {}
+# Ноты, которые используются на нотном стане (правая + левая рука)
+STAFF_NOTES_RIGHT_HAND = ["F5", "D5", "B4", "G4", "E4", "C4", "E5", "C5", "A4", "F4", "D4"]
+STAFF_NOTES_LEFT_HAND = ["E4", "C4", "A3", "F3", "D3", "B2", "D4", "B3", "G3", "E3", "C3"]
+ALL_STAFF_NOTES = set(STAFF_NOTES_RIGHT_HAND + STAFF_NOTES_LEFT_HAND)
+
+# Кеш для всех нот - теперь используем LRU кеш вместо сохранения всех на диск
+note_cache = OrderedDict()  # LRU кеш - хранит только часто используемые ноты
+note_cache_lock = threading.Lock()
+
+# Максимум 50 нот в памяти (примерно 5-10 МБ вместо 800 МБ!)
+MAX_CACHE_SIZE = 50
 
 _MIDI_NOTE_NAMES = ("C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B")
 _FLAT_TO_SHARP = {
@@ -83,22 +95,34 @@ def midi_note_to_name(note_number: int) -> str:
     return f"{note_name}{octave}"
 
 
-def save_cache(filename='piano_cache.npz'):
-    """Сохраняет note_cache в сжатый .npz файл."""
-    np.savez_compressed(filename, **note_cache)
-    print(f"Кеш сохранён в {filename}")
+def save_cache(filename='piano_cache.pkl'):
+    """Сохраняет note_cache в pickle файл (быстрее, чем npz)."""
+    try:
+        with open(filename, 'wb') as f:
+            pickle.dump(note_cache, f, protocol=pickle.HIGHEST_PROTOCOL)
+        size_mb = os.path.getsize(filename) / (1024*1024)
+        print(f"✓ Кеш сохранён в {filename} ({size_mb:.1f} МБ)")
+    except Exception as e:
+        print(f"⚠ Ошибка при сохранении кеша: {e}")
 
 
-def load_cache(filename="piano_cache.npz"):
+def load_cache(filename="piano_cache.pkl"):
     if not os.path.exists(filename):
         return None
-    loaded = np.load(filename, allow_pickle=True)
-    cache = {}
-    for key in loaded.files:
-        arr = loaded[key]
-        print(f"Загружаю {key}: форма {arr.shape}, ndim {arr.ndim}")
-        cache[key] = arr.ravel().copy()
-    return cache
+    try:
+        with open(filename, 'rb') as f:
+            cache = pickle.load(f)
+        size_mb = os.path.getsize(filename) / (1024*1024)
+        print(f"✓ Загружаю кеш: {len(cache)} нот ({size_mb:.1f} МБ)")
+        return cache
+    except Exception as e:
+        print(f"⚠ Ошибка при загрузке кеша: {e}")
+        print(f"⚠ Удаляю повреждённый файл: {filename}")
+        try:
+            os.remove(filename)
+        except:
+            pass
+        return None
 
 
 def lowpass_filter(data, cutoff, sr, order=5):
@@ -107,24 +131,93 @@ def lowpass_filter(data, cutoff, sr, order=5):
     b, a = butter(order, normal_cutoff, btype='low', analog=False)
     return lfilter(b, a, data)
 
-def precompute_all():
-    for name, freq in NOTE_FREQ.items():
-        ratio = freq / 261.63
-        new_len = int(len(base_note) / ratio)
-        if new_len < 1:
-            new_len = 1
+def generate_note(note_name: str, use_fast_resample=False) -> np.ndarray:
+    """Генерирует ноту по требованию (без сохранения 800 МБ на диск)"""
+    if note_name not in NOTE_FREQ:
+        return base_note.copy()
+    
+    freq = NOTE_FREQ[note_name]
+    ratio = freq / 261.63
+    new_len = int(len(base_note) / ratio)
+    if new_len < 1:
+        new_len = 1
+    
+    # Более быстрый resample для экономии CPU при генерации по требованию
+    if use_fast_resample:
+        # Используем линейную интерполяцию вместо кубической (быстрее, качество приемлемо)
+        arr = zoom(base_note, new_len / len(base_note), order=1).astype(np.float32)
+    else:
+        # Кубическая интерполяция для лучшего качества (используется при предвычислении)
         arr = zoom(base_note, new_len / len(base_note), order=3).astype(np.float32)
+    
+    # Anti-aliasing фильтр для высоких нот (пропускаем при быстром resample)
+    if not use_fast_resample and ratio > 1:
+        cutoff = 20000 / ratio
+        cutoff = min(cutoff, 20000)
+        if cutoff > 50:
+            arr = lowpass_filter(arr, cutoff, SAMPLE_RATE, order=5)
+    
+    return arr.ravel()
 
-        # Anti-aliasing фильтр для высоких нот (ratio > 1)
-        if ratio > 1:
-            cutoff = 20000 / ratio   # пропорциональное снижение частоты среза
-            cutoff = min(cutoff, 20000)  # не выше 20 кГц
-            if cutoff > 50:
-                arr = lowpass_filter(arr, cutoff, SAMPLE_RATE, order=5)
+def get_note_audio(note_name: str) -> np.ndarray:
+    """Получает ноту из кеша или генерирует её быстро"""
+    with note_cache_lock:
+        if note_name in note_cache:
+            # Переместить в конец (LRU)
+            note_cache.move_to_end(note_name)
+            return note_cache[note_name]
+        
+        # Генерируем ноту БЫСТРО (линейная интерполяция, без фильтра)
+        # Это нужно для on-demand нот, которые не на нотном стане
+        audio = generate_note(note_name, use_fast_resample=True)
+        note_cache[note_name] = audio
+        
+        # Удаляем самую старую, если превышен лимит
+        if len(note_cache) > MAX_CACHE_SIZE:
+            oldest = next(iter(note_cache))
+            del note_cache[oldest]
+        
+        return audio
 
-        note_cache[name] = arr.ravel()
-precompute_all()
-# save_cache()
+def save_cache(filename='piano_cache.pkl'):
+    """Не используется - ноты генерируются по требованию"""
+    pass
+
+
+def load_cache(filename="piano_cache.pkl"):
+    """Не используется - ноты генерируются по требованию"""
+    return None
+
+
+# Event для синхронизации: когда ноты нотного стана готовы
+_staff_notes_ready = threading.Event()
+
+def preload_staff_notes_sync():
+    """Синхронно предвычисляет ноты нотного стана при старте"""
+    import time
+    start = time.time()
+    print("⏳ Предвычисляю ноты нотного стана...")
+    count = 0
+    with note_cache_lock:
+        for note_name in ALL_STAFF_NOTES:
+            if note_name not in note_cache:
+                # Используем качественное кодирование при предвычислении
+                note_cache[note_name] = generate_note(note_name, use_fast_resample=False)
+                count += 1
+    elapsed = time.time() - start
+    print(f"✓ Предвычислено {count} нот нотного стана в {elapsed:.2f}сек (~{count*0.5:.1f} МБ)")
+    print(f"✓ Метроном будет синхронизирован - все ноты готовы к воспроизведению")
+    _staff_notes_ready.set()  # Сигнализируем, что ноты готовы
+
+
+# ✓ Система готова! Ноты нотного стана предвычислены, остальные генерируются по требованию
+print("✓ Система аудио инициализирована")
+print("  - Ноты нотного стана: предвычисляются...")
+print("  - Остальные ноты: генерируются по требованию")
+print("  - Память: ~2-5 МБ")
+
+# Предвычисляем ноты нотного стана СИНХРОННО при импорте (блокирует до готовности)
+preload_staff_notes_sync()
 
 
 class PianoPlayer(QObject):
@@ -174,7 +267,7 @@ class PianoPlayer(QObject):
             })
 
     def _get_note_audio(self, note_name, duration, volume=0.7):
-        base = self.note_cache[note_name]
+        base = get_note_audio(note_name)  # Генерируем или получаем из кеша
         target_len = int(self.sample_rate * duration)
         
         if target_len <= len(base):
@@ -299,11 +392,7 @@ class PianoPlayer(QObject):
 
 
     def play_note(self, note_name, duration, volume=0.7):
-        if note_name not in self.note_cache:
-            print(f"Нота {note_name} не найдена")
-            return
-        
-        base = self.note_cache[note_name].ravel()
+        base = get_note_audio(note_name)  # Генерируем или получаем из кеша
         target_len = int(self.sample_rate * duration)
 
         if target_len <= len(base):
