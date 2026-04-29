@@ -10,6 +10,11 @@ from datetime import datetime
 # from app.core.middleware import LoggingMiddleware, ErrorHandlingMiddleware
 from api import api_router
 import logging
+import os
+
+
+os.makedirs('server/logs', exist_ok=True)
+
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',

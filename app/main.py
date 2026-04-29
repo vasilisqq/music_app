@@ -31,9 +31,13 @@ def main() -> None:
             is_token_valid = False
             loop.quit()
 
+        def on_error(string):
+            print(string)
+
         worker.token_valid_signal.connect(on_token_valid)
         worker.token_invalid_signal.connect(on_token_invalid)
-        
+        worker.error_occurred_signal.connect(on_error)
+
         worker.verify_token(token)
         loop.exec()
         
