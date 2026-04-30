@@ -1,21 +1,23 @@
-from PyQt6.QtWidgets import QMainWindow, QMessageBox, QWidget, QScrollArea, QListWidgetItem
-
-from GUI.lesson_list_item import LessonListItemWidget, truncate
-from PyQt6.QtCore import Qt, QSize
-
-from loader import settings
-from GUI.main_window import Ui_MainWindow
-from GUI.LessonCard import LessonCard
-from GUI.helpful import FlowLayout
-
-from workers.auth_worker import AuthWorker
-from workers.topic_worker import TopicWorker
-from workers.lesson_worker import LessonWorker
-from workers.progress_worker import ProgressWorker
-
 from controllers.admin import AdminController
 from controllers.profile import ProfileController
 from controllers.settings import SettingsController
+from GUI.helpful import FlowLayout
+from GUI.lesson_list_item import LessonListItemWidget
+from GUI.LessonCard import LessonCard
+from GUI.main_window import Ui_MainWindow
+from loader import settings
+from PyQt6.QtCore import QSize, Qt
+from PyQt6.QtWidgets import (
+    QListWidgetItem,
+    QMainWindow,
+    QMessageBox,
+    QScrollArea,
+    QWidget,
+)
+from workers.auth_worker import AuthWorker
+from workers.lesson_worker import LessonWorker
+from workers.progress_worker import ProgressWorker
+from workers.topic_worker import TopicWorker
 
 
 class Main(QMainWindow):
@@ -45,7 +47,9 @@ class Main(QMainWindow):
         self.progress_worker = ProgressWorker()
 
         self.admin_controller = AdminController(self.ui)
-        self.profile_controller = ProfileController(self.ui, self.user_data, self.auth_worker, self.progress_worker)
+        self.profile_controller = ProfileController(
+            self.ui, self.user_data, self.auth_worker, self.progress_worker
+        )
         self.settings_controller = SettingsController(self.ui)
 
         self._selected_topic_id: int | None = None
@@ -70,10 +74,14 @@ class Main(QMainWindow):
         self.topic_worker.topics_loaded_signal.connect(self._on_topics_loaded)
         self.topic_worker.error_signal.connect(self._show_error)
 
-        self.lesson_worker.lessons_by_topic_loaded_signal.connect(self._on_lessons_loaded)
+        self.lesson_worker.lessons_by_topic_loaded_signal.connect(
+            self._on_lessons_loaded
+        )
         self.lesson_worker.lesson_error_sygnal.connect(self._show_error)
 
-        self.progress_worker.completed_lessons_loaded_signal.connect(self._on_progress_loaded)
+        self.progress_worker.completed_lessons_loaded_signal.connect(
+            self._on_progress_loaded
+        )
         self.progress_worker.lesson_completed_signal.connect(self._on_lesson_completed)
         self.progress_worker.error_signal.connect(self._show_error)
 
@@ -114,7 +122,9 @@ class Main(QMainWindow):
                 item.widget().deleteLater()
 
         for topic in topics:
-            card = LessonCard(title=topic.name, progress=topic.progress, payload=topic.id)
+            card = LessonCard(
+                title=topic.name, progress=topic.progress, payload=topic.id
+            )
             card.clicked.connect(self._on_topic_selected)
             self.flow_layout.addWidget(card)
 
@@ -125,7 +135,9 @@ class Main(QMainWindow):
         self.lesson_worker.get_lessons_by_topic(self._selected_topic_id)
 
     def _on_lessons_loaded(self, lessons):
-        self._lessons_cache = sorted(lessons, key=lambda l: (l.order_in_topic or 0, l.id))
+        self._lessons_cache = sorted(
+            lessons, key=lambda l: (l.order_in_topic or 0, l.id)
+        )
         if self._selected_topic_id is None:
             return
         self.progress_worker.get_completed_lessons_for_topic(self._selected_topic_id)
@@ -161,7 +173,9 @@ class Main(QMainWindow):
                 locked=not is_unlocked,
             )
 
-            item_height = max(96, widget.sizeHint().height(), widget.minimumSizeHint().height())
+            item_height = max(
+                96, widget.sizeHint().height(), widget.minimumSizeHint().height()
+            )
             item.setSizeHint(QSize(0, item_height))
             widget.setMinimumHeight(item_height)
 
@@ -176,13 +190,17 @@ class Main(QMainWindow):
     def _on_lesson_clicked(self, item: QListWidgetItem):
         # Проверка на блокировку урока
         if not (item.flags() & Qt.ItemFlag.ItemIsEnabled):
-            self._show_error("Этот урок пока заблокирован. Пройдите предыдущие упражнения в теме.")
+            self._show_error(
+                "Этот урок пока заблокирован. Пройдите предыдущие упражнения в теме."
+            )
             return
 
         lesson = item.data(Qt.ItemDataRole.UserRole + 1)
         if lesson is None:
             lesson_id = int(item.data(Qt.ItemDataRole.UserRole))
-            lesson = next((l for l in self._lessons_cache if int(l.id) == lesson_id), None)
+            lesson = next(
+                (l for l in self._lessons_cache if int(l.id) == lesson_id), None
+            )
             if lesson is None:
                 return
 
@@ -197,14 +215,15 @@ class Main(QMainWindow):
         self.ui.stackedWidget.addWidget(self.lesson_player_page)
         self.ui.stackedWidget.setCurrentWidget(self.lesson_player_page)
 
-
     def _on_lesson_player_closed(self, was_completed: bool):
         # Возвращаем боковое меню при закрытии урока
         self.ui.drawerWidget.show()
 
         if was_completed:
             if self._selected_topic_id is not None:
-                self.progress_worker.get_completed_lessons_for_topic(self._selected_topic_id)
+                self.progress_worker.get_completed_lessons_for_topic(
+                    self._selected_topic_id
+                )
             self.progress_worker.get_profile_stats()
 
         self.ui.stackedWidget.setCurrentWidget(self.ui.topicsPageWidget)
@@ -221,7 +240,12 @@ class Main(QMainWindow):
 
     def _set_active_tab(self, button, widget):
         self.ui.stackedWidget.setCurrentWidget(widget)
-        nav_buttons = [self.ui.homeBtn, self.ui.profileBtn, self.ui.settingsBtn, self.ui.adminPanelBtn]
+        nav_buttons = [
+            self.ui.homeBtn,
+            self.ui.profileBtn,
+            self.ui.settingsBtn,
+            self.ui.adminPanelBtn,
+        ]
         for btn in nav_buttons:
             is_active = btn == button
             btn.setProperty("active", is_active)

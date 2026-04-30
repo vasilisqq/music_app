@@ -1,8 +1,10 @@
-from sqlalchemy import select, func, case
 from fastapi import HTTPException
+from models import Lesson, LessonProgress, Topic
+from sqlalchemy import case, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from models import Topic, Lesson, LessonProgress
+
 from schemas.topic import TopicCreate
+
 
 class TopicService:
     def __init__(self, db: AsyncSession):
@@ -12,18 +14,19 @@ class TopicService:
         """Возвращаем темы с количеством уроков и прогрессом пользователя"""
         completed_lessons = func.count(
             case((LessonProgress.completed_at.is_not(None), Lesson.id))
-        ).label('completed_lessons_count')
+        ).label("completed_lessons_count")
 
         stmt = (
             select(
                 Topic,
-                func.count(Lesson.id).label('lessons_count'),
+                func.count(Lesson.id).label("lessons_count"),
                 completed_lessons,
             )
             .outerjoin(Lesson, Lesson.topic_id == Topic.id)
             .outerjoin(
                 LessonProgress,
-                (LessonProgress.lesson_id == Lesson.id) & (LessonProgress.user_id == user_id),
+                (LessonProgress.lesson_id == Lesson.id)
+                & (LessonProgress.user_id == user_id),
             )
             .group_by(Topic.id)
             .order_by(Topic.id)
@@ -47,15 +50,17 @@ class TopicService:
     async def create_topic(self, topic_data: TopicCreate):
         stmt = select(Topic).where(Topic.name == topic_data.name)
         existing_topic = await self.db.scalar(stmt)
-        
+
         if existing_topic:
-            raise HTTPException(status_code=400, detail="Тема с таким названием уже существует")
-            
+            raise HTTPException(
+                status_code=400, detail="Тема с таким названием уже существует"
+            )
+
         new_topic = Topic(name=topic_data.name, description=topic_data.description)
         self.db.add(new_topic)
         await self.db.commit()
         await self.db.refresh(new_topic)
-        
+
         new_topic.lessons_count = 0
         new_topic.progress = 0.0
 
@@ -70,7 +75,9 @@ class TopicService:
             stmt = select(Topic).where(Topic.name == topic_data.name)
             existing_topic = await self.db.scalar(stmt)
             if existing_topic:
-                raise HTTPException(status_code=400, detail="Тема с таким названием уже существует")
+                raise HTTPException(
+                    status_code=400, detail="Тема с таким названием уже существует"
+                )
 
         topic.name = topic_data.name
         topic.description = topic_data.description
@@ -84,7 +91,6 @@ class TopicService:
         topic.progress = 0.0
 
         return topic
-    
 
     async def delete_topic(self, topic_id: int):
         """Удаляет тему (каскадно удалятся и все её уроки благодаря настройкам ORM)"""
@@ -95,6 +101,6 @@ class TopicService:
         # Удаляем объект
         await self.db.delete(topic)
         await self.db.commit()
-        
+
         # Возвращаем ID удаленной темы, чтобы клиент знал, что убирать из таблицы
         return {"id": topic_id, "message": "Тема успешно удалена"}

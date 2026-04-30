@@ -1,29 +1,34 @@
-from PyQt6.QtCore import Qt, QRectF, QLineF, QPointF
-from PyQt6.QtGui import QPen, QBrush, QFont, QPixmap, QColor, QPainter, QPainterPath
+import os
+import sys
+
+from config import *
+from PyQt6.QtCore import QLineF, QRectF, Qt
+from PyQt6.QtGui import QBrush, QColor, QFont, QPainter, QPainterPath, QPen
+from PyQt6.QtSvgWidgets import QGraphicsSvgItem
 from PyQt6.QtWidgets import (
+    QGraphicsEllipseItem,
     QGraphicsItem,
     QGraphicsLineItem,
-    QGraphicsScene,
-    QGraphicsTextItem,
-    QGraphicsPixmapItem,
     QGraphicsRectItem,
-    QGraphicsEllipseItem
+    QGraphicsTextItem,
 )
-from PyQt6.QtSvgWidgets import QGraphicsSvgItem
-from config import *
-import sys
-import os
-sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-from schemas.lesson import LessonCreate, LessonResponse
-import time
-from test import player
-import threading
 
+sys.path.append(
+    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+)
+import threading
+import time
+
+from test import player
+
+from schemas.lesson import LessonCreate, LessonResponse
 
 DURATION_EPSILON = 1e-6
 
 
-def durations_equal(left: float, right: float, epsilon: float = DURATION_EPSILON) -> bool:
+def durations_equal(
+    left: float, right: float, epsilon: float = DURATION_EPSILON
+) -> bool:
     return abs(left - right) <= epsilon
 
 
@@ -49,6 +54,7 @@ class LaySettings:
         self.input_mode = "note"
         self.scene = None
 
+
 settings = LaySettings()
 
 
@@ -71,7 +77,9 @@ class RestItem(QGraphicsItem):
         self.rect = QRectF()
         self.dot_rect = QRectF()
         self.setZValue(10)
-        self.setAcceptedMouseButtons(Qt.MouseButton.LeftButton | Qt.MouseButton.RightButton)
+        self.setAcceptedMouseButtons(
+            Qt.MouseButton.LeftButton | Qt.MouseButton.RightButton
+        )
         self._update_geometry()
 
     def _update_geometry(self):
@@ -80,10 +88,20 @@ class RestItem(QGraphicsItem):
         line_y = self.y
 
         if durations_equal(self.base_duration, 1):
-            self.rect = QRectF(self.x - whole_or_half_width / 2, line_y, whole_or_half_width, whole_or_half_height)
+            self.rect = QRectF(
+                self.x - whole_or_half_width / 2,
+                line_y,
+                whole_or_half_width,
+                whole_or_half_height,
+            )
             self._clear_svg_item()
         elif durations_equal(self.base_duration, 0.5):
-            self.rect = QRectF(self.x - whole_or_half_width / 2, line_y - whole_or_half_height, whole_or_half_width, whole_or_half_height)
+            self.rect = QRectF(
+                self.x - whole_or_half_width / 2,
+                line_y - whole_or_half_height,
+                whole_or_half_width,
+                whole_or_half_height,
+            )
             self._clear_svg_item()
         else:
             self.rect = QRectF(self.x - 10, line_y - 20, 20, 40)
@@ -91,7 +109,9 @@ class RestItem(QGraphicsItem):
             self._position_svg_item()
 
         if self.is_dotted:
-            self.dot_rect = QRectF(self.rect.right() + 4, self.rect.center().y() - 2, 4, 4)
+            self.dot_rect = QRectF(
+                self.rect.right() + 4, self.rect.center().y() - 2, 4, 4
+            )
         else:
             self.dot_rect = QRectF()
 
@@ -160,7 +180,9 @@ class RestItem(QGraphicsItem):
         return self.rect.united(self.dot_rect).adjusted(-2, -2, 2, 2)
 
     def paint(self, painter: QPainter, option, widget):
-        if durations_equal(self.base_duration, 1) or durations_equal(self.base_duration, 0.5):
+        if durations_equal(self.base_duration, 1) or durations_equal(
+            self.base_duration, 0.5
+        ):
             painter.setPen(QPen(Qt.GlobalColor.black, 1.4))
             painter.setBrush(QBrush(Qt.GlobalColor.black))
             painter.drawRect(self.rect)
@@ -171,15 +193,9 @@ class RestItem(QGraphicsItem):
 
 
 class NoteItem(QGraphicsEllipseItem):
-    def __init__(self, 
-                 x, 
-                 y, 
-                 name, 
-                 scene, 
-                 duration, 
-                 has_shtil=False, 
-                 reversing=False, 
-                 bit=None):
+    def __init__(
+        self, x, y, name, scene, duration, has_shtil=False, reversing=False, bit=None
+    ):
         super().__init__(parent=bit)
         self.note_lenght = duration
         self.base_duration = get_base_duration(duration)
@@ -194,7 +210,7 @@ class NoteItem(QGraphicsEllipseItem):
         self.scene = scene
         self.bit = bit
         self.flag_path = None
-        self.tilt_angle = -15   # угол наклона в градусах
+        self.tilt_angle = -15  # угол наклона в градусах
         self.accidental = settings.accidental
         self.accidental_item = None
         self.setZValue(10)
@@ -203,12 +219,18 @@ class NoteItem(QGraphicsEllipseItem):
         self.setPen(NORMAL_PEN)
         self.prev_note = None
         self.next_note = None
-        self.stem_x = int(self.x + self.width/2) if not self.reversing else int(self.x - self.width/2)
+        self.stem_x = (
+            int(self.x + self.width / 2)
+            if not self.reversing
+            else int(self.x - self.width / 2)
+        )
 
     def get_stem_group_notes(self):
         if self.bit is None:
             return [self]
-        return [note for note in self.bit.notes if note.reversing == self.reversing] or [self]
+        return [
+            note for note in self.bit.notes if note.reversing == self.reversing
+        ] or [self]
 
     def has_split_upward_chord(self) -> bool:
         if self.bit is None or self.reversing or len(self.bit.notes) < 2:
@@ -217,7 +239,10 @@ class NoteItem(QGraphicsEllipseItem):
         if len(upward_notes) < 2:
             return False
         ordered_notes = sorted(upward_notes, key=lambda note: note.y, reverse=True)
-        return any(abs(current.y - following.y) > 12 for current, following in zip(ordered_notes, ordered_notes[1:]))
+        return any(
+            abs(current.y - following.y) > 12
+            for current, following in zip(ordered_notes, ordered_notes[1:])
+        )
 
     def get_stem_start_y(self) -> float:
         group_notes = self.get_stem_group_notes()
@@ -249,7 +274,11 @@ class NoteItem(QGraphicsEllipseItem):
         return QRectF(self.x + self.width / 2 + 4, self.y - 1.5, 4, 4)
 
     def update_stem_x(self):
-        self.stem_x = int(self.x + self.width / 2) if not self.reversing else int(self.x - self.width / 2)
+        self.stem_x = (
+            int(self.x + self.width / 2)
+            if not self.reversing
+            else int(self.x - self.width / 2)
+        )
 
     def sync_geometry(self):
         self.update_stem_x()
@@ -269,7 +298,11 @@ class NoteItem(QGraphicsEllipseItem):
 
     def draw_stem(self, painter: QPainter):
         stem_top_y = self.get_stem_top_y()
-        painter.drawLine(QLineF(float(self.stem_x), float(self.y), float(self.stem_x), float(stem_top_y)))
+        painter.drawLine(
+            QLineF(
+                float(self.stem_x), float(self.y), float(self.stem_x), float(stem_top_y)
+            )
+        )
 
     def draw_beam(self, painter: QPainter):
         if self.next_note is None:
@@ -290,10 +323,19 @@ class NoteItem(QGraphicsEllipseItem):
         painter.drawEllipse(self.get_dot_bounds())
 
     def get_visual_bounds(self) -> QRectF:
-        rect = QRectF(self.x - self.width, self.y - self.height, self.width * 2, self.height * 2)
+        rect = QRectF(
+            self.x - self.width, self.y - self.height, self.width * 2, self.height * 2
+        )
         if not durations_equal(self.base_duration, 1):
             stem_top_y = self.get_stem_top_y()
-            rect = rect.united(QRectF(self.stem_x - 2, min(self.y, stem_top_y), 4, abs(self.y - stem_top_y)))
+            rect = rect.united(
+                QRectF(
+                    self.stem_x - 2,
+                    min(self.y, stem_top_y),
+                    4,
+                    abs(self.y - stem_top_y),
+                )
+            )
         if durations_equal(self.base_duration, 0.125) and self.shtil:
             rect = rect.united(QRectF(self.stem_x, self.get_stem_top_y(), 12, 22))
         if self.next_note is not None:
@@ -301,7 +343,9 @@ class NoteItem(QGraphicsEllipseItem):
             max_x = max(self.stem_x, self.next_note.stem_x)
             min_y = min(self.get_stem_top_y(), self.next_note.get_stem_top_y())
             max_y = max(self.get_stem_top_y(), self.next_note.get_stem_top_y())
-            rect = rect.united(QRectF(min_x, min_y - 2, max_x - min_x, (max_y - min_y) + 4))
+            rect = rect.united(
+                QRectF(min_x, min_y - 2, max_x - min_x, (max_y - min_y) + 4)
+            )
         if self.is_dotted:
             rect = rect.united(self.get_dot_bounds())
         return rect.adjusted(-5, -5, 5, 5)
@@ -327,14 +371,21 @@ class NoteItem(QGraphicsEllipseItem):
 
     def shape(self):
         path = QPainterPath()
-        path.addEllipse(QRectF(self.x - self.width/2, self.y - self.height/2, self.width, self.height))
+        path.addEllipse(
+            QRectF(
+                self.x - self.width / 2,
+                self.y - self.height / 2,
+                self.width,
+                self.height,
+            )
+        )
         return path
 
     def get_base_note_name(self):
         if self.accidental:
             symbol = self._accidental_to_symbol(self.accidental)
             if self.note_name.endswith(symbol):
-                return self.note_name[:-len(symbol)]
+                return self.note_name[: -len(symbol)]
         return self.note_name
 
     def paint(self, painter: QPainter, option, widget):
@@ -343,7 +394,9 @@ class NoteItem(QGraphicsEllipseItem):
         painter.rotate(self.tilt_angle)
         painter.setBrush(self.brush())
         painter.setPen(self.pen())
-        painter.drawEllipse(QRectF(-self.width/2, -self.height/2, self.width, self.height))
+        painter.drawEllipse(
+            QRectF(-self.width / 2, -self.height / 2, self.width, self.height)
+        )
         painter.restore()
 
         if not durations_equal(self.base_duration, 1):
@@ -435,7 +488,7 @@ class NoteItem(QGraphicsEllipseItem):
         if self.accidental and self.accidental != "natural":
             symbol = self._accidental_to_symbol(self.accidental)
             if self.note_name.endswith(symbol):
-                self.note_name = self.note_name[:-len(symbol)]
+                self.note_name = self.note_name[: -len(symbol)]
         self.accidental = None
         self.update()
 
@@ -458,6 +511,7 @@ class NoteItem(QGraphicsEllipseItem):
         if event.button() == Qt.MouseButton.RightButton:
             # Безопасное удаление через QTimer.singleShot, чтобы не удалять себя в процессе mousePressEvent
             from PyQt6.QtCore import QTimer
+
             QTimer.singleShot(0, self.delete)
             return
         self.accidental = settings.accidental
@@ -492,17 +546,24 @@ class NoteItem(QGraphicsEllipseItem):
         self.accidental_item = acc_item
         self.update()
 
+
 class HighlightableLineItem(QGraphicsLineItem):
     """Класс линии, которая подсвечивается при наведении"""
 
-    def __init__(self, line:QLineF, tact, y, note_name, transparent=False, parent=None):
+    def __init__(
+        self, line: QLineF, tact, y, note_name, transparent=False, parent=None
+    ):
         super().__init__(line, parent)
         self.line_obj = line
         self.tact = tact
         self.read_only = False
         self.y = y
         self.transparent = transparent
-        self.normal_pen = QPen(Qt.GlobalColor.transparent) if transparent else QPen(Qt.GlobalColor.black)
+        self.normal_pen = (
+            QPen(Qt.GlobalColor.transparent)
+            if transparent
+            else QPen(Qt.GlobalColor.black)
+        )
         self.normal_pen.setWidthF(LINE_WIDTH)
         self.hover_pen = QPen(QColor(255, 0, 0))
         self.hover_pen.setWidthF(LINE_WIDTH * 1.5)
@@ -625,6 +686,7 @@ class StaffSpaceItem(QGraphicsRectItem):
 
 class TimeSignature:
     """Класс для отображения размерности такта"""
+
     def __init__(self, scene, x, y, numerator=4, denominator=4):
         self.scene = scene
         self.x = x
@@ -633,7 +695,7 @@ class TimeSignature:
         self.denominator = denominator
 
         self.render()
-    
+
     def render(self):
         """Отображает размерность такта на сцене"""
         # Создаем элемент текста для числителя
@@ -641,19 +703,19 @@ class TimeSignature:
         font = QFont("Arial", 26)
         font.setBold(True)
         numerator_text.setFont(font)
-        
+
         # Позиционируем числитель
-        numerator_text.setPos(self.x, self.y-12)
+        numerator_text.setPos(self.x, self.y - 12)
         self.scene.addItem(numerator_text)
-        
+
         # Создаем элемент текста для знаменателя
         denominator_text = QGraphicsTextItem(str(self.denominator))
         denominator_text.setFont(font)
-        
+
         # Позиционируем знаменатель под числителем
-        denominator_text.setPos(self.x, self.y+12)
+        denominator_text.setPos(self.x, self.y + 12)
         self.scene.addItem(denominator_text)
-    
+
     def update_signature(self, numerator, denominator):
         """Обновляет размерность такта"""
         self.numerator = numerator
@@ -662,7 +724,7 @@ class TimeSignature:
 
 class BarLine:
     """Класс для вертикальных линий такта"""
-    
+
     def __init__(self, scene, x, y_top, y_bottom):
         self.scene = scene
         self.x = x
@@ -670,12 +732,12 @@ class BarLine:
         self.y_bottom = y_bottom
         self.line_item = None
         self.render()
-    
+
     def render(self):
         """Отображает вертикальную линию такта на сцене"""
         # Создаем вертикальную линию
-        line = QGraphicsLineItem(self.x, self.y_top+0.6, self.x, self.y_bottom-0.6)
-        
+        line = QGraphicsLineItem(self.x, self.y_top + 0.6, self.x, self.y_bottom - 0.6)
+
         # Настраиваем перо для линии такта (толще обычных линий)
         pen = QPen(Qt.GlobalColor.black)
         pen.setWidthF(2.0)
@@ -685,7 +747,6 @@ class BarLine:
 
 
 class Bits(QGraphicsRectItem):
-
     def __init__(self, rect, x0, x1, tact=None, weigth=0.25, parent=None):
         super().__init__(rect, parent)
         self.notes = []
@@ -758,14 +819,12 @@ class Bits(QGraphicsRectItem):
         super().setVisible(visible)
         self.update()
 
-
     def isExist_note(self, line: StaffSpaceItem | HighlightableLineItem):
         for note in self.notes:
             if note.note_name[:2] == line.note_name:
                 return True
         return False
-    
-    
+
     def has_near_note(self, note_):
         for note in self.notes:
             if abs(note.y - note_.y) <= 6 and note != note_:
@@ -773,7 +832,6 @@ class Bits(QGraphicsRectItem):
             elif abs(note.y - note_.y) <= 12 and note != note_:
                 return False
         return False
-
 
     def update_notes(self):
         pred_note = None
@@ -789,10 +847,10 @@ class Bits(QGraphicsRectItem):
             elif note.reversing:
                 note.reverse(False)
             pred_note = note
-            if n:=note.prev_note:
-               linked_note_prev,n = n,linked_note_prev
-            if n:=note.next_note: 
-                linked_note_next,note.next_note = note.next_note,linked_note_next
+            if n := note.prev_note:
+                linked_note_prev, n = n, linked_note_prev
+            if n := note.next_note:
+                linked_note_next, note.next_note = note.next_note, linked_note_next
         if self.notes:
             last_note = self.notes[-1]
             last_note.create_shtil()
@@ -801,8 +859,6 @@ class Bits(QGraphicsRectItem):
         elif self.rest_item is None:
             self.tact.change_bits(self)
         self.tact.update_beams()
-        
-
 
     def add_note(self, duration, line, scene):
         if not durations_equal(duration, self.weigth):
@@ -811,7 +867,9 @@ class Bits(QGraphicsRectItem):
             return False
         if self.isExist_note(line):
             return False
-        note_item = NoteItem(self.x0+15, line.y, line.note_name, scene, duration, bit=self)
+        note_item = NoteItem(
+            self.x0 + 15, line.y, line.note_name, scene, duration, bit=self
+        )
         self.notes.append(note_item)
         self.notes.sort(key=lambda note: note.y, reverse=True)
         self.update_notes()
@@ -856,7 +914,17 @@ def build_bit_weights(total_duration: float, step_duration: float) -> list[float
 
 
 class Tact:
-    def __init__(self,y_bottom,scene,number,x0=X0, y=Y0, duration=0.25, numerator=4, hand="right"):
+    def __init__(
+        self,
+        y_bottom,
+        scene,
+        number,
+        x0=X0,
+        y=Y0,
+        duration=0.25,
+        numerator=4,
+        hand="right",
+    ):
         self.tact_number = number
         self.numerator = numerator
         self.x0 = x0
@@ -877,7 +945,6 @@ class Tact:
         self.hand = hand
         self.init_bits()
         self.init_tact()
-    
 
     def init_tact(self):
         # Сначала создаем пространства между линиями (4 пространства между 5 линиями)
@@ -890,34 +957,37 @@ class Tact:
             # Для левой руки: B3 - верхняя нота на стане
             space_notes = ["D4", "B3", "G3", "E3", "C3"]
             line_notes = ["E4", "C4", "A3", "F3", "D3", "B2"]
-        
+
         for i in range(5):
             y_top = self.y0 + i * LINE_SPACING
             space_rect = QRectF(self.x0, y_top, self.width, LINE_SPACING)
             note_name = space_notes[i]
-            space_item = StaffSpaceItem(space_rect, i, self, note_name, int(y_top+LINE_SPACING/2))
+            space_item = StaffSpaceItem(
+                space_rect, i, self, note_name, int(y_top + LINE_SPACING / 2)
+            )
             self.scene.addItem(space_item)
             self.spaces.append(space_item)
-        
+
         # Затем создаем 5 линий стана
         for i in range(6):
             y = self.y0 + i * LINE_SPACING
             note_name = line_notes[i]
             if i != 5:
                 line_item = HighlightableLineItem(
-                    QLineF(self.x0, y, self.x0 + self.width, y),
-                    self, y, note_name
+                    QLineF(self.x0, y, self.x0 + self.width, y), self, y, note_name
                 )
             else:
                 line_item = HighlightableLineItem(
                     QLineF(self.x0, y, self.x0 + self.width, y),
-                    self, y, note_name, transparent=True
+                    self,
+                    y,
+                    note_name,
+                    transparent=True,
                 )
             line_item.line_number = i
             self.scene.addItem(line_item)
             self.lines.append(line_item)
         self.add_bar_lines()
-
 
     def init_bits(self):
         tact_total_duration = self.numerator / 4
@@ -933,7 +1003,9 @@ class Tact:
         self.bits.clear()
 
         tact_total_duration = self.numerator / 4
-        print(f"Tact {self.tact_number} | Rhythm: {self.numerator/4} | Weights: {bit_weights}")
+        print(
+            f"Tact {self.tact_number} | Rhythm: {self.numerator / 4} | Weights: {bit_weights}"
+        )
 
         x_start_offset = 100 if self.tact_number == 0 else 0
         usable_width = self.width - x_start_offset
@@ -960,19 +1032,16 @@ class Tact:
         self.update_beams()
         self.scene.update()
 
-
     def add_bar_lines(self):
         """Добавляет вертикальные линии тактов"""
         # Добавляем левую тактовую черту (сразу после размерности такта)
         scene = self.scene
-        left_bar = BarLine(scene, self.x0 , self.y0, self.y_bottom)
+        left_bar = BarLine(scene, self.x0, self.y0, self.y_bottom)
         self.bar_lines.append(left_bar)
         # Добавляем правую тактовую черту (конечную)
         right_bar_x = self.x0 + self.width
         right_bar = BarLine(scene, right_bar_x, self.y0, self.y_bottom)
         self.bar_lines.append(right_bar)
-
-
 
     def add_item_at_position(self, click_x, line):
         if not self.x0 <= click_x <= self.x0 + self.width:
@@ -995,13 +1064,14 @@ class Tact:
     def add_note_at_position(self, click_x, line):
         self.add_item_at_position(click_x, line)
 
-
     def update_beams(self):
         pred_bit = None
         for bit in self.bits:
             if bit.notes:
                 if pred_bit:
-                    if durations_equal(bit.weigth, 0.125) and durations_equal(pred_bit.weigth, 0.125):
+                    if durations_equal(bit.weigth, 0.125) and durations_equal(
+                        pred_bit.weigth, 0.125
+                    ):
                         pred_note = pred_bit.notes[-1]
                         current_note = bit.notes[-1]
                         if pred_note.prev_note:
@@ -1025,7 +1095,6 @@ class Tact:
                 pred_bit = None
         self.scene.update()
 
-
     def increase_duration(self, duration):
         self.duration *= 2
         available_bit = None
@@ -1038,15 +1107,21 @@ class Tact:
                     available_bit = None
                     continue
                 if bit.weigth == available_bit.weigth:
-                    width = (bit.x1-available_bit.x0)
-                    new_bits.append(Bits(QRectF(available_bit.x0, 
-                                                self.y0, 
-                                                width, 
-                                                self.y_bottom-self.y0), 
-                                            available_bit.x0, 
-                                            available_bit.x0+width,
-                                            weigth=self.duration, 
-                                            tact=self))
+                    width = bit.x1 - available_bit.x0
+                    new_bits.append(
+                        Bits(
+                            QRectF(
+                                available_bit.x0,
+                                self.y0,
+                                width,
+                                self.y_bottom - self.y0,
+                            ),
+                            available_bit.x0,
+                            available_bit.x0 + width,
+                            weigth=self.duration,
+                            tact=self,
+                        )
+                    )
                     self.scene.addItem(new_bits[-1])
                     self.scene.removeItem(bit)
                     self.scene.removeItem(available_bit)
@@ -1060,7 +1135,6 @@ class Tact:
         self.bits = new_bits
         if self.duration != duration:
             self.increase_duration(duration)
-                    
 
     def change_bits(self, empty_bit):
         """Обрабатывает изменения битов: объединяет пустые биты одинаковой длительности или разбивает слишком большие пустые биты."""
@@ -1075,9 +1149,10 @@ class Tact:
                 for i in range(ratio):
                     new_bit = Bits(
                         QRectF(x, Y0, new_width, self.y_bottom - Y0),
-                        x, x + new_width,
+                        x,
+                        x + new_width,
                         weigth=self.duration,
-                        tact=self
+                        tact=self,
                     )
                     self.scene.addItem(new_bit)
                     new_bits.append(new_bit)
@@ -1102,14 +1177,21 @@ class Tact:
 
         # Проверяем левого соседа
         left_idx = idx - 1
-        if left_idx >= 0 and self.bits[left_idx].weigth == empty_bit.weigth and not self.bits[left_idx].notes:
+        if (
+            left_idx >= 0
+            and self.bits[left_idx].weigth == empty_bit.weigth
+            and not self.bits[left_idx].notes
+        ):
             left_bit = self.bits[left_idx]
             new_x0 = left_bit.x0
             new_x1 = empty_bit.x1
             new_weigth = left_bit.weigth * 2
             new_bit = Bits(
                 QRectF(new_x0, self.y0, new_x1 - new_x0, self.y_bottom - self.y0),
-                new_x0, new_x1, weigth=new_weigth, tact=self
+                new_x0,
+                new_x1,
+                weigth=new_weigth,
+                tact=self,
             )
             self.scene.addItem(new_bit)
             self.scene.removeItem(left_bit)
@@ -1122,14 +1204,21 @@ class Tact:
 
         # Проверяем правого соседа
         right_idx = idx + 1
-        if right_idx < len(self.bits) and self.bits[right_idx].weigth == empty_bit.weigth and not self.bits[right_idx].notes:
+        if (
+            right_idx < len(self.bits)
+            and self.bits[right_idx].weigth == empty_bit.weigth
+            and not self.bits[right_idx].notes
+        ):
             right_bit = self.bits[right_idx]
             new_x0 = empty_bit.x0
             new_x1 = right_bit.x1
             new_weigth = empty_bit.weigth * 2
             new_bit = Bits(
                 QRectF(new_x0, self.y0, new_x1 - new_x0, self.y_bottom - self.y0),
-                new_x0, new_x1, weigth=new_weigth, tact=self
+                new_x0,
+                new_x1,
+                weigth=new_weigth,
+                tact=self,
             )
             self.scene.addItem(new_bit)
             self.scene.removeItem(empty_bit)
@@ -1144,18 +1233,33 @@ class Tact:
 
         # Если соседей для объединения нет, ничего не делаем
 
-
-
     def decrease_duration(self, duration):
-        if self.duration != duration: self.duration /= 2
+        if self.duration != duration:
+            self.duration /= 2
         new_bits = []
         for bit in self.bits:
             if not bit.notes and not bit.weigth <= duration:
-                width = (bit.x1-bit.x0)/2
-                new_bits.extend([
-                    Bits(QRectF(bit.x0, self.y0, width, self.y_bottom-self.y0), bit.x0, bit.x0+width,weigth=bit.weigth/2, tact=self),
-                    Bits(QRectF(bit.x0+width, self.y0, width, self.y_bottom-self.y0), bit.x0+width+1, bit.x1,weigth=bit.weigth/2, tact=self)]
-                    )
+                width = (bit.x1 - bit.x0) / 2
+                new_bits.extend(
+                    [
+                        Bits(
+                            QRectF(bit.x0, self.y0, width, self.y_bottom - self.y0),
+                            bit.x0,
+                            bit.x0 + width,
+                            weigth=bit.weigth / 2,
+                            tact=self,
+                        ),
+                        Bits(
+                            QRectF(
+                                bit.x0 + width, self.y0, width, self.y_bottom - self.y0
+                            ),
+                            bit.x0 + width + 1,
+                            bit.x1,
+                            weigth=bit.weigth / 2,
+                            tact=self,
+                        ),
+                    ]
+                )
                 self.scene.addItem(new_bits[-2])
                 self.scene.addItem(new_bits[-1])
                 self.scene.removeItem(bit)
@@ -1163,13 +1267,11 @@ class Tact:
                 new_bits.append(bit)
         self.bits = new_bits
         if self.duration != duration:
-            self.decrease_duration(duration) 
-
-
+            self.decrease_duration(duration)
 
     def remove_from_scene(self):
         # Удаляем линии
-        for line in self.lines[:]:          # копия списка для безопасной итерации
+        for line in self.lines[:]:  # копия списка для безопасной итерации
             self.scene.removeItem(line)
             # При необходимости: del line
         self.lines.clear()
@@ -1196,7 +1298,6 @@ class Tact:
             self.scene.removeItem(note)
         del self
 
-
     def recalculate_all_accidentals(self, note_item):
         """Убирает все знаки и заново рисует только те, что явно поставил пользователь."""
         alteration = None
@@ -1204,7 +1305,11 @@ class Tact:
 
         for i, bit in enumerate(self.bits):
             for note in bit.notes:
-                if note == note_item and note.accidental == "natural" and alteration is None:
+                if (
+                    note == note_item
+                    and note.accidental == "natural"
+                    and alteration is None
+                ):
                     note.draw_accidental(0)
                     alteration = note.accidental
                     drawed = True
@@ -1214,7 +1319,7 @@ class Tact:
                         alteration = note.accidental
                         note.draw_accidental(0)
                         drawed = True
-                        continue 
+                        continue
                     if alteration == note.accidental:
                         symbol = note._accidental_to_symbol(alteration)
                         if not note.note_name.endswith(symbol):
@@ -1225,19 +1330,17 @@ class Tact:
                             note.draw_accidental(i)
                             drawed = True
                     else:
-
                         alteration = note.accidental
                         note.draw_accidental(i)
                         drawed = True
         # if note_item.accidental != "natural":
         #     note_item.draw_accidental()
 
-                    
-
-
 
 class StaffLayout:
-    def __init__(self, scene, time_signature="4/4", read_only: bool = False, hand: str = "right"):
+    def __init__(
+        self, scene, time_signature="4/4", read_only: bool = False, hand: str = "right"
+    ):
         self.left_hand = hand == "left"
         self.hand = hand
         self.read_only = read_only
@@ -1249,7 +1352,7 @@ class StaffLayout:
         self.y = Y0
         self.x = X0
         self.scene = scene
-        self.beats_per_measure = int(self.time_signature.split('/')[0])
+        self.beats_per_measure = int(self.time_signature.split("/")[0])
         # self.max_tact_duration = self.beats_per_measure * 0.25
         self.current_duration = 0.25
         self.init_staff(scene)
@@ -1257,13 +1360,11 @@ class StaffLayout:
 
     @property
     def y_bottom(self) -> float:
-        return self.y + (4 * LINE_SPACING) 
-    
+        return self.y + (4 * LINE_SPACING)
+
     @property
     def staff_height(self) -> float:
         return 4 * LINE_SPACING
-    
-
 
     def set_duration(self, duration):
         self.current_duration = duration
@@ -1305,10 +1406,16 @@ class StaffLayout:
                 bit_width = usable_width * (bit.weigth / tact_total_duration)
                 bit.x0 = current_x
                 bit.x1 = current_x + bit_width
-                bit.setRect(QRectF(current_x, tact.y0, bit_width, tact.y_bottom - tact.y0))
+                bit.setRect(
+                    QRectF(current_x, tact.y0, bit_width, tact.y_bottom - tact.y0)
+                )
                 for note in bit.notes:
                     note.x = current_x + 15
-                    note.stem_x = int(note.x + note.width / 2) if not note.reversing else int(note.x - note.width / 2)
+                    note.stem_x = (
+                        int(note.x + note.width / 2)
+                        if not note.reversing
+                        else int(note.x - note.width / 2)
+                    )
                     note.update()
                 bit.sync_rest()
                 tact.bits.append(bit)
@@ -1332,12 +1439,16 @@ class StaffLayout:
         tact.current_bit = 0
         tact.update_beams()
         self.scene.update()
-                        
-
-
 
     def init_staff(self, scene):
-        self.current_tact = Tact(self.y_bottom, scene, len(self.tacts), duration=self.current_duration, numerator=self.beats_per_measure, hand=self.hand)
+        self.current_tact = Tact(
+            self.y_bottom,
+            scene,
+            len(self.tacts),
+            duration=self.current_duration,
+            numerator=self.beats_per_measure,
+            hand=self.hand,
+        )
         self._apply_read_only_to_tact(self.current_tact)
         self.tacts.append(self.current_tact)
         self.tacts_per_rows = 1
@@ -1345,10 +1456,11 @@ class StaffLayout:
         self.add_treble_clef(scene)
         # Добавляем размерность такта (4/4) после скрипичного ключа
         self.time_signature = TimeSignature(
-            scene, 
+            scene,
             X0 + 50,  # Отступ от левого края после скрипичного ключа
-            Y0,   # Немного выше первой линии
-            self.beats_per_measure, 4           # Размерность 4/4
+            Y0,  # Немного выше первой линии
+            self.beats_per_measure,
+            4,  # Размерность 4/4
         )
         print(self.beats_per_measure)
 
@@ -1366,25 +1478,32 @@ class StaffLayout:
         clef_item = QGraphicsSvgItem(clef_file)
         original_rect = clef_item.boundingRect()
         original_height = original_rect.height()
-        
+
         # Вычисляем коэффициент масштабирования
         scale_factor = target_height / original_height
-        
+
         # Применяем масштаб к элементу
         clef_item.setScale(scale_factor)
 
         # Корректируем позицию
         x_pos = X0 + 5
-        
+
         clef_item.setPos(x_pos, y_pos)
-        
+
         # Отключаем интерактивность
         clef_item.setAcceptHoverEvents(False)
-        
+
         # Добавляем на сцену
         scene.addItem(clef_item)
 
-    def save_lesson(self, name: str, description: str, difficult: int, topic_id: int, hand: str = "right"):
+    def save_lesson(
+        self,
+        name: str,
+        description: str,
+        difficult: int,
+        topic_id: int,
+        hand: str = "right",
+    ):
         """Собирает ноты с нотного стана и формирует lesson payload для бэкенда"""
         hand_key = "right_hand" if hand == "right" else "left_hand"
         lesson_notes = {hand_key: []}
@@ -1399,10 +1518,7 @@ class StaffLayout:
                     for note in bit.notes:
                         note_names.append(note.note_name)
 
-                tact_data.append({
-                    "duration": bit.weigth,
-                    "notes": note_names
-                })
+                tact_data.append({"duration": bit.weigth, "notes": note_names})
 
             lesson_notes[hand_key].append(tact_data)
 
@@ -1415,16 +1531,17 @@ class StaffLayout:
             rhythm=rhythm_val,
             notes=lesson_notes,
             topic=topic_id,
-            hand=hand
+            hand=hand,
         )
-
-
-    
 
     def display_lesson(self, lesson: LessonResponse):
         """Отрисовывает урок на нотном стане, полученный с сервера"""
         # Получаем ноты в зависимости от руки
-        hand_key = "left_hand" if hasattr(lesson, 'hand') and lesson.hand == "left" else "right_hand"
+        hand_key = (
+            "left_hand"
+            if hasattr(lesson, "hand") and lesson.hand == "left"
+            else "right_hand"
+        )
         saved_tacts = lesson.notes.get(hand_key, lesson.notes.get("right_hand", []))
 
         while len(self.tacts) < len(saved_tacts):
@@ -1432,7 +1549,10 @@ class StaffLayout:
 
         for tact_idx, saved_tact in enumerate(saved_tacts):
             tact = self.tacts[tact_idx]
-            bit_weights = [float(saved_bit.get("duration", tact.duration)) for saved_bit in saved_tact]
+            bit_weights = [
+                float(saved_bit.get("duration", tact.duration))
+                for saved_bit in saved_tact
+            ]
             if bit_weights:
                 tact.set_bit_weights(bit_weights)
             lines_and_spaces = tact.lines + tact.spaces
@@ -1461,7 +1581,6 @@ class StaffLayout:
                             bit.add_note(bit.weigth, item, self.scene)
                             break
 
-
     def touch_thread(self):
         for tact in self.tacts:
             for bit in tact.bits:
@@ -1472,14 +1591,14 @@ class StaffLayout:
                 time.sleep(duration)
 
     def sound_thread(self):
-            time.sleep(0.05)
-            for tact in self.tacts:
-                for bit in tact.bits:
-                    duration = 60 / self.bpm * bit.weigth * 4
-                    if bit.notes:
-                        chord_notes = [note.note_name for note in bit.notes]
-                        player.play_chord(chord_notes, duration)
-                    time.sleep(duration)
+        time.sleep(0.05)
+        for tact in self.tacts:
+            for bit in tact.bits:
+                duration = 60 / self.bpm * bit.weigth * 4
+                if bit.notes:
+                    chord_notes = [note.note_name for note in bit.notes]
+                    player.play_chord(chord_notes, duration)
+                time.sleep(duration)
 
     def start_lesson(self, wait_for_input: bool = True, play_sound: bool = True):
         if wait_for_input:
@@ -1487,10 +1606,8 @@ class StaffLayout:
         if play_sound:
             threading.Thread(target=self.sound_thread, daemon=True).start()
 
-
     def change_accidental(self, data):
         self.accidental = data
-
 
     def _apply_read_only_to_tact(self, tact):
         try:
@@ -1512,14 +1629,32 @@ class StaffLayout:
 
     def add_tact(self):
         pred_tact = self.tacts[-1]
-        new_x0 = pred_tact.x0+pred_tact.width
+        new_x0 = pred_tact.x0 + pred_tact.width
         if new_x0 + WIDTH > SCENE_WIDTH:
             self.x = X0
-            self.y += (self.staff_height + 100)
-            self.current_tact = Tact(self.y_bottom, self.scene, len(self.tacts), X0, self.y, self.current_duration, self.beats_per_measure, hand=self.hand)
+            self.y += self.staff_height + 100
+            self.current_tact = Tact(
+                self.y_bottom,
+                self.scene,
+                len(self.tacts),
+                X0,
+                self.y,
+                self.current_duration,
+                self.beats_per_measure,
+                hand=self.hand,
+            )
         else:
             self.x = new_x0
-            self.current_tact = Tact(self.y_bottom, self.scene, len(self.tacts), new_x0, self.y, self.current_duration, self.beats_per_measure, hand=self.hand)
+            self.current_tact = Tact(
+                self.y_bottom,
+                self.scene,
+                len(self.tacts),
+                new_x0,
+                self.y,
+                self.current_duration,
+                self.beats_per_measure,
+                hand=self.hand,
+            )
 
         self._apply_read_only_to_tact(self.current_tact)
         self.tacts.append(self.current_tact)
@@ -1529,7 +1664,6 @@ class StaffLayout:
         needed_height = bounding.bottom() + 100
         if needed_height > current_rect.bottom():
             self.scene.setSceneRect(0, 0, current_rect.width(), needed_height)
-
 
     def delete_tact(self):
         if len(self.tacts) == 1:
@@ -1544,8 +1678,6 @@ class StaffLayout:
         needed_height = bounding.bottom() - 100
         if needed_height < current_rect.bottom():
             self.scene.setSceneRect(0, 0, current_rect.width(), needed_height)
-
-
 
     # staff.py (внутри StaffLayout)
     def get_playhead_path(self):

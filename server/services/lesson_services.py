@@ -1,9 +1,10 @@
 from typing import Optional
 
 from fastapi import HTTPException
+from models import Lesson, LessonProgress
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from models import Lesson, LessonProgress
+
 from schemas.lesson import LessonCreate, LessonUpdate
 
 
@@ -18,15 +19,15 @@ class LessonService:
         max_order = result.scalar_one_or_none()
         return (max_order or 0) + 1
 
-    async def _maybe_assign_order_for_new_topic(self, lesson: Lesson, *, new_topic_id: int, topic_changed: bool):
+    async def _maybe_assign_order_for_new_topic(
+        self, lesson: Lesson, *, new_topic_id: int, topic_changed: bool
+    ):
         if topic_changed:
             lesson.order_in_topic = await self._get_next_order_in_topic(new_topic_id)
             return
 
         if getattr(lesson, "order_in_topic", None) is None:
             lesson.order_in_topic = await self._get_next_order_in_topic(new_topic_id)
-
-
 
     async def get_lesson_by_id(self, lesson_id: int):
         return await self.db.get(Lesson, lesson_id)
@@ -49,7 +50,8 @@ class LessonService:
             notes=lesson_data.notes,
             topic=topic_id,
             topic_id=topic_id,
-            order_in_topic=lesson_data.order_in_topic or await self._get_next_order_in_topic(topic_id),
+            order_in_topic=lesson_data.order_in_topic
+            or await self._get_next_order_in_topic(topic_id),
         )
         self.db.add(db_lesson)
         await self.db.commit()
@@ -64,11 +66,16 @@ class LessonService:
         if lesson.name != lesson_data.name:
             existing_lesson = await self.get_lesson_by_name(lesson_data.name)
             if existing_lesson and existing_lesson.id != lesson_id:
-                raise HTTPException(status_code=400, detail="Упражнение с таким названием уже существует")
+                raise HTTPException(
+                    status_code=400,
+                    detail="Упражнение с таким названием уже существует",
+                )
 
         existing_notes_lesson = await self.get_lesson_by_notes(lesson_data.notes)
         if existing_notes_lesson and existing_notes_lesson.id != lesson_id:
-            raise HTTPException(status_code=400, detail="упражнение с такими нотами уже существует")
+            raise HTTPException(
+                status_code=400, detail="упражнение с такими нотами уже существует"
+            )
 
         old_topic_id = lesson.topic_id
         new_topic_id = lesson_data.topic
@@ -109,7 +116,6 @@ class LessonService:
             .order_by(Lesson.order_in_topic.asc())
         )
         return result.scalars().all()
-    
 
     async def get_lessons_with_status_by_topic(self, topic_id: int, user_id: int):
         # 1. Получаем все уроки темы, отсортированные по порядку

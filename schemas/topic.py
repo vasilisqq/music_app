@@ -1,10 +1,13 @@
 # schemas/topic.py
-from pydantic import BaseModel, ConfigDict
 from typing import Optional
+
+from pydantic import BaseModel, ConfigDict
+
 
 class TopicCreate(BaseModel):
     name: str
     description: Optional[str] = None
+
 
 class TopicResponse(TopicCreate):
     id: int

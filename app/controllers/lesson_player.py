@@ -2,8 +2,11 @@ from __future__ import annotations
 
 import time
 
+import mido
+from GUI.creator import Ui_MainWindow
+from loader import settings
 from PyQt6.QtCore import Qt, QTimer, pyqtSignal
-from PyQt6.QtGui import QColor, QBrush, QPen
+from PyQt6.QtGui import QBrush, QColor, QPen
 from PyQt6.QtWidgets import (
     QComboBox,
     QGraphicsEllipseItem,
@@ -18,14 +21,11 @@ from PyQt6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
-import mido
-from loader import settings
-
-from GUI.creator import Ui_MainWindow
-from schemas.lesson import LessonResponse
 from staff import LINE_SPACING, StaffLayout
 from test import normalize_note_name, player
 from workers.progress_worker import ProgressWorker
+
+from schemas.lesson import LessonResponse
 
 
 class LessonPlayerController(QWidget):
@@ -89,20 +89,30 @@ class LessonPlayerController(QWidget):
             elif item.spacerItem() is not None:
                 self.page_layout.addItem(item.spacerItem())
 
-        self.page_widget.setSizePolicy(QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred))
+        self.page_widget.setSizePolicy(
+            QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+        )
 
         self.scroll_area = QScrollArea(self)
         self.scroll_area.setWidgetResizable(True)
-        self.scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        self.scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
-        self.scroll_area.setStyleSheet("QScrollArea { background: transparent; border: none; }")
+        self.scroll_area.setHorizontalScrollBarPolicy(
+            Qt.ScrollBarPolicy.ScrollBarAlwaysOff
+        )
+        self.scroll_area.setVerticalScrollBarPolicy(
+            Qt.ScrollBarPolicy.ScrollBarAsNeeded
+        )
+        self.scroll_area.setStyleSheet(
+            "QScrollArea { background: transparent; border: none; }"
+        )
         self.scroll_area.setWidget(self.page_widget)
         root_layout.addWidget(self.scroll_area)
 
         self.ui.verticalLayout = self.page_layout
 
     def _apply_equal_button_style(self, button: QPushButton):
-        button.setSizePolicy(QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed))
+        button.setSizePolicy(
+            QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        )
         button.setMinimumHeight(45)
         button.setMaximumWidth(16777215)
         button.setCursor(Qt.CursorShape.PointingHandCursor)
@@ -125,7 +135,11 @@ class LessonPlayerController(QWidget):
 
         description = (self.lesson.description or "").strip()
         if description:
-            preview = description if len(description) <= 80 else description[:79].rstrip() + "…"
+            preview = (
+                description
+                if len(description) <= 80
+                else description[:79].rstrip() + "…"
+            )
 
             preview_row = QHBoxLayout()
             preview_row.setContentsMargins(0, 0, 0, 0)
@@ -133,12 +147,18 @@ class LessonPlayerController(QWidget):
 
             self.description_preview_label = QLabel(preview)
             self.description_preview_label.setWordWrap(False)
-            self.description_preview_label.setStyleSheet("font-size: 12px; color: rgba(26, 26, 26, 0.7);")
-            self.description_preview_label.setSizePolicy(QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred))
+            self.description_preview_label.setStyleSheet(
+                "font-size: 12px; color: rgba(26, 26, 26, 0.7);"
+            )
+            self.description_preview_label.setSizePolicy(
+                QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+            )
 
             self.description_toggle = QPushButton("▼")
             self.description_toggle.setCheckable(True)
-            self.description_toggle.setSizePolicy(QSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed))
+            self.description_toggle.setSizePolicy(
+                QSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+            )
             self.description_toggle.setFixedSize(20, 20)
             self.description_toggle.setCursor(Qt.CursorShape.PointingHandCursor)
             self.description_toggle.setStyleSheet(
@@ -150,7 +170,9 @@ class LessonPlayerController(QWidget):
             self.description_label = QLabel(description)
             self.description_label.setWordWrap(True)
             self.description_label.setVisible(False)
-            self.description_label.setStyleSheet("font-size: 12px; color: rgba(26, 26, 26, 0.7); padding-left: 0px; margin-top: 2px;")
+            self.description_label.setStyleSheet(
+                "font-size: 12px; color: rgba(26, 26, 26, 0.7); padding-left: 0px; margin-top: 2px;"
+            )
 
             self.description_toggle.toggled.connect(self._toggle_description)
             preview_row.addWidget(self.description_preview_label, 1)
@@ -212,11 +234,17 @@ class LessonPlayerController(QWidget):
         self.ui.start_button.clicked.connect(self._listen)
         self.repeat_button.clicked.connect(self._repeat)
 
-        self.ui.graphicsView.setSizePolicy(QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred))
+        self.ui.graphicsView.setSizePolicy(
+            QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+        )
         self.ui.graphicsView.setMinimumHeight(400)
         self.ui.graphicsView.setMaximumHeight(560)
-        self.ui.graphicsView.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        self.ui.graphicsView.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.ui.graphicsView.setVerticalScrollBarPolicy(
+            Qt.ScrollBarPolicy.ScrollBarAlwaysOff
+        )
+        self.ui.graphicsView.setHorizontalScrollBarPolicy(
+            Qt.ScrollBarPolicy.ScrollBarAlwaysOff
+        )
 
     def _on_bpm_changed(self, _index: int):
         bpm = self.bpm_combo.currentData()
@@ -230,7 +258,9 @@ class LessonPlayerController(QWidget):
         if self.scene is None:
             self.scene = QGraphicsScene(0, 0, 1000, 1000)
             self.ui.graphicsView.setScene(self.scene)
-            self.ui.graphicsView.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop)
+            self.ui.graphicsView.setAlignment(
+                Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop
+            )
 
         time_signature = "4/4"
         try:
@@ -252,7 +282,11 @@ class LessonPlayerController(QWidget):
     def _estimate_duration_ms(self) -> int:
         bpm = float(getattr(self.staff_layout, "bpm", 60))
         beats_per_measure = int(getattr(self.staff_layout, "beats_per_measure", 4))
-        total_duration_sec = (60.0 / bpm) * beats_per_measure * len(getattr(self.staff_layout, "tacts", []))
+        total_duration_sec = (
+            (60.0 / bpm)
+            * beats_per_measure
+            * len(getattr(self.staff_layout, "tacts", []))
+        )
         return max(1000, int(total_duration_sec * 1000))
 
     def _listen(self):
@@ -264,12 +298,18 @@ class LessonPlayerController(QWidget):
     def _open_selected_midi_input(self) -> bool:
         device_name = settings.value("midi/input_device_name", None)
         if not device_name:
-            QMessageBox.information(self, "Тренировка", "Сначала выбери MIDI-устройство в настройках.")
+            QMessageBox.information(
+                self, "Тренировка", "Сначала выбери MIDI-устройство в настройках."
+            )
             return False
         try:
             self._midi_input_port = mido.open_input(device_name)
         except Exception as exc:
-            QMessageBox.warning(self, "Тренировка", f"Не удалось открыть MIDI-устройство:\n{device_name}\n\n{exc}")
+            QMessageBox.warning(
+                self,
+                "Тренировка",
+                f"Не удалось открыть MIDI-устройство:\n{device_name}\n\n{exc}",
+            )
             self._midi_input_port = None
             return False
 
@@ -297,7 +337,10 @@ class LessonPlayerController(QWidget):
             self._close_midi_input()
             return
         for message in messages:
-            if getattr(message, "type", None) != "note_on" or getattr(message, "velocity", 0) <= 0:
+            if (
+                getattr(message, "type", None) != "note_on"
+                or getattr(message, "velocity", 0) <= 0
+            ):
                 continue
             player.check_midi_note_number(int(message.note))
 
@@ -361,7 +404,7 @@ class LessonPlayerController(QWidget):
         progress = elapsed / self._playhead_total_sec
         target_dist = progress * self.total_path_length
 
-        for (x_start, y, x_end, _y_end, length, cum_start) in self.playhead_segments:
+        for x_start, y, x_end, _y_end, length, cum_start in self.playhead_segments:
             cum_end = cum_start + length
             if cum_start <= target_dist <= cum_end:
                 local_dist = target_dist - cum_start
@@ -370,18 +413,27 @@ class LessonPlayerController(QWidget):
                 self.playhead_line.setLine(current_x, y, current_x, y + 200)
                 break
 
-    def _count_in(self, remaining_beats: int, interval_ms: int, token: int, practice_mode: bool):
+    def _count_in(
+        self, remaining_beats: int, interval_ms: int, token: int, practice_mode: bool
+    ):
         if token != self._playback_token:
             return
 
         if remaining_beats > 1:
             player.play_click()
-            QTimer.singleShot(interval_ms, lambda: self._count_in(remaining_beats - 1, interval_ms, token, practice_mode))
+            QTimer.singleShot(
+                interval_ms,
+                lambda: self._count_in(
+                    remaining_beats - 1, interval_ms, token, practice_mode
+                ),
+            )
             return
 
         if remaining_beats == 1:
             player.play_click()
-            QTimer.singleShot(interval_ms, lambda: self._start_synced_playback(token, practice_mode))
+            QTimer.singleShot(
+                interval_ms, lambda: self._start_synced_playback(token, practice_mode)
+            )
 
     def _start_synced_playback(self, token: int, practice_mode: bool):
         if token != self._playback_token:
@@ -396,7 +448,9 @@ class LessonPlayerController(QWidget):
         self._metronome_active = True
         self._play_metronome_beat(token)
 
-        self.playhead_segments, self.total_path_length = self.staff_layout.get_playhead_path()
+        self.playhead_segments, self.total_path_length = (
+            self.staff_layout.get_playhead_path()
+        )
         if self.playhead_segments:
             first_seg = self.playhead_segments[0]
             start_x, start_y = first_seg[0], first_seg[1]
@@ -466,7 +520,11 @@ class LessonPlayerController(QWidget):
             return None
 
         letter = normalized_note[0]
-        octave_text = normalized_note[2:] if len(normalized_note) > 2 and normalized_note[1] in {"#", "b"} else normalized_note[1:]
+        octave_text = (
+            normalized_note[2:]
+            if len(normalized_note) > 2 and normalized_note[1] in {"#", "b"}
+            else normalized_note[1:]
+        )
         try:
             octave = int(octave_text)
         except ValueError:
@@ -497,7 +555,9 @@ class LessonPlayerController(QWidget):
         self._correct += 1
         self._create_feedback_markers(note_item, is_correct=True)
 
-    def _on_note_wrong(self, note_item, _expected_note_name, played_note_name, is_timeout):
+    def _on_note_wrong(
+        self, note_item, _expected_note_name, played_note_name, is_timeout
+    ):
         if not self._practice_mode:
             return
         self._wrong += 1
@@ -531,7 +591,9 @@ class LessonPlayerController(QWidget):
             return
 
         total_attempts = self._correct + self._wrong + self._idle_presses
-        accuracy = 0.0 if total_attempts == 0 else (self._correct / total_attempts) * 100.0
+        accuracy = (
+            0.0 if total_attempts == 0 else (self._correct / total_attempts) * 100.0
+        )
         QMessageBox.information(
             self,
             "Результат повтора",

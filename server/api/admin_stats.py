@@ -1,16 +1,17 @@
-from fastapi import APIRouter, Depends
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from core.dependencies import is_admin
 from db import get_db
-from schemas.admin_stats import AdminStatsResponse
+from fastapi import APIRouter, Depends
 from services.admin_stats_service import AdminStatsService
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from schemas.admin_stats import AdminStatsResponse
 
 router = APIRouter(prefix="/admin/stats", tags=["admin-stats"])
 
 
-async def get_admin_stats_service(db: AsyncSession = Depends(get_db)) -> AdminStatsService:
+async def get_admin_stats_service(
+    db: AsyncSession = Depends(get_db),
+) -> AdminStatsService:
     return AdminStatsService(db)
 
 

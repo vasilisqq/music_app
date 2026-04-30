@@ -1,29 +1,49 @@
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
+"""
+Database Configuration Module
+
+Конфигурирует асинхронное подключение к PostgreSQL и создание сессий.
+"""
+
+import logging
+from typing import AsyncGenerator
+
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase
+
 from server.core.config import settings
 
-# Создание асинхронного движка
-engine = create_async_engine(
-    settings.DATABASE_URL,
-    echo=settings.DEBUG,
-    future=True
-)
+logger = logging.getLogger(__name__)
+
+
+class Base(DeclarativeBase):
+    """Базовый класс для всех ORM моделей"""
+
+    pass
+
+
+# Создание асинхронного движка для работы с БД
+engine = create_async_engine(settings.DATABASE_URL, echo=settings.DEBUG, future=True)
 
 # Создание фабрики сессий
 AsyncSessionLocal = async_sessionmaker(
-    engine,
-    class_=AsyncSession,
-    expire_on_commit=False
+    engine, class_=AsyncSession, expire_on_commit=False
 )
 
-# Базовый класс для моделей
-class Base(DeclarativeBase):
-    pass
 
-# Dependency для получения сессии базы данных
-async def get_db():
+async def get_db() -> AsyncGenerator[AsyncSession, None]:
+    """
+    Dependency для получения сессии базы данных.
+
+    Использование:
+        async def my_route(db: AsyncSession = Depends(get_db)):
+            # Работаем с базой
+
+    Yields:
+        AsyncSession: Асинхронная сессия для работы с БД
+    """
     async with AsyncSessionLocal() as session:
         try:
             yield session
         finally:
             await session.close()
+            logger.debug("Сессия БД закрыта")

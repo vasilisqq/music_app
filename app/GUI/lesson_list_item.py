@@ -1,17 +1,27 @@
 from __future__ import annotations
 
-from PyQt6.QtWidgets import QWidget, QLabel, QHBoxLayout, QVBoxLayout, QSizePolicy
 from PyQt6.QtCore import Qt
+from PyQt6.QtWidgets import QHBoxLayout, QLabel, QSizePolicy, QVBoxLayout, QWidget
 
 
 class LessonListItemWidget(QWidget):
-    def __init__(self, *, title: str, difficulty: int, icon: str, locked: bool, parent: QWidget | None = None):
+    def __init__(
+        self,
+        *,
+        title: str,
+        difficulty: int,
+        icon: str,
+        locked: bool,
+        parent: QWidget | None = None,
+    ):
         super().__init__(parent)
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
 
         title_color = "rgba(26, 26, 26, 0.45)" if locked else "#1a1a1a"
         filled_star_color = "rgba(245, 179, 1, 0.45)" if locked else "#f5b301"
-        empty_star_color = "rgba(26, 26, 26, 0.18)" if locked else "rgba(26, 26, 26, 0.22)"
+        empty_star_color = (
+            "rgba(26, 26, 26, 0.18)" if locked else "rgba(26, 26, 26, 0.22)"
+        )
         card_background = "rgba(243, 243, 243, 0.96)" if locked else "#f3f8ff"
         card_border = "rgba(0, 0, 0, 0.10)" if locked else "rgba(63, 139, 222, 0.35)"
 
@@ -32,19 +42,33 @@ class LessonListItemWidget(QWidget):
         self._icon_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         self._title_label = QLabel(title)
-        self._title_label.setTextInteractionFlags(Qt.TextInteractionFlag.NoTextInteraction)
-        self._title_label.setAlignment(Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft)
-        self._title_label.setStyleSheet(f"font-size: 16px; font-weight: 700; color: {title_color}; background: transparent;")
-        self._title_label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+        self._title_label.setTextInteractionFlags(
+            Qt.TextInteractionFlag.NoTextInteraction
+        )
+        self._title_label.setAlignment(
+            Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft
+        )
+        self._title_label.setStyleSheet(
+            f"font-size: 16px; font-weight: 700; color: {title_color}; background: transparent;"
+        )
+        self._title_label.setSizePolicy(
+            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred
+        )
 
         stars = max(0, min(int(difficulty or 0), 5))
         self._difficulty_label = QLabel(
             f'<span style="color: {filled_star_color};">{"★" * stars}</span>'
             f'<span style="color: {empty_star_color};">{"★" * (5 - stars)}</span>'
         )
-        self._difficulty_label.setTextInteractionFlags(Qt.TextInteractionFlag.NoTextInteraction)
-        self._difficulty_label.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
-        self._difficulty_label.setStyleSheet("font-size: 18px; font-weight: 700; background: transparent;")
+        self._difficulty_label.setTextInteractionFlags(
+            Qt.TextInteractionFlag.NoTextInteraction
+        )
+        self._difficulty_label.setAlignment(
+            Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter
+        )
+        self._difficulty_label.setStyleSheet(
+            "font-size: 18px; font-weight: 700; background: transparent;"
+        )
         self._difficulty_label.setMinimumWidth(104)
 
         layout = QHBoxLayout(self.card)
@@ -52,7 +76,11 @@ class LessonListItemWidget(QWidget):
         layout.setSpacing(12)
         layout.addWidget(self._icon_label, 0, Qt.AlignmentFlag.AlignVCenter)
         layout.addWidget(self._title_label, 1, Qt.AlignmentFlag.AlignVCenter)
-        layout.addWidget(self._difficulty_label, 0, Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignRight)
+        layout.addWidget(
+            self._difficulty_label,
+            0,
+            Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignRight,
+        )
 
         self.setMinimumHeight(72)
 

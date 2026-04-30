@@ -2,11 +2,10 @@ from __future__ import annotations
 
 import re
 
-from PyQt6.QtCore import QObject
-from PyQt6.QtWidgets import QMessageBox
 import mido
 from loader import settings
-
+from PyQt6.QtCore import QObject
+from PyQt6.QtWidgets import QMessageBox
 
 _DEVICE_ID_SUFFIX = re.compile(r"\s+\d+:\d+$")
 _DEVICE_PORT_SUFFIX = re.compile(r"\s+port\s+\d+$", re.IGNORECASE)
@@ -92,7 +91,11 @@ class SettingsController(QObject):
         self.ui.midiSettingsHint.setText(
             "Используется один общий список подключённых MIDI-входов. "
             "Если устройство подключено позже, обнови список."
-            + (f" Скрыто дополнительных портов: {hidden_duplicates}." if hidden_duplicates else "")
+            + (
+                f" Скрыто дополнительных портов: {hidden_duplicates}."
+                if hidden_duplicates
+                else ""
+            )
         )
 
         selected_name = current_name or saved_name
@@ -124,7 +127,11 @@ class SettingsController(QObject):
     def verify_selected_midi_input(self):
         device_name = self.get_selected_midi_input_name()
         if not device_name:
-            QMessageBox.information(self.ui.centralwidget, "Проверка MIDI", "Сначала выбери подключённое MIDI-устройство.")
+            QMessageBox.information(
+                self.ui.centralwidget,
+                "Проверка MIDI",
+                "Сначала выбери подключённое MIDI-устройство.",
+            )
             return
         try:
             with mido.open_input(device_name):
@@ -133,16 +140,15 @@ class SettingsController(QObject):
             QMessageBox.warning(
                 self.ui.centralwidget,
                 "Проверка MIDI",
-                f"Не удалось открыть устройство:\n{device_name}\n\n{exc}"
+                f"Не удалось открыть устройство:\n{device_name}\n\n{exc}",
             )
             return
         except Exception as exc:
             import logging
+
             logging.error(f"Неожиданная ошибка при проверке MIDI: {exc}")
             QMessageBox.warning(
-                self.ui.centralwidget,
-                "Ошибка",
-                f"Неожиданная ошибка: {exc}"
+                self.ui.centralwidget, "Ошибка", f"Неожиданная ошибка: {exc}"
             )
             return
 
@@ -155,9 +161,13 @@ class SettingsController(QObject):
     def _update_status_label(self):
         device_name = self.get_selected_midi_input_name()
         if device_name:
-            self.ui.midiSettingsStatusLabel.setText(f"Выбрано подключённое устройство: {device_name}")
+            self.ui.midiSettingsStatusLabel.setText(
+                f"Выбрано подключённое устройство: {device_name}"
+            )
         else:
-            self.ui.midiSettingsStatusLabel.setText("Подключённое MIDI-устройство не выбрано")
+            self.ui.midiSettingsStatusLabel.setText(
+                "Подключённое MIDI-устройство не выбрано"
+            )
 
     def _is_bluetooth_device(self, name: str) -> bool:
         return bool(self._BT_PATTERN.search(name or ""))

@@ -1,11 +1,10 @@
-from fastapi import APIRouter, Depends, status
-
 from core.dependencies import get_current_active_user
-from services.progress_service import ProgressService
 from db import get_db
+from fastapi import APIRouter, Depends, status
+from services.progress_service import ProgressService
 from sqlalchemy.ext.asyncio import AsyncSession
-from schemas.profile_stats import ProfileStatsResponse
 
+from schemas.profile_stats import ProfileStatsResponse
 
 router = APIRouter(tags=["progress"], prefix="/progress")
 
@@ -31,7 +30,9 @@ async def complete_lesson(
     progress_service: ProgressService = Depends(get_progress_service),
     current_user=Depends(get_current_active_user),
 ):
-    await progress_service.mark_lesson_completed(user_id=current_user.id, lesson_id=lesson_id)
+    await progress_service.mark_lesson_completed(
+        user_id=current_user.id, lesson_id=lesson_id
+    )
     return None
 
 
