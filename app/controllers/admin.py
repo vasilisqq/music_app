@@ -18,6 +18,7 @@ from PyQt6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
+from widgets.draggable_table import DraggableTableWidget
 from workers.admin_stats_worker import AdminStatsWorker
 from workers.auth_worker import AuthWorker
 from workers.lesson_worker import LessonWorker
@@ -429,6 +430,7 @@ class AdminController:
         self.lesson_worker.lesson_deleted_signal.connect(self.on_lesson_deleted)
         self.lesson_worker.lesson_updated_signal.connect(self.on_lesson_topic_changed)
         self.lesson_worker.lesson_error_sygnal.connect(self.show_error)
+        self.lesson_worker.lessons_reordered_signal.connect(self.on_lessons_reordered)
         self.stats_worker.stats_loaded_signal.connect(self.on_stats_loaded)
         self.stats_worker.error_signal.connect(self.show_error)
         self.ui.statsRefreshBtn.clicked.connect(self.refresh_stats)
@@ -445,6 +447,13 @@ class AdminController:
         self.auth_worker.get_all_users()
         self.refresh_stats("month")
         
+
+
+    def on_lessons_reordered(self):
+        """Обновление таблицы уроков после изменения порядка"""
+        if self.selected_topic_id is not None:
+            self.refresh_lessons(self.selected_topic_id)
+
     def _toggle_lesson_btn(self):
         # Активируем кнопку "Добавить урок", если в таблице тем что-то выбрано
         has_selection = len(self.ui.table_topics.selectedItems()) > 0
@@ -487,6 +496,7 @@ class AdminController:
         self.creator_page.ui.exit_button.clicked.connect(self.close_creator)
 
     def refresh_lessons(self, topic_id: int):
+        print(f"[DEBUG] refresh_lessons called with topic_id={topic_id}")
         self.ui.table_lessons.setRowCount(0)
         self.lesson_worker.get_lessons_by_topic(topic_id)
 
@@ -617,25 +627,70 @@ class AdminController:
         self.creator_page = None
 
     def setup_admin_panel(self):
-        table_style = self.ui.table_topics.styleSheet()
-        self.ui.table_lessons.setStyleSheet(table_style)
+        # Заменяем обычную таблицу на DraggableTableWidget для поддержки drag-and-drop
+        if not isinstance(self.ui.table_lessons, DraggableTableWidget):
+            # Сохраняем конфигурацию старой таблицы
+            old_table = self.ui.table_lessons
 
-        l_header = self.ui.table_lessons.horizontalHeader()
-        l_header.setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)
-        l_header.setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
-        self.ui.table_lessons.verticalHeader().setVisible(False)
-        self.ui.table_lessons.setSelectionBehavior(
-            QAbstractItemView.SelectionBehavior.SelectRows
-        )
-        self.ui.table_lessons.setContextMenuPolicy(
-            Qt.ContextMenuPolicy.CustomContextMenu
-        )
-        self.ui.table_lessons.customContextMenuRequested.connect(
-            self.show_lesson_context_menu
-        )
-        self.ui.table_lessons.setEditTriggers(
-            QAbstractItemView.EditTrigger.NoEditTriggers
-        )
+            # Создаем новую таблицу с поддержкой drag-and-drop
+            new_table = DraggableTableWidget()
+            new_table.setObjectName("table_lessons")
+
+            # Копируем столбцы
+            for col in range(old_table.columnCount()):
+                header_item = old_table.horizontalHeaderItem(col)
+                if header_item:
+                    new_table.setHorizontalHeaderItem(col, QTableWidgetItem(header_item.text()))
+
+            # Копируем стиль
+            new_table.setStyleSheet(old_table.styleSheet())
+
+            # Настраиваем заголовки
+            l_header = new_table.horizontalHeader()
+            l_header.setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)
+            l_header.setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
+            new_table.verticalHeader().setVisible(False)
+            new_table.setSelectionBehavior(
+                QAbstractItemView.SelectionBehavior.SelectRows
+            )
+            new_table.setContextMenuPolicy(
+                Qt.ContextMenuPolicy.CustomContextMenu
+            )
+            new_table.customContextMenuRequested.connect(
+                self.show_lesson_context_menu
+            )
+            new_table.setEditTriggers(
+                QAbstractItemView.EditTrigger.NoEditTriggers
+            )
+
+            # Заменяем таблицу в layout
+            parent_layout = old_table.parent().layout()
+            if parent_layout:
+                index = parent_layout.indexOf(old_table)
+                parent_layout.removeWidget(old_table)
+                old_table.hide()
+                old_table.deleteLater()
+                parent_layout.insertWidget(index, new_table)
+
+            self.ui.table_lessons = new_table
+        else:
+            # Если таблица уже DraggableTableWidget, просто настраиваем её
+            l_header = self.ui.table_lessons.horizontalHeader()
+            l_header.setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)
+            l_header.setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
+            self.ui.table_lessons.verticalHeader().setVisible(False)
+            self.ui.table_lessons.setSelectionBehavior(
+                QAbstractItemView.SelectionBehavior.SelectRows
+            )
+            self.ui.table_lessons.setContextMenuPolicy(
+                Qt.ContextMenuPolicy.CustomContextMenu
+            )
+            self.ui.table_lessons.customContextMenuRequested.connect(
+                self.show_lesson_context_menu
+            )
+            self.ui.table_lessons.setEditTriggers(
+                QAbstractItemView.EditTrigger.NoEditTriggers
+            )
 
         header = self.ui.table_topics.horizontalHeader()
         header.setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
@@ -829,26 +884,18 @@ class AdminController:
     def on_topic_selected(self, row, column):
         """Обработка клика по теме: загрузка уроков"""
         topic_id = int(self.ui.table_topics.item(row, 0).text())
+        print(f"[DEBUG] on_topic_selected: topic_id={topic_id}, row={row}, column={column}")
         self.selected_topic_id = topic_id
         self.ui.btn_add_lesson.setEnabled(True)
         self.refresh_lessons(topic_id)
 
-    def on_lesson_created(self, topic_id: int):
-        self.selected_topic_id = topic_id
-        self.close_creator()
-        self.refresh_lessons(topic_id)
-        self.fetch_topics()
-
-    def on_lesson_updated(self, topic_id: int):
-        self.selected_topic_id = topic_id
-        self.close_creator()
-        self.refresh_lessons(topic_id)
-        self.fetch_topics()
 
     def on_lessons_loaded(self, lessons):
         """Отображение полученных уроков в таблице"""
+        print(f"[DEBUG] on_lessons_loaded called with {len(lessons)} lessons")
         self.ui.table_lessons.setRowCount(len(lessons))
         for row, lesson in enumerate(lessons):
+            print(f"[DEBUG] Loading lesson {row}: {lesson.name} (id={lesson.id})")
             self.ui.table_lessons.setItem(row, 0, QTableWidgetItem(str(lesson.id)))
             name_item = QTableWidgetItem(lesson.name)
             name_item.setData(Qt.ItemDataRole.UserRole, lesson.description)
@@ -858,21 +905,37 @@ class AdminController:
             name_item.setData(Qt.ItemDataRole.UserRole + 4, lesson.topic_id)
             self.ui.table_lessons.setItem(row, 1, name_item)
 
+    def on_lessons_reordered(self):
+        """Обновление таблицы уроков после изменения порядка"""
+        if self.selected_topic_id is not None:
+            self.refresh_lessons(self.selected_topic_id)
+
+    def handle_lesson_reorder(self, lesson_ids: list[int]):
+        """Обработчик изменения порядка уроков из DraggableTableWidget"""
+        if self.selected_topic_id is None:
+            return
+        self.lesson_worker.reorder_lessons(self.selected_topic_id, lesson_ids)
+
+
     def fetch_topics(self):
         self.ui.table_topics.setRowCount(0)
         self.worker.get_topics()
 
     def on_topics_loaded(self, topics: list[TopicResponse]):  # Type hinting!
+        print(f"[DEBUG] on_topics_loaded called with {len(topics)} topics")
         self.ui.table_topics.setRowCount(len(topics))
         for row_index, topic in enumerate(topics):
+            print(f"[DEBUG] Loading topic {row_index}: {topic.name} (id={topic.id})")
             desc = topic.description if topic.description else ""
             self._insert_topic_row(
                 row_index, topic.id, topic.name, desc, topic.lessons_count
             )
 
         if self.selected_topic_id is None:
+            print("[DEBUG] No selected_topic_id, returning early")
             return
 
+        print(f"[DEBUG] Trying to restore selected_topic_id={self.selected_topic_id}")
         for row in range(self.ui.table_topics.rowCount()):
             id_item = self.ui.table_topics.item(row, 0)
             if (
@@ -880,8 +943,11 @@ class AdminController:
                 and id_item.text().isdigit()
                 and int(id_item.text()) == self.selected_topic_id
             ):
+                print(f"[DEBUG] Found topic at row {row}, selecting and loading lessons")
                 self.ui.table_topics.setCurrentCell(row, 1)
+                self.refresh_lessons(self.selected_topic_id)
                 return
+        print(f"[DEBUG] Topic {self.selected_topic_id} not found in the table")
 
     def show_add_topic_dialog(self):
         dialog = AddTopicDialog(self.ui.centralwidget)
@@ -1157,17 +1223,6 @@ class TimeSignatureDialog(QDialog):
     def get_signature(self) -> str:
         return self.combo.currentText()
 
-    def on_lesson_created(self, topic_id: int):
-        self.selected_topic_id = topic_id
-        self.close_creator()
-        self.refresh_lessons(topic_id)
-        self.fetch_topics()
-
-    def on_lesson_updated(self, topic_id: int):
-        self.selected_topic_id = topic_id
-        self.close_creator()
-        self.refresh_lessons(topic_id)
-        self.fetch_topics()
 
     def on_lessons_loaded(self, lessons):
         """Отображение полученных уроков в таблице"""
@@ -1206,6 +1261,7 @@ class TimeSignatureDialog(QDialog):
                 and int(id_item.text()) == self.selected_topic_id
             ):
                 self.ui.table_topics.setCurrentCell(row, 1)
+                self.refresh_lessons(self.selected_topic_id)
                 return
 
     def show_add_topic_dialog(self):
@@ -1581,6 +1637,7 @@ class TimeSignatureDialog(QDialog):
                 and int(id_item.text()) == self.selected_topic_id
             ):
                 self.ui.table_topics.setCurrentCell(row, 1)
+                self.refresh_lessons(self.selected_topic_id)
                 return
 
     def show_add_topic_dialog(self):

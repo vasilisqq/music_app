@@ -19,6 +19,7 @@ class LessonWorker(BaseAPIWorker):
     )
     lesson_get_signal = pyqtSignal(LessonResponse)
     lessons_by_topic_loaded_signal = pyqtSignal(list)
+    lessons_reordered_signal = pyqtSignal()
 
     def __init__(self):
         super().__init__()  # Инициализирует QNetworkAccessManager из базового класса
