@@ -1,4 +1,4 @@
-from typing import Literal
+from typing import Literal, List
 
 from pydantic import BaseModel, ConfigDict
 
@@ -29,6 +29,9 @@ class LessonResponse(LessonBase):
     model_config = ConfigDict(from_attributes=True)
 
 
-# ДОБАВИТЬ ЭТОТ КЛАСС:
 class LessonWithStatusResponse(LessonResponse):
     status: Literal["completed", "available", "locked"]
+
+
+class LessonReorderRequest(BaseModel):
+    lesson_ids: List[int]

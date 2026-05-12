@@ -16,7 +16,7 @@ class LessonWorker(BaseAPIWorker):
     lesson_deleted_signal = pyqtSignal(int)
     lesson_error_sygnal = pyqtSignal(
         str
-    )  # Оставил с опечаткой как у тебя, чтобы не сломать UI
+    )
     lesson_get_signal = pyqtSignal(LessonResponse)
     lessons_by_topic_loaded_signal = pyqtSignal(list)
 
@@ -70,5 +70,15 @@ class LessonWorker(BaseAPIWorker):
             success_callback=lambda d: self.lessons_by_topic_loaded_signal.emit(
                 [LessonResponse.model_validate(item) for item in d]
             ),
+            error_callback=self.lesson_error_sygnal.emit,
+        )
+
+    def reorder_lessons(self, topic_id: int, lesson_ids: list[int]) -> None:
+        """Отправляет запрос на изменение порядка уроков в теме"""
+        self._make_request(
+            method="POST",
+            endpoint=f"/lesson/topic/{topic_id}/reorder",
+            data={"lesson_ids": lesson_ids},
+            success_callback=lambda _: self.lessons_reordered_signal.emit(),
             error_callback=self.lesson_error_sygnal.emit,
         )

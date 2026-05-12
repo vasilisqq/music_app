@@ -5,7 +5,7 @@ from models import Lesson, LessonProgress
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from schemas.lesson import LessonCreate, LessonUpdate
+from schemas.lesson import LessonCreate, LessonUpdate, LessonReorderRequest
 
 
 class LessonService:
@@ -154,3 +154,35 @@ class LessonService:
                 lesson.status = "locked"
 
         return lessons
+    
+
+    async def reorder_lessons(self, topic_id: int, request: LessonReorderRequest) -> bool:
+        """
+        Обновляет порядок уроков в теме на основе переданного списка ID.
+        Список lesson_ids должен содержать ВСЕ уроки темы в новом порядке.
+        """
+        # 1. Получаем текущие уроки темы для проверки
+        result = await self.db.execute(
+            select(Lesson).where(Lesson.topic_id == topic_id)
+        )
+        current_lessons = result.scalars().all()
+        
+        current_ids = {l.id for l in current_lessons}
+        request_ids = set(request.lesson_ids)
+
+        # Проверка: список ID должен совпадать с набором уроков в теме
+        if current_ids != request_ids:
+            raise HTTPException(
+                status_code=400, 
+                detail="Список ID уроков не соответствует составу темы. Возможно, урок был удален или добавлен."
+            )
+
+        # 2. Обновляем order_in_topic
+        # Создаем маппинг id -> новый индекс
+        new_order_map = {lid: idx for idx, lid in enumerate(request.lesson_ids)}
+
+        for lesson in current_lessons:
+            lesson.order_in_topic = new_order_map[lesson.id]
+
+        await self.db.commit()
+        return True

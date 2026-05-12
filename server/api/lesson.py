@@ -13,6 +13,7 @@ from schemas.lesson import (
     LessonResponse,
     LessonUpdate,
     LessonWithStatusResponse,
+    LessonReorderRequest
 )
 
 router = APIRouter(tags=["lessons"], prefix="/lesson")
@@ -95,3 +96,23 @@ async def get_lessons_by_topic(
         topic_id, current_user.id
     )
     return lessons
+
+
+@router.post("/topic/{topic_id}/reorder")
+async def reorder_lessons_in_topic(
+    topic_id: int,
+    request: LessonReorderRequest,
+    current_user = Depends(get_current_active_user), # Или Depends(is_admin)
+    lesson_service: LessonService = Depends(get_lesson_service)
+):
+    """
+    Изменяет порядок уроков в теме.
+    Принимает список ID уроков в том порядке, в котором они должны отображаться.
+    """
+    try:
+        await lesson_service.reorder_lessons(topic_id, request)
+        return {"message": "Порядок уроков успешно обновлен"}
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Ошибка сервера: {str(e)}")
