@@ -635,7 +635,8 @@ class AdminController:
             # Создаем новую таблицу с поддержкой drag-and-drop
             new_table = DraggableTableWidget()
             new_table.setObjectName("table_lessons")
-
+            new_table.setColumnCount(old_table.columnCount())
+            new_table.orderChanged.connect(self.handle_lesson_reorder)
             # Копируем столбцы
             for col in range(old_table.columnCount()):
                 header_item = old_table.horizontalHeaderItem(col)

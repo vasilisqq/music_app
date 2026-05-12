@@ -1,10 +1,13 @@
+from PyQt6.QtCore import Qt, QMimeData, QPoint, pyqtSignal  # <--- Добавлен pyqtSignal
 from PyQt6.QtWidgets import QTableWidget, QTableWidgetItem, QAbstractItemView, QApplication, QMessageBox
 from PyQt6.QtCore import Qt, QMimeData, QPoint
 from PyQt6.QtGui import QCursor
+from PyQt6.QtGui import QCursor, QDrag  # <--- Добавлен QDrag
 
 class DraggableTableWidget(QTableWidget):
     """Кастомная таблица с поддержкой Drag-and-Drop для перемещения строк"""
-    
+    orderChanged = pyqtSignal(list)
+
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setDragEnabled(True)
@@ -32,7 +35,8 @@ class DraggableTableWidget(QTableWidget):
         mime_data = QMimeData()
         mime_data.setData("application/x-row-index", str(self._dragged_row).encode())
         
-        drag = self.createDrag(mime_data)
+        drag = QDrag(self)
+        drag.setMimeData(mime_data)
         drag.exec(supportedActions)
         
         self._dragged_row = -1
@@ -134,14 +138,14 @@ class DraggableTableWidget(QTableWidget):
         
         if not lesson_ids:
             return
-        
+        self.orderChanged.emit(lesson_ids)
         # Вызываем метод родителя (AdminController)
-        parent = self.parent()
-        if hasattr(parent, 'handle_lesson_reorder'):
-            QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
-            try:
-                parent.handle_lesson_reorder(lesson_ids)
-            finally:
-                QApplication.restoreOverrideCursor()
-        else:
-            print("Ошибка: Родительский виджет не имеет метода handle_lesson_reorder")
+        # parent = self.parent()
+        # if hasattr(parent, 'handle_lesson_reorder'):
+        #     QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
+        #     try:
+        #         parent.handle_lesson_reorder(lesson_ids)
+        #     finally:
+        #         QApplication.restoreOverrideCursor()
+        # else:
+        #     print("Ошибка: Родительский виджет не имеет метода handle_lesson_reorder")
