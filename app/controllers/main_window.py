@@ -30,6 +30,7 @@ class Main(QMainWindow):
         user_role = self.user_data.get("role", "пользователь")
         if user_role == "администратор":
             self.ui.adminPanelBtn.setVisible(True)
+            self.admin_controller = AdminController(self.ui)
 
         self.ui.topicsListWidget.hide()
         self.scroll_area = QScrollArea()
@@ -44,7 +45,6 @@ class Main(QMainWindow):
         self.lesson_worker = LessonWorker()
         self.progress_worker = ProgressWorker()
 
-        self.admin_controller = AdminController(self.ui)
         self.profile_controller = ProfileController(self.ui, self.user_data, self.auth_worker, self.progress_worker)
         self.settings_controller = SettingsController(self.ui)
 

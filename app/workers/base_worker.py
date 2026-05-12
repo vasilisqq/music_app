@@ -105,7 +105,29 @@ class BaseAPIWorker(QObject):
             raw_data = reply.readAll().data()
             if raw_data:
                 data = json.loads(raw_data.decode("utf-8"))
-                error_callback(data.get("detail", "Неизвестная ошибка сервера"))
+                detail = data.get("detail", "Неизвестная ошибка сервера")
+                
+                # 🔥 ИСПРАВЛЕНИЕ: Если detail - это список (ошибки валидации), превращаем в строку
+                if isinstance(detail, list):
+                    # Собираем сообщения об ошибках в одну строку
+                    messages = []
+                    for item in detail:
+                        if isinstance(item, dict):
+                            msg = item.get("msg", str(item))
+                            loc = item.get("loc", [])
+                            # Формируем красивое сообщение: "Ошибка в поле 'period': field required"
+                            if loc:
+                                messages.append(f"Поле '{loc[-1]}': {msg}")
+                            else:
+                                messages.append(msg)
+                        else:
+                            messages.append(str(item))
+                    
+                    error_text = "; ".join(messages)
+                    error_callback(error_text)
+                else:
+                    # Если detail - обычная строка, передаем как есть
+                    error_callback(str(detail))
             else:
                 error_callback(f"Сетевая ошибка: {reply.errorString()}")
         except json.JSONDecodeError:

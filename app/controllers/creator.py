@@ -512,7 +512,7 @@ class CreatorController(QWidget):
     def on_lesson_get(self, lesson: LessonResponse):
         self.lesson = lesson
         self.lesson_id = lesson.id
-        self.topic_id = lesson.topic
+        self.topic_id = lesson.topic_id
         self.lay.display_lesson(lesson)
 
     def on_exit_clicked(self):

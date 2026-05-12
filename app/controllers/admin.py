@@ -31,7 +31,7 @@ class StatsLineChart(QWidget):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
 
-        rect = self.rect().adjusted(16, 16, -16, -28)
+        rect = self.rect().adjusted(16, 16, -16, -45)
         painter.fillRect(self.rect(), QColor("#ffffff"))
 
         if not self._points:
@@ -414,7 +414,7 @@ class AdminController:
 
         # Загружаем пользователей
         self.auth_worker.get_all_users()
-        self.refresh_stats()
+        self.refresh_stats("month")
         
     def _toggle_lesson_btn(self):
         # Активируем кнопку "Добавить урок", если в таблице тем что-то выбрано
@@ -469,7 +469,7 @@ class AdminController:
             difficult=lesson_difficult,
             rhythm=lesson_rhythm,
             notes=lesson_notes,
-            topic=lesson_topic,
+            topic_id=lesson_topic,
         )
 
     def show_lesson_context_menu(self, pos):
@@ -495,7 +495,7 @@ class AdminController:
         lesson = self.get_selected_lesson(row)
         time_signature = f"{int(float(lesson.rhythm) * 4)}/4"
         hand = getattr(lesson, 'hand', 'right')
-        self.open_creator(time_signature, str(lesson.topic), lesson, hand=hand)
+        self.open_creator(time_signature, str(lesson.topic_id), lesson, hand=hand)
 
     def _get_topics_from_table(self) -> list[tuple[int, str]]:
         topics: list[tuple[int, str]] = []
@@ -623,7 +623,7 @@ class AdminController:
         ]
         for frame in card_frames:
             frame.setStyleSheet(
-                "QFrame { background: #f8fbff; border: 1px solid rgba(63, 139, 222, 0.18); border-radius: 16px; }"
+                "#" + frame.objectName() + "{ background: #f8fbff; border: 1px solid rgba(63, 139, 222, 0.18); border-radius: 16px; }"
                 "QLabel { background: transparent; }"
             )
 
@@ -657,7 +657,7 @@ class AdminController:
         chart_layout.setContentsMargins(0, 0, 0, 0)
         chart_layout.addWidget(self.stats_chart)
         self.ui.statsChartFrame.setStyleSheet(
-            "QFrame { background: #ffffff; border: 1px solid #e4e7ec; border-radius: 16px; }"
+            "#" + self.ui.statsChartFrame.objectName() + " { background: #ffffff; border: 1px solid #e4e7ec; border-radius: 16px; }"
         )
 
         self.ui.table_stats_popularity.setStyleSheet(self.ui.table_topics.styleSheet())
@@ -682,11 +682,23 @@ class AdminController:
         current_data = self.ui.statsPeriodCombo.currentData()
         if current_data:
             self._current_stats_period = int(current_data)
-            self.refresh_stats()
+            # Обновляем отображение периода (опционально)
+            days = self._current_stats_period
+            if days == 7:
+                period_str = "week"
+            elif days == 30:
+                period_str = "month"
+            elif days == 90:
+                period_str = "quarter"
+            else:
+                period_str = "month"  # по умолчанию
+            
+            self.refresh_stats(period_str)  # ✅ ПЕРЕДАЕМ СТРОКУ
 
-    def refresh_stats(self):
+    def refresh_stats(self, period_str: str = "month"):
+        """Обновление статистики с указанным периодом"""
         self.ui.statsRefreshBtn.setEnabled(False)
-        self.stats_worker.get_dashboard_stats(self._current_stats_period)
+        self.stats_worker.get_dashboard_stats(period_str)  # ✅ ТЕПЕРЬ ПЕРЕДАЕМ СТРОКУ
 
     def on_stats_loaded(self, stats):
         self.ui.statsRefreshBtn.setEnabled(True)
@@ -700,6 +712,8 @@ class AdminController:
         self.ui.statsCompletedCoursesValue.setText(str(summary.completed_courses))
 
         self.stats_chart.set_points(stats.timeline)
+        self.ui.statsChartPlaceholder.update()  # ← ДОБАВИТЬ эту строку
+        self.ui.statsChartFrame.update() 
 
         self.ui.table_stats_popularity.setRowCount(len(stats.popularity))
         for row, item in enumerate(stats.popularity):
@@ -754,7 +768,7 @@ class AdminController:
             name_item.setData(Qt.ItemDataRole.UserRole + 1, lesson.difficult)
             name_item.setData(Qt.ItemDataRole.UserRole + 2, float(lesson.rhythm))
             name_item.setData(Qt.ItemDataRole.UserRole + 3, lesson.notes)
-            name_item.setData(Qt.ItemDataRole.UserRole + 4, lesson.topic)
+            name_item.setData(Qt.ItemDataRole.UserRole + 4, lesson.topic_id)
             self.ui.table_lessons.setItem(row, 1, name_item)
 
     def fetch_topics(self):
@@ -1014,7 +1028,7 @@ class TimeSignatureDialog(QDialog):
         layout.addWidget(label)
 
         self.combo = QComboBox(self)
-        self.combo.addItems(["4/4", "3/4", "2/4", "6/8"])
+        self.combo.addItems(["4/4", "3/4"])
         self.combo.setCurrentText("4/4")
         layout.addWidget(self.combo)
 

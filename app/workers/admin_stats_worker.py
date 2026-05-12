@@ -21,23 +21,26 @@ class AdminStatsWorker(BaseAPIWorker):
         # Инициализируем базовый класс (сетевой менеджер и настройки)
         super().__init__()
 
-    def get_dashboard_stats(self, period: str = "all") -> None:
+    def get_dashboard_stats(self, period: str = "month") -> None:
         # Подгоняем периоды под жесткие ограничения бэкенда (7, 30, 90)
         days_map = {
             "week": 7,
             "month": 30,
             "quarter": 90,
-            "year": 90,   # Сервер не пускает больше 90 дней
-            "all": 90     # Отправляем максимум разрешенного
+            "year": 90,
+            "all": 90,
         }
-        # Если придет что-то непонятное, по умолчанию ставим 30
-        days = days_map.get(period, 30) 
+        # Если придет число (старая логика), конвертируем
+        if isinstance(period, int):
+            days = period
+        else:
+            days = days_map.get(period, 30)
 
         self._make_request(
             method="GET",
             endpoint=f"/admin/stats/dashboard?period_days={days}",
             success_callback=self._on_stats_received,
-            error_callback=self.error_signal.emit
+            error_callback=self.error_signal.emit,
         )
 
         
@@ -49,10 +52,6 @@ class AdminStatsWorker(BaseAPIWorker):
             self.error_signal.emit(f"Ошибка валидации статистики: {str(e)}")
 
     def get_popularity_report(self) -> None:
-        """
-        Пример дополнительного метода для детальных отчетов, 
-        если ты решишь их добавить в диплом.
-        """
         self._make_request(
             method="GET",
             endpoint="/admin/stats/popularity",

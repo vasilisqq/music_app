@@ -7,7 +7,7 @@ class LessonBase(BaseModel):
     difficult: int
     rhythm: float
     notes: dict
-    topic: int
+    topic_id: int
     hand: str = "right"
     order_in_topic: int | None = None
 

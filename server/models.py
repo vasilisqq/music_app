@@ -47,7 +47,6 @@ class Lesson(Base):
     difficult = Column(Integer, nullable=False, index=True)
     rhythm = Column(DECIMAL(), nullable=False)
     notes = Column(JSONB(), nullable=False)
-    topic = Column(Integer, nullable=False)
     hand = Column(String, nullable=False, default="right")
 
     topic_id = Column(Integer, ForeignKey("topic.id"), nullable=False)
