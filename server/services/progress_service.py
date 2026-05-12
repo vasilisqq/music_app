@@ -1,10 +1,10 @@
 from datetime import datetime, timezone
 
 from fastapi import HTTPException
+from models import Lesson, LessonProgress, Topic, User
 from sqlalchemy import case, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from models import Lesson, LessonProgress, Topic, User
 from schemas.profile_stats import ProfileStatsResponse
 
 
@@ -12,7 +12,9 @@ class ProgressService:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def get_completed_lesson_ids_for_topic(self, *, user_id: int, topic_id: int) -> list[int]:
+    async def get_completed_lesson_ids_for_topic(
+        self, *, user_id: int, topic_id: int
+    ) -> list[int]:
         result = await self.db.execute(
             select(LessonProgress.lesson_id)
             .join(Lesson, Lesson.id == LessonProgress.lesson_id)
@@ -47,11 +49,14 @@ class ProgressService:
         total_users = await self.db.scalar(select(func.count(User.id))) or 0
         total_topics = await self.db.scalar(select(func.count(Topic.id))) or 0
 
-        completed_lessons_count = await self.db.scalar(
-            select(func.count(LessonProgress.id))
-            .where(LessonProgress.user_id == user_id)
-            .where(LessonProgress.completed_at.is_not(None))
-        ) or 0
+        completed_lessons_count = (
+            await self.db.scalar(
+                select(func.count(LessonProgress.id))
+                .where(LessonProgress.user_id == user_id)
+                .where(LessonProgress.completed_at.is_not(None))
+            )
+            or 0
+        )
 
         topic_progress_rows = await self.db.execute(
             select(
@@ -93,7 +98,11 @@ class ProgressService:
             elif lessons_count > 0:
                 progress_sum += completed_count / lessons_count
 
-        average_progress_percent = (progress_sum / started_topics_count * 100.0) if started_topics_count > 0 else 0.0
+        average_progress_percent = (
+            (progress_sum / started_topics_count * 100.0)
+            if started_topics_count > 0
+            else 0.0
+        )
 
         user_completed_rows = await self.db.execute(
             select(
@@ -102,7 +111,11 @@ class ProgressService:
                 func.count(LessonProgress.id).label("completed_lessons_count"),
             )
             .select_from(User)
-            .outerjoin(LessonProgress, (LessonProgress.user_id == User.id) & (LessonProgress.completed_at.is_not(None)))
+            .outerjoin(
+                LessonProgress,
+                (LessonProgress.user_id == User.id)
+                & (LessonProgress.completed_at.is_not(None)),
+            )
             .outerjoin(Lesson, Lesson.id == LessonProgress.lesson_id)
             .group_by(User.id, Lesson.topic_id)
         )
@@ -135,12 +148,15 @@ class ProgressService:
         rating_place = next(
             (
                 index
-                for index, (rank_user_id, _completed_lessons, _completed_topics) in enumerate(ranking_data, start=1)
+                for index, (
+                    rank_user_id,
+                    _completed_lessons,
+                    _completed_topics,
+                ) in enumerate(ranking_data, start=1)
                 if rank_user_id == user_id
             ),
             total_users if total_users > 0 else 1,
         )
-
 
         return ProfileStatsResponse(
             completed_lessons_count=int(completed_lessons_count),

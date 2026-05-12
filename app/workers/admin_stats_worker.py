@@ -1,5 +1,6 @@
-import sys
 import os
+import sys
+
 from PyQt6.QtCore import pyqtSignal
 
 # Импортируем базовый класс
@@ -14,6 +15,7 @@ class AdminStatsWorker(BaseAPIWorker):
     """
     Воркер для получения аналитики и статистики приложения в панель администратора.
     """
+
     stats_loaded_signal = pyqtSignal(AdminStatsResponse)
     error_signal = pyqtSignal(str)
 
@@ -41,9 +43,9 @@ class AdminStatsWorker(BaseAPIWorker):
             endpoint=f"/admin/stats/dashboard?period_days={days}",
             success_callback=self._on_stats_received,
             error_callback=self.error_signal.emit,
+            error_callback=self.error_signal.emit,
         )
 
-        
     def _on_stats_received(self, data: dict) -> None:
         try:
             stats = AdminStatsResponse.model_validate(data)
@@ -56,5 +58,5 @@ class AdminStatsWorker(BaseAPIWorker):
             method="GET",
             endpoint="/admin/stats/popularity",
             success_callback=lambda d: print("Отчет получен:", d),
-            error_callback=self.error_signal.emit
+            error_callback=self.error_signal.emit,
         )

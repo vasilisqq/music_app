@@ -1,10 +1,10 @@
 from datetime import datetime, timedelta, timezone
 
 from fastapi import HTTPException
+from models import Lesson, LessonProgress, Topic, User
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from models import Lesson, LessonProgress, Topic, User
 from schemas.admin_stats import (
     AdminStatsResponse,
     AdminStatsSummary,
@@ -20,7 +20,9 @@ class AdminStatsService:
 
     async def get_dashboard_stats(self, period_days: int) -> AdminStatsResponse:
         if period_days not in {7, 30, 90}:
-            raise HTTPException(status_code=400, detail="Поддерживаются периоды 7, 30 или 90 дней")
+            raise HTTPException(
+                status_code=400, detail="Поддерживаются периоды 7, 30 или 90 дней"
+            )
 
         now = datetime.now(timezone.utc)
         start_dt = now - timedelta(days=period_days - 1)
@@ -29,11 +31,21 @@ class AdminStatsService:
         total_courses = await self.db.scalar(select(func.count(Topic.id))) or 0
         total_lessons = await self.db.scalar(select(func.count(Lesson.id))) or 0
         total_users = await self.db.scalar(select(func.count(User.id))) or 0
-        active_users = await self.db.scalar(select(func.count(User.id)).where(User.is_active.is_(True))) or 0
+        active_users = (
+            await self.db.scalar(
+                select(func.count(User.id)).where(User.is_active.is_(True))
+            )
+            or 0
+        )
 
-        completions_in_period = await self.db.scalar(
-            select(func.count(LessonProgress.id)).where(LessonProgress.completed_at >= start_dt)
-        ) or 0
+        completions_in_period = (
+            await self.db.scalar(
+                select(func.count(LessonProgress.id)).where(
+                    LessonProgress.completed_at >= start_dt
+                )
+            )
+            or 0
+        )
 
         popularity = await self._get_popularity_rows(start_dt)
         course_progress = await self._get_course_progress_rows()
@@ -62,7 +74,9 @@ class AdminStatsService:
             timeline=timeline,
         )
 
-    async def _get_popularity_rows(self, start_dt: datetime) -> list[CoursePopularityRow]:
+    async def _get_popularity_rows(
+        self, start_dt: datetime
+    ) -> list[CoursePopularityRow]:
         result = await self.db.execute(
             select(
                 Topic.id,
@@ -131,7 +145,9 @@ class AdminStatsService:
                 if lessons_count > 0
             ]
 
-            average_progress = sum(percentages) / len(percentages) if percentages else 0.0
+            average_progress = (
+                sum(percentages) / len(percentages) if percentages else 0.0
+            )
             reached_25 = sum(1 for value in percentages if value >= 0.25)
             reached_50 = sum(1 for value in percentages if value >= 0.50)
             reached_75 = sum(1 for value in percentages if value >= 0.75)
@@ -153,7 +169,9 @@ class AdminStatsService:
 
         return rows
 
-    async def _get_timeline_rows(self, start_dt: datetime, period_days: int) -> list[TimelinePoint]:
+    async def _get_timeline_rows(
+        self, start_dt: datetime, period_days: int
+    ) -> list[TimelinePoint]:
         result = await self.db.execute(
             select(
                 func.date(LessonProgress.completed_at).label("day"),

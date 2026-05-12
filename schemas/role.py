@@ -1,10 +1,11 @@
 from pydantic import BaseModel
 
+
 class RoleCreate(BaseModel):
-    name:str
+    name: str
 
 
 class RoleResponse(RoleCreate):
     """Схема для создания пользователя"""
-    id: int
 
+    id: int

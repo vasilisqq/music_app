@@ -1,5 +1,7 @@
 import time
 
+from config import BACKGROUND_SCENE_COLOR, X0, Y0
+from GUI.creator import Ui_MainWindow
 from PyQt6.QtCore import QSize, Qt, QTimer, pyqtSignal
 from PyQt6.QtGui import QBrush, QColor, QIcon, QPainter, QPen
 from PyQt6.QtWidgets import (
@@ -17,12 +19,10 @@ from PyQt6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
-
-from config import BACKGROUND_SCENE_COLOR, X0, Y0
-from GUI.creator import Ui_MainWindow
 from staff import StaffLayout, settings
 from test import player
 from workers.lesson_worker import LessonWorker
+
 from schemas.lesson import LessonResponse, LessonUpdate
 
 
@@ -68,7 +68,9 @@ class SaveLessonDialog(QDialog):
     ERROR_STYLE = "padding: 8px; font-size: 14px; border: 2px solid #ff4444; border-radius: 5px; background-color: #fff0f0;"
     ERROR_LABEL_STYLE = "color: #ff4444; font-size: 13px; margin-left: 5px;"
 
-    def __init__(self, topic_id: int, parent=None, lesson: LessonResponse | None = None):
+    def __init__(
+        self, topic_id: int, parent=None, lesson: LessonResponse | None = None
+    ):
         super().__init__(parent)
         self.topic_id = int(topic_id)
         self.lesson = lesson
@@ -117,7 +119,7 @@ class SaveLessonDialog(QDialog):
         self.hand_combo = QComboBox()
         self.hand_combo.addItem("Правая рука", "right")
         self.hand_combo.addItem("Левая рука", "left")
-        if lesson and hasattr(lesson, 'hand') and lesson.hand == "left":
+        if lesson and hasattr(lesson, "hand") and lesson.hand == "left":
             self.hand_combo.setCurrentIndex(1)
         else:
             self.hand_combo.setCurrentIndex(0)
@@ -158,7 +160,9 @@ class SaveLessonDialog(QDialog):
         has_name = bool(self.name_edit.text().strip())
         has_rating = self.rating_widget.rating > 0
 
-        self.name_edit.setStyleSheet(self.DEFAULT_STYLE if has_name else self.ERROR_STYLE)
+        self.name_edit.setStyleSheet(
+            self.DEFAULT_STYLE if has_name else self.ERROR_STYLE
+        )
         self.name_error_label.setVisible(not has_name)
         if not has_name:
             self.name_error_label.setText("Название урока не может быть пустым")
@@ -180,7 +184,13 @@ class CreatorController(QWidget):
     lesson_created = pyqtSignal(int)
     lesson_updated = pyqtSignal(int)
 
-    def __init__(self, time_signature, topic_id, lesson: LessonResponse | None = None, hand: str = "right"):
+    def __init__(
+        self,
+        time_signature,
+        topic_id,
+        lesson: LessonResponse | None = None,
+        hand: str = "right",
+    ):
         super().__init__()
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
@@ -189,7 +199,9 @@ class CreatorController(QWidget):
         self.topic_id = int(topic_id)
         self.lesson = lesson
         self.lesson_id = lesson.id if lesson else None
-        self.hand = hand if lesson is None else (getattr(lesson, 'hand', 'right') or 'right')
+        self.hand = (
+            hand if lesson is None else (getattr(lesson, "hand", "right") or "right")
+        )
         self.metronome_beats = int(self.time_signature.split("/")[0])
         self.metronome_count = 0
         self._playback_token = 0
@@ -278,7 +290,9 @@ class CreatorController(QWidget):
         y = Y0 + 200
         self.create_feedback_circle(x, y, is_correct=True)
 
-    def on_note_wrong_graphic(self, note_item, _expected_note_name, _played_note_name, is_timeout):
+    def on_note_wrong_graphic(
+        self, note_item, _expected_note_name, _played_note_name, is_timeout
+    ):
         if not self.practice_mode:
             return
 
@@ -359,9 +373,15 @@ class CreatorController(QWidget):
         self.scene.setBackgroundBrush(BACKGROUND_SCENE_COLOR)
         self.ui.graphicsView.setScene(self.scene)
         self.ui.graphicsView.setRenderHint(QPainter.RenderHint.Antialiasing, True)
-        self.ui.graphicsView.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOn)
-        self.ui.graphicsView.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop)
-        self.ui.graphicsView.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform, True)
+        self.ui.graphicsView.setVerticalScrollBarPolicy(
+            Qt.ScrollBarPolicy.ScrollBarAlwaysOn
+        )
+        self.ui.graphicsView.setAlignment(
+            Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop
+        )
+        self.ui.graphicsView.setRenderHint(
+            QPainter.RenderHint.SmoothPixmapTransform, True
+        )
 
     def _find_first_unfilled_bit(self) -> tuple[int, int] | None:
         for tact_index, tact in enumerate(self.lay.tacts, start=1):
@@ -412,7 +432,10 @@ class CreatorController(QWidget):
             return
 
         if not self.play_started:
-            QTimer.singleShot(interval_ms - 50, lambda: self.lay.start_lesson(wait_for_input=self.practice_mode))
+            QTimer.singleShot(
+                interval_ms - 50,
+                lambda: self.lay.start_lesson(wait_for_input=self.practice_mode),
+            )
             QTimer.singleShot(interval_ms, self.start_playhead_animation)
             QTimer.singleShot(interval_ms, lambda: self.animation_timer.start(50))
 
@@ -444,7 +467,7 @@ class CreatorController(QWidget):
         progress = elapsed / self.anim_total_duration
         target_dist = progress * self.total_path_length
 
-        for (x_start, y, x_end, _y_end, length, cum_start) in self.playhead_segments:
+        for x_start, y, x_end, _y_end, length, cum_start in self.playhead_segments:
             cum_end = cum_start + length
             if cum_start <= target_dist <= cum_end:
                 local_dist = target_dist - cum_start
@@ -471,9 +494,13 @@ class CreatorController(QWidget):
             if self.lesson_id is None:
                 self.api.create_lesson(lesson_data)
             else:
-                self.api.update_lesson(self.lesson_id, LessonUpdate(**lesson_data.model_dump()))
+                self.api.update_lesson(
+                    self.lesson_id, LessonUpdate(**lesson_data.model_dump())
+                )
         except AttributeError:
-            QMessageBox.warning(self, "Ошибка", "Метод save_lesson не реализован в StaffLayout")
+            QMessageBox.warning(
+                self, "Ошибка", "Метод save_lesson не реализован в StaffLayout"
+            )
 
     def on_reset_clicked(self):
         self.score = 0

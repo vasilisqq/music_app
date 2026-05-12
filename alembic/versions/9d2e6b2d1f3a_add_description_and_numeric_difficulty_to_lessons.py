@@ -5,11 +5,12 @@ Revises: c3bb436bece8
 Create Date: 2026-04-21 12:00:00.000000
 
 """
+
 from typing import Sequence, Union
 
-from alembic import op
 import sqlalchemy as sa
 
+from alembic import op
 
 revision: str = "9d2e6b2d1f3a"
 down_revision: Union[str, Sequence[str], None] = "c3bb436bece8"
@@ -18,7 +19,10 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    op.add_column("lesson", sa.Column("description", sa.String(), nullable=False, server_default=""))
+    op.add_column(
+        "lesson",
+        sa.Column("description", sa.String(), nullable=False, server_default=""),
+    )
     op.alter_column(
         "lesson",
         "difficult",

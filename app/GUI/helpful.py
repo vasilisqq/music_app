@@ -1,5 +1,5 @@
-from PyQt6.QtWidgets import QLayout, QSizePolicy, QGraphicsView
 from PyQt6.QtCore import QPoint, QRect, QSize, Qt
+from PyQt6.QtWidgets import QGraphicsView, QLayout
 
 
 class FlowLayout(QLayout):
@@ -54,7 +54,7 @@ class FlowLayout(QLayout):
         x = rect.x()
         y = rect.y()
         lineHeight = 0
-        
+
         # 1. Сначала рассчитываем, сколько карточек влезет в один ряд (по первой строке)
         cards_per_row = 0
         current_w = 0
@@ -64,8 +64,8 @@ class FlowLayout(QLayout):
                 break
             current_w += item_w + self.spacing()
             cards_per_row += 1
-        
-        cards_per_row = max(1, cards_per_row) # Минимум одна карточка
+
+        cards_per_row = max(1, cards_per_row)  # Минимум одна карточка
 
         # 2. Вычисляем ширину "контента" (целых карточек в ряду) для общего отступа
         # Берем только те карточки, которые реально помещаются
@@ -81,10 +81,16 @@ class FlowLayout(QLayout):
         current_x = rect.x() + left_offset
         for i in range(self.count()):
             item = self.itemAt(i)
-            
+
             # Если карточка не влезает в текущую строку по ширине
-            if current_x + item.sizeHint().width() > rect.x() + rect.width() - left_offset and lineHeight > 0:
-                current_x = rect.x() + left_offset # Возвращаемся к началу с тем же отступом
+            if (
+                current_x + item.sizeHint().width()
+                > rect.x() + rect.width() - left_offset
+                and lineHeight > 0
+            ):
+                current_x = (
+                    rect.x() + left_offset
+                )  # Возвращаемся к началу с тем же отступом
                 y = y + lineHeight + self.spacing()
                 lineHeight = 0
 
@@ -99,18 +105,20 @@ class FlowLayout(QLayout):
     def _center_line(self, widgets, total_width, line_height, y_offset):
         if not widgets:
             return
-        
+
         # Считаем общую ширину всех виджетов в строке с учетом отступов
-        line_width = sum(w.sizeHint().width() for w in widgets) + (len(widgets) - 1) * self.spacing()
-        
+        line_width = (
+            sum(w.sizeHint().width() for w in widgets)
+            + (len(widgets) - 1) * self.spacing()
+        )
+
         # Начальный отступ для центрирования
         start_x = (total_width - line_width) // 2
-        
+
         current_x = start_x
         for item in widgets:
             item.setGeometry(QRect(QPoint(current_x, y_offset), item.sizeHint()))
             current_x += item.sizeHint().width() + self.spacing()
-
 
 
 class ScalableGraphicsView(QGraphicsView):
@@ -119,13 +127,14 @@ class ScalableGraphicsView(QGraphicsView):
         self.setResizeAnchor(QGraphicsView.ViewportAnchor.AnchorViewCenter)
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOn)
-    
+
     def resizeEvent(self, event):
         center = None
         if self.scene():
             center = self.mapToScene(self.viewport().rect().center())
-            self.fitInView(self.scene().sceneRect(), 
-                          Qt.AspectRatioMode.KeepAspectRatioByExpanding)
+            self.fitInView(
+                self.scene().sceneRect(), Qt.AspectRatioMode.KeepAspectRatioByExpanding
+            )
         super().resizeEvent(event)
         if center is not None:
             self.centerOn(center)

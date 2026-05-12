@@ -1,11 +1,10 @@
 import re
 
-from PyQt6.QtCore import QRegularExpression, QObject
+from config import ERROR_STYLE, NORMAL_STYLE
+from loader import settings
+from PyQt6.QtCore import QObject, QRegularExpression
 from PyQt6.QtGui import QRegularExpressionValidator
 from PyQt6.QtWidgets import QMessageBox
-
-from config import NORMAL_STYLE, ERROR_STYLE
-from loader import settings
 
 
 class ProfileController(QObject):
@@ -25,7 +24,9 @@ class ProfileController(QObject):
         self.ui.saveProfileBtn.clicked.connect(self.on_save_profile)
         self.auth_worker.update_finished_signal.connect(self.on_update_success)
         self.auth_worker.error_occurred_signal.connect(self.on_update_error)
-        self.progress_worker.profile_stats_loaded_signal.connect(self.on_profile_stats_loaded)
+        self.progress_worker.profile_stats_loaded_signal.connect(
+            self.on_profile_stats_loaded
+        )
 
         self.load_profile_stats()
 
@@ -36,11 +37,17 @@ class ProfileController(QObject):
             self.ui.emailLabel.setText(self.user_data.get("email", "Не привязана"))
 
     def setup_profile_validation(self):
-        email_re = QRegularExpression(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$')
-        self.ui.emailEdit.setValidator(QRegularExpressionValidator(email_re, self.ui.centralwidget))
+        email_re = QRegularExpression(
+            r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
+        )
+        self.ui.emailEdit.setValidator(
+            QRegularExpressionValidator(email_re, self.ui.centralwidget)
+        )
 
-        username_re = QRegularExpression(r'^[a-zA-Z0-9_]{3,20}$')
-        self.ui.usernameEdit.setValidator(QRegularExpressionValidator(username_re, self.ui.centralwidget))
+        username_re = QRegularExpression(r"^[a-zA-Z0-9_]{3,20}$")
+        self.ui.usernameEdit.setValidator(
+            QRegularExpressionValidator(username_re, self.ui.centralwidget)
+        )
 
         self.ui.usernameEdit.textChanged.connect(self.validate_username)
         self.ui.emailEdit.textChanged.connect(self.validate_email)
@@ -50,7 +57,12 @@ class ProfileController(QObject):
     def fill_profile_data(self):
         self.ui.usernameEdit.setText(self.user_data.get("username", ""))
         self.ui.emailEdit.setText(self.user_data.get("email", ""))
-        for edit in [self.ui.usernameEdit, self.ui.emailEdit, self.ui.passwordEdit, self.ui.confirmPasswordEdit]:
+        for edit in [
+            self.ui.usernameEdit,
+            self.ui.emailEdit,
+            self.ui.passwordEdit,
+            self.ui.confirmPasswordEdit,
+        ]:
             edit.setStyleSheet(NORMAL_STYLE)
 
     def load_profile_stats(self):
@@ -68,7 +80,9 @@ class ProfileController(QObject):
         self.ui.profileStartedTopicsValue.setText(str(stats.started_topics_count))
         self.ui.profileCompletedTopicsValue.setText(str(stats.completed_topics_count))
         self.ui.profileAverageValue.setText(f"{stats.average_progress_percent:.1f}%")
-        self.ui.profileRatingValue.setText(f"{stats.rating_place} из {stats.total_users}")
+        self.ui.profileRatingValue.setText(
+            f"{stats.rating_place} из {stats.total_users}"
+        )
 
     def show_error(self, field, message, edit_widget, label_widget):
         self.errors[field] = message
@@ -82,48 +96,80 @@ class ProfileController(QObject):
 
     def validate_username(self):
         val = self.ui.usernameEdit.text().strip()
-        self.clear_error('username', self.ui.usernameEdit, self.ui.usernameErrors)
+        self.clear_error("username", self.ui.usernameEdit, self.ui.usernameErrors)
         if not val:
-            self.show_error('username', 'Логин обязателен', self.ui.usernameEdit, self.ui.usernameErrors)
+            self.show_error(
+                "username",
+                "Логин обязателен",
+                self.ui.usernameEdit,
+                self.ui.usernameErrors,
+            )
             return False
         if len(val) < 3:
-            self.show_error('username', 'Минимум 3 символа', self.ui.usernameEdit, self.ui.usernameErrors)
+            self.show_error(
+                "username",
+                "Минимум 3 символа",
+                self.ui.usernameEdit,
+                self.ui.usernameErrors,
+            )
             return False
         return True
 
     def validate_email(self):
         val = self.ui.emailEdit.text().strip()
-        self.clear_error('email', self.ui.emailEdit, self.ui.emailErrors)
-        if not re.match(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$', val):
-            self.show_error('email', 'Неверный формат email', self.ui.emailEdit, self.ui.emailErrors)
+        self.clear_error("email", self.ui.emailEdit, self.ui.emailErrors)
+        if not re.match(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$", val):
+            self.show_error(
+                "email", "Неверный формат email", self.ui.emailEdit, self.ui.emailErrors
+            )
             return False
         return True
 
     def validate_password(self):
         val = self.ui.passwordEdit.text()
-        self.clear_error('password', self.ui.passwordEdit, self.ui.passwordErrors)
+        self.clear_error("password", self.ui.passwordEdit, self.ui.passwordErrors)
         if not val:
             return True
 
         if len(val) < 6:
-            self.show_error('password', 'Минимум 6 символов', self.ui.passwordEdit, self.ui.passwordErrors)
+            self.show_error(
+                "password",
+                "Минимум 6 символов",
+                self.ui.passwordEdit,
+                self.ui.passwordErrors,
+            )
             return False
-        if not re.match(r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)', val):
-            self.show_error('password', 'Нужна 1 заглавная, 1 строчная и цифра', self.ui.passwordEdit, self.ui.passwordErrors)
+        if not re.match(r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)", val):
+            self.show_error(
+                "password",
+                "Нужна 1 заглавная, 1 строчная и цифра",
+                self.ui.passwordEdit,
+                self.ui.passwordErrors,
+            )
             return False
         return True
 
     def validate_confirm(self):
         p = self.ui.passwordEdit.text()
         c = self.ui.confirmPasswordEdit.text()
-        self.clear_error('confirm', self.ui.confirmPasswordEdit, self.ui.confirmErrors)
+        self.clear_error("confirm", self.ui.confirmPasswordEdit, self.ui.confirmErrors)
         if p != c:
-            self.show_error('confirm', 'Пароли не совпадают', self.ui.confirmPasswordEdit, self.ui.confirmErrors)
+            self.show_error(
+                "confirm",
+                "Пароли не совпадают",
+                self.ui.confirmPasswordEdit,
+                self.ui.confirmErrors,
+            )
             return False
         return True
 
     def on_save_profile(self):
-        if self.validate_username() and self.validate_email() and self.validate_password() and self.validate_confirm():
+        if (
+            self.validate_username()
+            and self.validate_email()
+            and self.validate_password()
+            and self.validate_confirm()
+        ):
             token = settings.value("token")
             update_payload = {
                 "username": self.ui.usernameEdit.text().strip(),
@@ -137,7 +183,9 @@ class ProfileController(QObject):
             self.auth_worker.update_profile(token, update_payload)
 
     def on_update_success(self, new_user_data):
-        QMessageBox.information(self.ui.centralwidget, "Профиль", "Данные успешно обновлены!")
+        QMessageBox.information(
+            self.ui.centralwidget, "Профиль", "Данные успешно обновлены!"
+        )
         self.user_data.update(new_user_data)
         self.setup_profile()
         self.fill_profile_data()
@@ -145,4 +193,6 @@ class ProfileController(QObject):
         self.ui.confirmPasswordEdit.clear()
 
     def on_update_error(self, message):
-        QMessageBox.warning(self.ui.centralwidget, "Ошибка", f"Не удалось обновить профиль: {message}")
+        QMessageBox.warning(
+            self.ui.centralwidget, "Ошибка", f"Не удалось обновить профиль: {message}"
+        )

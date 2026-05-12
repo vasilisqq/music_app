@@ -1,22 +1,24 @@
+import time
+
 import numpy as np
 import sounddevice as sd
 from scipy.signal import butter, filtfilt
-import time
+
 
 class GentlePiano:
     def __init__(self, sample_rate=44100):
         self.sr = sample_rate
         # Предварительный фильтр для всех нот (срез низких частот)
         # Фильтр Баттерворта 2-го порядка, частота среза 80 Гц
-        self.b_hpf, self.a_hpf = butter(2, 80 / (self.sr/2), btype='high')
+        self.b_hpf, self.a_hpf = butter(2, 80 / (self.sr / 2), btype="high")
 
     def _freq(self, midi):
         return 440.0 * 2.0 ** ((midi - 69) / 12.0)
 
     def _get_harmonics_amps(self, midi_note):
         # Уменьшаем амплитуды для басов
-        if midi_note < 48:   # ниже C3
-            factor = 0.4     # басы тише
+        if midi_note < 48:  # ниже C3
+            factor = 0.4  # басы тише
         elif midi_note > 72:
             factor = 0.8
         else:
@@ -27,7 +29,7 @@ class GentlePiano:
     def _get_decay_rates(self, midi_note):
         # Для басов затухание быстрее, чтобы не гудели
         if midi_note < 48:
-            t60_base = 1.0      # было 2.5 -> уменьшили
+            t60_base = 1.0  # было 2.5 -> уменьшили
         elif midi_note > 72:
             t60_base = 0.6
         else:
@@ -82,7 +84,9 @@ class GentlePiano:
             envelope[start:end] = np.linspace(1, sustain, end - start)
         release_start = max(0, total - release_s)
         if release_start < total:
-            envelope[release_start:] = np.linspace(envelope[release_start], 0, total - release_start)
+            envelope[release_start:] = np.linspace(
+                envelope[release_start], 0, total - release_start
+            )
 
         signal = signal * envelope * velocity
 
@@ -93,7 +97,7 @@ class GentlePiano:
         peak = np.max(np.abs(signal))
         if peak > 0:
             signal = signal / peak * 0.95
-        signal = np.tanh(signal * 1.1)   # лёгкое насыщение
+        signal = np.tanh(signal * 1.1)  # лёгкое насыщение
 
         return signal.astype(np.float32)
 
@@ -120,6 +124,7 @@ class GentlePiano:
             mix = mix / peak * 0.95
         sd.play(mix, self.sr)
         sd.wait()
+
 
 # Тест
 if __name__ == "__main__":

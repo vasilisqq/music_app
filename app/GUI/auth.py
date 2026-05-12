@@ -13,87 +13,91 @@ class Ui_AuthWindow(object):
     def setupUi(self, MusicApp):
         MusicApp.setObjectName("MusicApp")
         MusicApp.setGeometry(QtCore.QRect(0, 0, 550, 750))
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Fixed, QtWidgets.QSizePolicy.Policy.Fixed)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Policy.Fixed, QtWidgets.QSizePolicy.Policy.Fixed
+        )
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(MusicApp.sizePolicy().hasHeightForWidth())
         MusicApp.setSizePolicy(sizePolicy)
         MusicApp.setMinimumSize(QtCore.QSize(550, 750))
         MusicApp.setMaximumSize(QtCore.QSize(550, 750))
-        MusicApp.setStyleSheet("QMainWindow {\n"
-"  background: qlineargradient(x1:0, y1:0, x2:1, y2:1,\n"
-"    stop:0 #3a8dde, stop:0.5 #00c8d6, stop:1 #2faf5e);\n"
-"}\n"
-"\n"
-"/* Заголовок */\n"
-"QLabel#titleLabel, QLabel#titleLabel1 {\n"
-"  color: rgb(255,255,255); font-size: 36pt; font-weight: 700;\n"
-"  background: rgba(255,255,255,0.2); border-radius: 20px; padding: 25px;\n"
-"}\n"
-"\n"
-"/* Поля ввода */\n"
-"QLineEdit {\n"
-"  padding: 15px 20px; border: none; border-radius: 15px; font-size: 18px;\n"
-"  background: rgba(255,255,255,0.95); color: #333;\n"
-"}\n"
-"QLineEdit:focus { \n"
-"  background: rgba(255,255,255,1); \n"
-"  border: 3px solid #4facfe; \n"
-"  padding: 12px 17px; \n"
-"}\n"
-"\n"
-"/* КНОПКА ВОЙТИ / РЕГИСТРАЦИИ */\n"
-"QPushButton#authBtn, QPushButton#regBtn {\n"
-"  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #26af27, stop:1 #1a9f26);\n"
-"  color: white; padding: 20px; border-radius: 20px; font-size: 22px; font-weight: 700;\n"
-"  border: none;\n"
-"}\n"
-"QPushButton#authBtn:hover,QPushButton#regBtn:hover { \n"
-"  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #1e8b1f, stop:1 #158015); \n"
-"}\n"
-"QPushButton#authBtn:pressed, QPushButton#regBtn:pressed  { \n"
-"  background: rgb(9, 140, 12); \n"
-"}\n"
-"\n"
-"/* ПРОЗРАЧНАЯ КНОПКА ПЕРЕКЛЮЧЕНИЯ */\n"
-"QPushButton#switch, QPushButton#switch_2 {\n"
-"  background: transparent; \n"
-"  color: rgb(255,255,255); \n"
-"  font-size: 16px; \n"
-"  font-weight: 600; \n"
-"  padding: 8px 15px;\n"
-"  border: none; \n"
-"  border-radius: 8px; \n"
-"  text-decoration: underline;\n"
-"}\n"
-"QPushButton#switch:hover, QPushButton#switch_2:hover { \n"
-"  color: #4facfe;\n"
-"}\n"
-"\n"
-"/* ТЕКСТ */\n"
-"QLabel#label, QLabel#label1 {\n"
-"  color: rgb(255,255,255); \n"
-"  font-size: 16px; \n"
-"  font-weight: 500;\n"
-"  padding: 0 10px;\n"
-"}\n"
-"QLabel{\n"
-"  color: red; \n"
-"  font-size: 16px; \n"
-"  font-weight: 500;\n"
-"  padding: 0 10px;\n"
-"}\n"
-"\n"
-"/* Контейнеры */\n"
-"QWidget#widget, QWidget#widget_2 {\n"
-"  margin: 0; padding: 0;\n"
-"}\n"
-"QHBoxLayout, QVBoxLayout {\n"
-"  margin: 0; padding: 0;\n"
-"}\n"
-"QStackedWidget {\n"
-"  background: transparent;\n"
-"}")
+        MusicApp.setStyleSheet(
+            "QMainWindow {\n"
+            "  background: qlineargradient(x1:0, y1:0, x2:1, y2:1,\n"
+            "    stop:0 #3a8dde, stop:0.5 #00c8d6, stop:1 #2faf5e);\n"
+            "}\n"
+            "\n"
+            "/* Заголовок */\n"
+            "QLabel#titleLabel, QLabel#titleLabel1 {\n"
+            "  color: rgb(255,255,255); font-size: 36pt; font-weight: 700;\n"
+            "  background: rgba(255,255,255,0.2); border-radius: 20px; padding: 25px;\n"
+            "}\n"
+            "\n"
+            "/* Поля ввода */\n"
+            "QLineEdit {\n"
+            "  padding: 15px 20px; border: none; border-radius: 15px; font-size: 18px;\n"
+            "  background: rgba(255,255,255,0.95); color: #333;\n"
+            "}\n"
+            "QLineEdit:focus { \n"
+            "  background: rgba(255,255,255,1); \n"
+            "  border: 3px solid #4facfe; \n"
+            "  padding: 12px 17px; \n"
+            "}\n"
+            "\n"
+            "/* КНОПКА ВОЙТИ / РЕГИСТРАЦИИ */\n"
+            "QPushButton#authBtn, QPushButton#regBtn {\n"
+            "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #26af27, stop:1 #1a9f26);\n"
+            "  color: white; padding: 20px; border-radius: 20px; font-size: 22px; font-weight: 700;\n"
+            "  border: none;\n"
+            "}\n"
+            "QPushButton#authBtn:hover,QPushButton#regBtn:hover { \n"
+            "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #1e8b1f, stop:1 #158015); \n"
+            "}\n"
+            "QPushButton#authBtn:pressed, QPushButton#regBtn:pressed  { \n"
+            "  background: rgb(9, 140, 12); \n"
+            "}\n"
+            "\n"
+            "/* ПРОЗРАЧНАЯ КНОПКА ПЕРЕКЛЮЧЕНИЯ */\n"
+            "QPushButton#switch, QPushButton#switch_2 {\n"
+            "  background: transparent; \n"
+            "  color: rgb(255,255,255); \n"
+            "  font-size: 16px; \n"
+            "  font-weight: 600; \n"
+            "  padding: 8px 15px;\n"
+            "  border: none; \n"
+            "  border-radius: 8px; \n"
+            "  text-decoration: underline;\n"
+            "}\n"
+            "QPushButton#switch:hover, QPushButton#switch_2:hover { \n"
+            "  color: #4facfe;\n"
+            "}\n"
+            "\n"
+            "/* ТЕКСТ */\n"
+            "QLabel#label, QLabel#label1 {\n"
+            "  color: rgb(255,255,255); \n"
+            "  font-size: 16px; \n"
+            "  font-weight: 500;\n"
+            "  padding: 0 10px;\n"
+            "}\n"
+            "QLabel{\n"
+            "  color: red; \n"
+            "  font-size: 16px; \n"
+            "  font-weight: 500;\n"
+            "  padding: 0 10px;\n"
+            "}\n"
+            "\n"
+            "/* Контейнеры */\n"
+            "QWidget#widget, QWidget#widget_2 {\n"
+            "  margin: 0; padding: 0;\n"
+            "}\n"
+            "QHBoxLayout, QVBoxLayout {\n"
+            "  margin: 0; padding: 0;\n"
+            "}\n"
+            "QStackedWidget {\n"
+            "  background: transparent;\n"
+            "}"
+        )
         self.centralwidget = QtWidgets.QWidget(parent=MusicApp)
         self.centralwidget.setObjectName("centralwidget")
         self.verticalLayout = QtWidgets.QVBoxLayout(self.centralwidget)
@@ -109,7 +113,9 @@ class Ui_AuthWindow(object):
         self.verticalLayout_auth.setSpacing(7)
         self.verticalLayout_auth.setObjectName("verticalLayout_auth")
         self.titleLabel = QtWidgets.QLabel(parent=self.regPage)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Fixed)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Fixed
+        )
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.titleLabel.sizePolicy().hasHeightForWidth())
@@ -123,7 +129,12 @@ class Ui_AuthWindow(object):
         self.titleLabel.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
         self.titleLabel.setObjectName("titleLabel")
         self.verticalLayout_auth.addWidget(self.titleLabel)
-        spacerItem = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Expanding)
+        spacerItem = QtWidgets.QSpacerItem(
+            20,
+            40,
+            QtWidgets.QSizePolicy.Policy.Minimum,
+            QtWidgets.QSizePolicy.Policy.Expanding,
+        )
         self.verticalLayout_auth.addItem(spacerItem)
         self.emailInput = QtWidgets.QLineEdit(parent=self.regPage)
         self.emailInput.setObjectName("emailInput")
@@ -159,7 +170,10 @@ class Ui_AuthWindow(object):
         self.verticalLayout_3.setSpacing(10)
         self.verticalLayout_3.setObjectName("verticalLayout_3")
         self.regBtn = QtWidgets.QPushButton(parent=self.regPage)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.MinimumExpanding, QtWidgets.QSizePolicy.Policy.Fixed)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Policy.MinimumExpanding,
+            QtWidgets.QSizePolicy.Policy.Fixed,
+        )
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.regBtn.sizePolicy().hasHeightForWidth())
@@ -174,10 +188,17 @@ class Ui_AuthWindow(object):
         self.horizontalLayout = QtWidgets.QHBoxLayout()
         self.horizontalLayout.setSpacing(5)
         self.horizontalLayout.setObjectName("horizontalLayout")
-        spacerItem1 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum)
+        spacerItem1 = QtWidgets.QSpacerItem(
+            40,
+            20,
+            QtWidgets.QSizePolicy.Policy.Expanding,
+            QtWidgets.QSizePolicy.Policy.Minimum,
+        )
         self.horizontalLayout.addItem(spacerItem1)
         self.label = QtWidgets.QLabel(parent=self.regPage)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Maximum, QtWidgets.QSizePolicy.Policy.Maximum)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Policy.Maximum, QtWidgets.QSizePolicy.Policy.Maximum
+        )
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.label.sizePolicy().hasHeightForWidth())
@@ -187,9 +208,15 @@ class Ui_AuthWindow(object):
         font.setPointSize(-1)
         self.label.setFont(font)
         self.label.setObjectName("label")
-        self.horizontalLayout.addWidget(self.label, 0, QtCore.Qt.AlignmentFlag.AlignHCenter|QtCore.Qt.AlignmentFlag.AlignVCenter)
+        self.horizontalLayout.addWidget(
+            self.label,
+            0,
+            QtCore.Qt.AlignmentFlag.AlignHCenter | QtCore.Qt.AlignmentFlag.AlignVCenter,
+        )
         self.switch = QtWidgets.QPushButton(parent=self.regPage)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Maximum, QtWidgets.QSizePolicy.Policy.Maximum)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Policy.Maximum, QtWidgets.QSizePolicy.Policy.Maximum
+        )
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.switch.sizePolicy().hasHeightForWidth())
@@ -201,7 +228,12 @@ class Ui_AuthWindow(object):
         self.switch.setFont(font)
         self.switch.setObjectName("switch")
         self.horizontalLayout.addWidget(self.switch)
-        spacerItem2 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum)
+        spacerItem2 = QtWidgets.QSpacerItem(
+            40,
+            20,
+            QtWidgets.QSizePolicy.Policy.Expanding,
+            QtWidgets.QSizePolicy.Policy.Minimum,
+        )
         self.horizontalLayout.addItem(spacerItem2)
         self.verticalLayout_3.addLayout(self.horizontalLayout)
         self.verticalLayout_auth.addLayout(self.verticalLayout_3)
@@ -213,7 +245,9 @@ class Ui_AuthWindow(object):
         self.verticalLayout_auth1.setSpacing(7)
         self.verticalLayout_auth1.setObjectName("verticalLayout_auth1")
         self.titleLabel1 = QtWidgets.QLabel(parent=self.logPage)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Fixed)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Fixed
+        )
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.titleLabel1.sizePolicy().hasHeightForWidth())
@@ -231,7 +265,9 @@ class Ui_AuthWindow(object):
         self.emailInput1.setObjectName("emailInput1")
         self.verticalLayout_auth1.addWidget(self.emailInput1)
         self.emailErrors1 = QtWidgets.QLabel(parent=self.logPage)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Preferred, QtWidgets.QSizePolicy.Policy.Maximum)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Policy.Preferred, QtWidgets.QSizePolicy.Policy.Maximum
+        )
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.emailErrors1.sizePolicy().hasHeightForWidth())
@@ -244,10 +280,14 @@ class Ui_AuthWindow(object):
         self.passwordInput1.setObjectName("passwordInput1")
         self.verticalLayout_auth1.addWidget(self.passwordInput1)
         self.passwordErrors1 = QtWidgets.QLabel(parent=self.logPage)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Preferred, QtWidgets.QSizePolicy.Policy.Maximum)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Policy.Preferred, QtWidgets.QSizePolicy.Policy.Maximum
+        )
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.passwordErrors1.sizePolicy().hasHeightForWidth())
+        sizePolicy.setHeightForWidth(
+            self.passwordErrors1.sizePolicy().hasHeightForWidth()
+        )
         self.passwordErrors1.setSizePolicy(sizePolicy)
         self.passwordErrors1.setText("")
         self.passwordErrors1.setObjectName("passwordErrors1")
@@ -256,7 +296,10 @@ class Ui_AuthWindow(object):
         self.verticalLayout_31.setSpacing(10)
         self.verticalLayout_31.setObjectName("verticalLayout_31")
         self.authBtn = QtWidgets.QPushButton(parent=self.logPage)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.MinimumExpanding, QtWidgets.QSizePolicy.Policy.Fixed)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Policy.MinimumExpanding,
+            QtWidgets.QSizePolicy.Policy.Fixed,
+        )
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.authBtn.sizePolicy().hasHeightForWidth())
@@ -271,10 +314,17 @@ class Ui_AuthWindow(object):
         self.horizontalLayout1 = QtWidgets.QHBoxLayout()
         self.horizontalLayout1.setSpacing(5)
         self.horizontalLayout1.setObjectName("horizontalLayout1")
-        spacerItem3 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum)
+        spacerItem3 = QtWidgets.QSpacerItem(
+            40,
+            20,
+            QtWidgets.QSizePolicy.Policy.Expanding,
+            QtWidgets.QSizePolicy.Policy.Minimum,
+        )
         self.horizontalLayout1.addItem(spacerItem3)
         self.label1 = QtWidgets.QLabel(parent=self.logPage)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Maximum, QtWidgets.QSizePolicy.Policy.Maximum)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Policy.Maximum, QtWidgets.QSizePolicy.Policy.Maximum
+        )
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.label1.sizePolicy().hasHeightForWidth())
@@ -284,9 +334,15 @@ class Ui_AuthWindow(object):
         font.setPointSize(-1)
         self.label1.setFont(font)
         self.label1.setObjectName("label1")
-        self.horizontalLayout1.addWidget(self.label1, 0, QtCore.Qt.AlignmentFlag.AlignHCenter|QtCore.Qt.AlignmentFlag.AlignVCenter)
+        self.horizontalLayout1.addWidget(
+            self.label1,
+            0,
+            QtCore.Qt.AlignmentFlag.AlignHCenter | QtCore.Qt.AlignmentFlag.AlignVCenter,
+        )
         self.switch_2 = QtWidgets.QPushButton(parent=self.logPage)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Maximum, QtWidgets.QSizePolicy.Policy.Maximum)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Policy.Maximum, QtWidgets.QSizePolicy.Policy.Maximum
+        )
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.switch_2.sizePolicy().hasHeightForWidth())
@@ -298,7 +354,12 @@ class Ui_AuthWindow(object):
         self.switch_2.setFont(font)
         self.switch_2.setObjectName("switch_2")
         self.horizontalLayout1.addWidget(self.switch_2)
-        spacerItem4 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum)
+        spacerItem4 = QtWidgets.QSpacerItem(
+            40,
+            20,
+            QtWidgets.QSizePolicy.Policy.Expanding,
+            QtWidgets.QSizePolicy.Policy.Minimum,
+        )
         self.horizontalLayout1.addItem(spacerItem4)
         self.verticalLayout_31.addLayout(self.horizontalLayout1)
         self.verticalLayout_auth1.addLayout(self.verticalLayout_31)
@@ -317,7 +378,9 @@ class Ui_AuthWindow(object):
         self.emailInput.setPlaceholderText(_translate("AuthWindow", "✉️ Email"))
         self.usernameInput.setPlaceholderText(_translate("AuthWindow", "👤 Логин"))
         self.passwordInput.setPlaceholderText(_translate("AuthWindow", "🔒 Пароль"))
-        self.passwordConfirmInput.setPlaceholderText(_translate("AuthWindow", "🔒 Подтверждение пароля"))
+        self.passwordConfirmInput.setPlaceholderText(
+            _translate("AuthWindow", "🔒 Подтверждение пароля")
+        )
         self.regBtn.setText(_translate("AuthWindow", "Зарегистрироваться"))
         self.label.setText(_translate("AuthWindow", "Уже есть аккаунт?"))
         self.switch.setText(_translate("AuthWindow", "Войти"))

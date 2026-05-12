@@ -1,5 +1,7 @@
-from pydantic import BaseModel, ConfigDict
 from typing import Literal
+
+from pydantic import BaseModel, ConfigDict
+
 
 class LessonBase(BaseModel):
     name: str
@@ -25,6 +27,7 @@ class LessonUpdate(LessonBase):
 class LessonResponse(LessonBase):
     id: int
     model_config = ConfigDict(from_attributes=True)
+
 
 # ДОБАВИТЬ ЭТОТ КЛАСС:
 class LessonWithStatusResponse(LessonResponse):

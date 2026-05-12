@@ -9,8 +9,8 @@ Create Date: 2026-04-22 13:48:28.851152
 from typing import Sequence, Union
 
 import sqlalchemy as sa
-from alembic import op
 
+from alembic import op
 
 # revision identifiers, used by Alembic.
 revision: str = "dbc24f3df739"
@@ -31,7 +31,9 @@ def upgrade() -> None:
         sa.PrimaryKeyConstraint("id"),
         sa.UniqueConstraint("user_id", "lesson_id", name="uq_user_lesson"),
     )
-    op.create_index(op.f("ix_lesson_progress_id"), "lesson_progress", ["id"], unique=False)
+    op.create_index(
+        op.f("ix_lesson_progress_id"), "lesson_progress", ["id"], unique=False
+    )
     op.create_index(
         op.f("ix_lesson_progress_lesson_id"),
         "lesson_progress",
@@ -59,7 +61,9 @@ def upgrade() -> None:
         """
     )
     op.alter_column("lesson", "order_in_topic", nullable=False)
-    op.create_index(op.f("ix_lesson_order_in_topic"), "lesson", ["order_in_topic"], unique=False)
+    op.create_index(
+        op.f("ix_lesson_order_in_topic"), "lesson", ["order_in_topic"], unique=False
+    )
 
 
 def downgrade() -> None:
