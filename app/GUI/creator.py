@@ -176,4 +176,4 @@ class Ui_MainWindow(object):
         self.label_hand.setText(_translate("MainWindow", "Рука:"))
 
 
-from app.GUI.helpful import ScalableGraphicsView
+from GUI.helpful import ScalableGraphicsView

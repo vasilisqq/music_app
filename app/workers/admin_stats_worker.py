@@ -43,7 +43,6 @@ class AdminStatsWorker(BaseAPIWorker):
             endpoint=f"/admin/stats/dashboard?period_days={days}",
             success_callback=self._on_stats_received,
             error_callback=self.error_signal.emit,
-            error_callback=self.error_signal.emit,
         )
 
     def _on_stats_received(self, data: dict) -> None:

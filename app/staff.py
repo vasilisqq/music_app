@@ -13,14 +13,14 @@ from PyQt6.QtWidgets import (
     QGraphicsTextItem,
 )
 
-sys.path.append(
-    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-)
+
 import threading
 import time
 
 from test import player
-
+sys.path.append(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+)
 from schemas.lesson import LessonCreate, LessonResponse
 
 DURATION_EPSILON = 1e-6
@@ -1530,7 +1530,7 @@ class StaffLayout:
             difficult=difficult,
             rhythm=rhythm_val,
             notes=lesson_notes,
-            topic=topic_id,
+            topic_id=topic_id,
             hand=hand,
         )
 

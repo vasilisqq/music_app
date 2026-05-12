@@ -557,13 +557,13 @@ class AdminController:
             return
 
         dialog = ChangeLessonTopicDialog(
-            self.ui.centralwidget, topics, current_topic_id=lesson.topic
+            self.ui.centralwidget, topics, current_topic_id=lesson.topic_id
         )
         if dialog.exec() != QDialog.DialogCode.Accepted:
             return
 
         new_topic_id = dialog.get_selected_topic_id()
-        if new_topic_id == lesson.topic:
+        if new_topic_id == lesson.topic_id:
             return
 
         self._pending_lesson_topic_change_to = new_topic_id
@@ -573,7 +573,7 @@ class AdminController:
             difficult=lesson.difficult,
             rhythm=float(lesson.rhythm),
             notes=lesson.notes,
-            topic=new_topic_id,
+            topic_id=new_topic_id,
         )
         self.lesson_worker.update_lesson(lesson.id, lesson_update)
 

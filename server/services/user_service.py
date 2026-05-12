@@ -7,14 +7,17 @@ User Service Module
 
 import logging
 from typing import List, Optional
-
+import sys 
+import os
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
-
+sys.path.append(
+    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+)
 from schemas.auth import UserCreate, UserUpdate
-from server.models import Role, User
-from server.utils.security import get_password_hash, verify_password
+from models import Role, User
+from utils.security import get_password_hash, verify_password
 
 logger = logging.getLogger(__name__)
 

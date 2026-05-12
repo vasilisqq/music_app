@@ -41,14 +41,13 @@ class LessonService:
         return result.scalar_one_or_none()
 
     async def create_lesson(self, lesson_data: LessonCreate) -> Optional[Lesson]:
-        topic_id = lesson_data.topic
+        topic_id = lesson_data.topic_id
         db_lesson = Lesson(
             name=lesson_data.name,
             description=lesson_data.description,
             difficult=lesson_data.difficult,
             rhythm=lesson_data.rhythm,
             notes=lesson_data.notes,
-            topic=topic_id,
             topic_id=topic_id,
             order_in_topic=lesson_data.order_in_topic
             or await self._get_next_order_in_topic(topic_id),
@@ -78,7 +77,7 @@ class LessonService:
             )
 
         old_topic_id = lesson.topic_id
-        new_topic_id = lesson_data.topic
+        new_topic_id = lesson_data.topic_id
         topic_changed = old_topic_id != new_topic_id
 
         lesson.name = lesson_data.name
@@ -86,7 +85,6 @@ class LessonService:
         lesson.difficult = lesson_data.difficult
         lesson.rhythm = lesson_data.rhythm
         lesson.notes = lesson_data.notes
-        lesson.topic = new_topic_id
         lesson.topic_id = new_topic_id
 
         if lesson_data.order_in_topic is not None and not topic_changed:
