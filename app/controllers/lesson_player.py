@@ -193,9 +193,7 @@ class LessonPlayerController(QWidget):
             self.ui.input_mode_combo,
             self.ui.label_time_signature,
             self.ui.label_accidental,
-            self.ui.label_input_mode,
-            self.ui.hand_combo,
-            self.ui.label_hand
+            self.ui.label_input_mode
         ]:
             widget.hide()
 

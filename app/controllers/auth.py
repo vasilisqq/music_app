@@ -340,6 +340,7 @@ class Auth(QMainWindow):
 
         if not self.is_registration_valid():
             logger.warning("Registration validation failed")
+            QMessageBox.warning(self, "Ошибка аутентификации", "Пожалуйста проверьте корректность данных")
             return
 
         user_data = UserCreate(
@@ -412,6 +413,7 @@ class Auth(QMainWindow):
         if "username" in error.lower():
             if is_registration:
                 self.show_error("username", "Такой логин уже занят")
+                QMessageBox.warning(self, "Ошибка аутентификации", "Такой логин уже занят")
                 self.cached_usernames.add(self.ui.usernameInput.text().strip())
             else:
                 QMessageBox.warning(self, "Ошибка", error)
@@ -421,12 +423,12 @@ class Auth(QMainWindow):
                 # Сообщение только для регистрации
                 self.show_error("email", "Пользователь с такой почтой уже существует")
                 self.cached_emails.add(self.ui.emailInput.text().strip())
+                QMessageBox.warning(self, "Ошибка аутентификации", "Пользователь с такой почтой уже существует")
             else:
                 # Сообщение для входа (общая ошибка для безопасности)
                 self.show_error("email_auth", "Неверный email или пароль")
                 self.show_error("password_auth", "Неверный email или пароль")
                 QMessageBox.warning(self, "Ошибка аутентификации", error)
-        
         else:
             # Для всех остальных непредвиденных ошибок (например, 500 Internal Server Error)
             QMessageBox.warning(self, "Ошибка аутентификации", error)

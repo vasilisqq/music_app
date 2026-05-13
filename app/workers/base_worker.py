@@ -140,6 +140,8 @@ class BaseAPIWorker(QObject):
                 return self.manager.put(request, data)
             elif method == "DELETE":
                 return self.manager.deleteResource(request)
+            elif method == "PATCH":                                              
+                return self.manager.sendCustomRequest(request, b"PATCH", data)
             else:
                 logger.warning(f"Неподдерживаемый HTTP метод: {method}")
                 return None

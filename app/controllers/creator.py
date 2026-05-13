@@ -453,6 +453,15 @@ class CreatorController(QWidget):
                 break
 
     def on_save_clicked(self):
+        unfilled = self._find_first_unfilled_bit()
+        if unfilled is not None:
+            tact_index, bit_index = unfilled
+            QMessageBox.warning(
+                self,
+                "Нельзя сохранить",
+                f"Не все биты заполнены нотами или паузами.\nПусто: такт {tact_index}, бит {bit_index}."
+            )
+            return
         dialog = SaveLessonDialog(self.topic_id, self, self.lesson)
         if dialog.exec() != QDialog.DialogCode.Accepted:
             return

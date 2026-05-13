@@ -32,7 +32,7 @@ class Main(QMainWindow):
         user_role = self.user_data.get("role", "пользователь")
         if user_role == "администратор":
             self.ui.adminPanelBtn.setVisible(True)
-            self.admin_controller = AdminController(self.ui)
+            self.admin_controller = AdminController(self.ui, self.user_data)
 
         self.ui.topicsListWidget.hide()
         self.scroll_area = QScrollArea()
@@ -254,6 +254,9 @@ class Main(QMainWindow):
         self._set_active_tab(self.ui.homeBtn, self.ui.homePageWidget)
 
     def show_profile(self):
+        self.profile_controller.fill_profile_data()
+        self.ui.passwordEdit.clear()
+        self.ui.confirmPasswordEdit.clear()
         self._set_active_tab(self.ui.profileBtn, self.ui.profilePageWidget)
 
     def show_settings(self):

@@ -60,10 +60,21 @@ class SettingsController(QObject):
     def __init__(self, ui):
         super().__init__()
         self.ui = ui
-        self.ui.refreshMidiDevicesBtn.clicked.connect(self.refresh_midi_inputs)
+        self.ui.refreshMidiDevicesBtn.clicked.connect(self._on_refresh_clicked)
         self.ui.verifyMidiDeviceBtn.clicked.connect(self.verify_selected_midi_input)
         self.ui.midiInputCombo.currentIndexChanged.connect(self._on_midi_input_changed)
         self.refresh_midi_inputs()
+
+    def _on_refresh_clicked(self):
+        self.refresh_midi_inputs()
+        
+        # 2. Показываем всплывающее окно (обратная связь)
+        QMessageBox.information(
+            self.ui.centralwidget,
+            "Успех",
+            "Список MIDI-устройств успешно обновлен!"
+        )
+
 
     def refresh_midi_inputs(self):
         saved_name = settings.value(self.MIDI_INPUT_KEY, None)
@@ -91,13 +102,12 @@ class SettingsController(QObject):
         self.ui.midiSettingsHint.setText(
             "Используется один общий список подключённых MIDI-входов. "
             "Если устройство подключено позже, обнови список."
-            + (
-                f" Скрыто дополнительных портов: {hidden_duplicates}."
-                if hidden_duplicates
-                else ""
-            )
+            # + (
+            #     f" Скрыто дополнительных портов: {hidden_duplicates}."
+            #     if hidden_duplicates
+            #     else ""
+            # )
         )
-
         selected_name = current_name or saved_name
         selected_index = self.ui.midiInputCombo.findData(selected_name)
         if selected_index < 0:
@@ -130,7 +140,7 @@ class SettingsController(QObject):
             QMessageBox.information(
                 self.ui.centralwidget,
                 "Проверка MIDI",
-                "Сначала выбери подключённое MIDI-устройство.",
+                "Сначала выберите подключённое MIDI-устройство.",
             )
             return
         try:

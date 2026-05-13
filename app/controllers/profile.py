@@ -170,7 +170,6 @@ class ProfileController(QObject):
             and self.validate_password()
             and self.validate_confirm()
         ):
-            token = settings.value("token")
             update_payload = {
                 "username": self.ui.usernameEdit.text().strip(),
                 "email": self.ui.emailEdit.text().strip(),
@@ -180,7 +179,11 @@ class ProfileController(QObject):
             if new_pwd:
                 update_payload["password"] = new_pwd
 
-            self.auth_worker.update_profile(token, update_payload)
+            self.auth_worker.update_profile(update_payload)
+        else:
+            QMessageBox.warning(
+            self.ui.centralwidget, "Ошибка", f"Пожалуйста, проверьте корректность данных в профиле"
+        )
 
     def on_update_success(self, new_user_data):
         QMessageBox.information(

@@ -368,8 +368,9 @@ class EditUserDialog(QDialog):
 
 
 class AdminController:
-    def __init__(self, ui):
+    def __init__(self, ui, user_data=None):
         self.ui = ui
+        self.current_user_data = user_data or {}
         self.creator_window = None
         self.selected_topic_id = None
         self.ui.table_topics.itemSelectionChanged.connect(self._toggle_lesson_btn)
@@ -1151,6 +1152,15 @@ class AdminController:
 
         row = item.row()
         user_id = int(self.ui.table_users.item(row, 0).text())
+        email = self.ui.table_users.item(row, 2).text()
+
+        if self.current_user_data.get("email") == email:
+            menu = QMenu()
+            info_action = menu.addAction("Это вы (ред. в профиле)")
+            info_action.setEnabled(False)  # Делаем пункт некликабельным серым
+            menu.exec(self.ui.table_users.viewport().mapToGlobal(pos))
+            return  # Прерываем выполнение, чтобы обычное меню не появилось
+
         is_active = "Активен" in self.ui.table_users.item(row, 4).text()
 
         menu = QMenu()

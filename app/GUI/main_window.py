@@ -919,7 +919,7 @@ class Ui_MainWindow(object):
         self.logoutBtn.setText(_translate("MainWindow", "🚪 Выйти"))
         self.cardIconLabel.setText(_translate("MainWindow", "🎵"))
         self.cardTitleLabel.setText(_translate("MainWindow", "Начни обучение"))
-        self.cardDescLabel.setText(_translate("MainWindow", "Выбери интересующий тебя урок и начни свой путь в мире музыки"))
+        self.cardDescLabel.setText(_translate("MainWindow", "Начните свой путь в мире музыки"))
         self.cardPlayBtn.setText(_translate("MainWindow", "Играть по урокам"))
         self.backBtn.setText(_translate("MainWindow", "◀ Назад"))
         self.topicsHeaderLabel.setText(_translate("MainWindow", "📚 Доступные темы"))
@@ -990,7 +990,7 @@ class Ui_MainWindow(object):
         self.settingsDescription.setText(
             _translate(
                 "MainWindow",
-                "Выбери активный MIDI-вход для игры и проверь, что приложение действительно может открыть устройство.",
+                "Выберите активный MIDI-вход для игры и проверьте, что приложение действительно может открыть устройство.",
             )
         )
         self.settingsDescription.setStyleSheet(
