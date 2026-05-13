@@ -18,7 +18,7 @@ from workers.auth_worker import AuthWorker
 from workers.lesson_worker import LessonWorker
 from workers.progress_worker import ProgressWorker
 from workers.topic_worker import TopicWorker
-
+from schemas.lesson import LessonResponse
 
 class Main(QMainWindow):
     def __init__(self, user_data: dict):
@@ -108,7 +108,7 @@ class Main(QMainWindow):
 
         if self._topics_subview == "lessons":
             self._selected_topic_id = None
-            self._show_topics_view()
+            self._load_topics() 
             return
 
         self.show_home()
@@ -201,7 +201,17 @@ class Main(QMainWindow):
             )
             if lesson is None:
                 return
-
+        print(lesson)
+        lesson = LessonResponse(
+            id=lesson.id,
+            name=lesson.name,
+            description=lesson.description,
+            difficult=lesson.difficult,
+            rhythm=lesson.rhythm,
+            notes=lesson.notes,
+            topic_id=lesson.topic_id,
+            hand= list(lesson.notes.keys())[0].split("_")[0]
+        )
         from controllers.lesson_player import LessonPlayerController
 
         # Скрываем боковое меню (как в CreatorController)

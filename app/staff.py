@@ -949,14 +949,13 @@ class Tact:
     def init_tact(self):
         # Сначала создаем пространства между линиями (4 пространства между 5 линиями)
         if self.hand == "right":
-            # Для правой руки: E5, C5, A4, F4, D4
             space_notes = ["E5", "C5", "A4", "F4", "D4"]
             # Для правой руки: F5, D5, B4, G4, E4, C4
             line_notes = ["F5", "D5", "B4", "G4", "E4", "C4"]
         else:
             # Для левой руки: B3 - верхняя нота на стане
-            space_notes = ["D4", "B3", "G3", "E3", "C3"]
-            line_notes = ["E4", "C4", "A3", "F3", "D3", "B2"]
+            space_notes = ["G3", "E3", "C3", "A2", "F2"]
+            line_notes = ["A3", "F3", "D3", "B2", "G2", "E2"]
 
         for i in range(5):
             y_top = self.y0 + i * LINE_SPACING
@@ -1542,6 +1541,7 @@ class StaffLayout:
             if hasattr(lesson, "hand") and lesson.hand == "left"
             else "right_hand"
         )
+        print(hand_key)
         saved_tacts = lesson.notes.get(hand_key, lesson.notes.get("right_hand", []))
 
         while len(self.tacts) < len(saved_tacts):

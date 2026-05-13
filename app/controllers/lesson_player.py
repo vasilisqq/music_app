@@ -268,8 +268,8 @@ class LessonPlayerController(QWidget):
             time_signature = f"{beats}/4"
         except Exception:
             pass
-
-        self.staff_layout = StaffLayout(self.scene, time_signature, read_only=True)
+        hand = list(self.lesson.notes.keys())[0].split("_")[0]
+        self.staff_layout = StaffLayout(self.scene, time_signature, read_only=True,hand=hand)
         self.staff_layout.display_lesson(self.lesson)
         self._on_bpm_changed(self.bpm_combo.currentIndex())
 
@@ -590,10 +590,25 @@ class LessonPlayerController(QWidget):
         if not self._practice_mode:
             return
 
-        total_attempts = self._correct + self._wrong + self._idle_presses
-        accuracy = (
-            0.0 if total_attempts == 0 else (self._correct / total_attempts) * 100.0
+        # 1. Подсчитываем общее количество нот (без учета пауз) в упражнении
+        total_expected_notes = sum(
+            len(bit.notes)
+            for tact in getattr(self.staff_layout, "tacts", [])
+            for bit in tact.bits
         )
+
+        # 2. Вычисляем точность с учетом пауз
+        if total_expected_notes == 0:
+            # Упражнение только из пауз: если не было лишних нажатий, то 100%
+            accuracy = 100.0 if self._idle_presses == 0 else 0.0
+            total_attempts = self._idle_presses
+        else:
+            # Обычное упражнение
+            total_attempts = self._correct + self._wrong + self._idle_presses
+            accuracy = (
+                0.0 if total_attempts == 0 else (self._correct / total_attempts) * 100.0
+            )
+
         QMessageBox.information(
             self,
             "Результат повтора",
@@ -604,6 +619,7 @@ class LessonPlayerController(QWidget):
                 f"Общая точность: {accuracy:.0f}%"
             ),
         )
+        
         if accuracy >= 80.0:
             self.progress_worker.complete_lesson(int(self.lesson.id))
 

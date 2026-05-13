@@ -510,6 +510,7 @@ class AdminController:
         lesson_rhythm = lesson_item.data(Qt.ItemDataRole.UserRole + 2)
         lesson_notes = lesson_item.data(Qt.ItemDataRole.UserRole + 3)
         lesson_topic = lesson_item.data(Qt.ItemDataRole.UserRole + 4)
+        lesson_hand = lesson_item.data(Qt.ItemDataRole.UserRole + 5)
         return LessonResponse(
             id=lesson_id,
             name=lesson_name,
@@ -518,6 +519,7 @@ class AdminController:
             rhythm=lesson_rhythm,
             notes=lesson_notes,
             topic_id=lesson_topic,
+            hand=lesson_hand
         )
 
     def show_lesson_context_menu(self, pos):
@@ -905,6 +907,7 @@ class AdminController:
             name_item.setData(Qt.ItemDataRole.UserRole + 2, float(lesson.rhythm))
             name_item.setData(Qt.ItemDataRole.UserRole + 3, lesson.notes)
             name_item.setData(Qt.ItemDataRole.UserRole + 4, lesson.topic_id)
+            name_item.setData(Qt.ItemDataRole.UserRole + 5, list(lesson.notes.keys())[0].split("_")[0])
             self.ui.table_lessons.setItem(row, 1, name_item)
 
     def on_lessons_reordered(self):
