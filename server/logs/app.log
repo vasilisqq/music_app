@@ -14793,3 +14793,1758 @@ FROM lesson_progress JOIN lesson ON lesson.id = lesson_progress.lesson_id
 WHERE lesson_progress.user_id = $1::INTEGER AND lesson.topic_id = $2::INTEGER AND lesson_progress.completed_at IS NOT NULL
 2026-05-12 14:03:13,967 - sqlalchemy.engine.Engine - INFO - [cached since 22.54s ago] (23, 1)
 2026-05-12 14:03:13,968 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-05-13 14:10:16,722 - sqlalchemy.engine.Engine - INFO - select pg_catalog.version()
+2026-05-13 14:10:16,722 - sqlalchemy.engine.Engine - INFO - [raw sql] ()
+2026-05-13 14:10:16,742 - sqlalchemy.engine.Engine - INFO - select current_schema()
+2026-05-13 14:10:16,742 - sqlalchemy.engine.Engine - INFO - [raw sql] ()
+2026-05-13 14:10:16,745 - sqlalchemy.engine.Engine - INFO - show standard_conforming_strings
+2026-05-13 14:10:16,745 - sqlalchemy.engine.Engine - INFO - [raw sql] ()
+2026-05-13 14:10:16,747 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-05-13 14:10:16,764 - sqlalchemy.engine.Engine - INFO - SELECT "user".id, "user".email, "user".username, "user".hashed_password, "user".is_active, "user".role, "user".created_at, role_1.id AS id_1, role_1.name 
+FROM "user" LEFT OUTER JOIN role AS role_1 ON role_1.id = "user".role 
+WHERE "user".id = $1::INTEGER
+2026-05-13 14:10:16,764 - sqlalchemy.engine.Engine - INFO - [generated in 0.00033s] (23,)
+2026-05-13 14:10:16,790 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-05-13 14:10:16,970 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-05-13 14:10:16,971 - sqlalchemy.engine.Engine - INFO - SELECT "user".id, "user".email, "user".username, "user".hashed_password, "user".is_active, "user".role, "user".created_at, role_1.id AS id_1, role_1.name 
+FROM "user" LEFT OUTER JOIN role AS role_1 ON role_1.id = "user".role 
+WHERE "user".id = $1::INTEGER
+2026-05-13 14:10:16,971 - sqlalchemy.engine.Engine - INFO - [cached since 0.2076s ago] (23,)
+2026-05-13 14:10:16,991 - sqlalchemy.engine.Engine - INFO - SELECT topic.id, topic.name, topic.description, count(lesson.id) AS lessons_count, count(CASE WHEN (lesson_progress.completed_at IS NOT NULL) THEN lesson.id END) AS completed_lessons_count 
+FROM topic LEFT OUTER JOIN lesson ON lesson.topic_id = topic.id LEFT OUTER JOIN lesson_progress ON lesson_progress.lesson_id = lesson.id AND lesson_progress.user_id = $1::INTEGER GROUP BY topic.id ORDER BY topic.id
+2026-05-13 14:10:16,991 - sqlalchemy.engine.Engine - INFO - [generated in 0.00038s] (23,)
+2026-05-13 14:10:17,008 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-05-13 14:10:17,009 - sqlalchemy.engine.Engine - INFO - SELECT "user".id, "user".email, "user".username, "user".hashed_password, "user".is_active, "user".role, "user".created_at, role_1.id AS id_1, role_1.name 
+FROM "user" LEFT OUTER JOIN role AS role_1 ON role_1.id = "user".role 
+WHERE "user".id = $1::INTEGER
+2026-05-13 14:10:17,009 - sqlalchemy.engine.Engine - INFO - [cached since 0.2452s ago] (23,)
+2026-05-13 14:10:17,010 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-05-13 14:10:17,010 - sqlalchemy.engine.Engine - INFO - SELECT "user".id, "user".email, "user".username, "user".hashed_password, "user".is_active, "user".role, "user".created_at, role_1.id AS id_1, role_1.name 
+FROM "user" LEFT OUTER JOIN role AS role_1 ON role_1.id = "user".role 
+WHERE "user".id = $1::INTEGER
+2026-05-13 14:10:17,010 - sqlalchemy.engine.Engine - INFO - [cached since 0.2462s ago] (23,)
+2026-05-13 14:10:17,012 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-05-13 14:10:17,014 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-05-13 14:10:17,014 - sqlalchemy.engine.Engine - INFO - SELECT "user".id, "user".email, "user".username, "user".hashed_password, "user".is_active, "user".role, "user".created_at, role_1.id AS id_1, role_1.name 
+FROM "user" LEFT OUTER JOIN role AS role_1 ON role_1.id = "user".role 
+WHERE "user".id = $1::INTEGER
+2026-05-13 14:10:17,014 - sqlalchemy.engine.Engine - INFO - [cached since 0.2504s ago] (23,)
+2026-05-13 14:10:17,015 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-05-13 14:10:17,015 - sqlalchemy.engine.Engine - INFO - SELECT "user".id, "user".email, "user".username, "user".hashed_password, "user".is_active, "user".role, "user".created_at, role_1.id AS id_1, role_1.name 
+FROM "user" LEFT OUTER JOIN role AS role_1 ON role_1.id = "user".role 
+WHERE "user".id = $1::INTEGER
+2026-05-13 14:10:17,015 - sqlalchemy.engine.Engine - INFO - [cached since 0.2514s ago] (23,)
+2026-05-13 14:10:17,016 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-05-13 14:10:17,016 - sqlalchemy.engine.Engine - INFO - SELECT "user".id, "user".email, "user".username, "user".hashed_password, "user".is_active, "user".role, "user".created_at, role_1.id AS id_1, role_1.name 
+FROM "user" LEFT OUTER JOIN role AS role_1 ON role_1.id = "user".role 
+WHERE "user".id = $1::INTEGER
+2026-05-13 14:10:17,016 - sqlalchemy.engine.Engine - INFO - [cached since 0.2524s ago] (23,)
+2026-05-13 14:10:17,022 - sqlalchemy.engine.Engine - INFO - SELECT count(topic.id) AS count_1 
+FROM topic
+2026-05-13 14:10:17,022 - sqlalchemy.engine.Engine - INFO - [generated in 0.00026s] ()
+2026-05-13 14:10:17,023 - sqlalchemy.engine.Engine - INFO - SELECT count(topic.id) AS count_1 
+FROM topic
+2026-05-13 14:10:17,023 - sqlalchemy.engine.Engine - INFO - [cached since 0.001612s ago] ()
+2026-05-13 14:10:17,024 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-05-13 14:10:17,024 - sqlalchemy.engine.Engine - INFO - SELECT "user".id, "user".email, "user".username, "user".hashed_password, "user".is_active, "user".role, "user".created_at, role_1.id AS id_1, role_1.name 
+FROM "user" LEFT OUTER JOIN role AS role_1 ON role_1.id = "user".role 
+WHERE "user".id = $1::INTEGER
+2026-05-13 14:10:17,025 - sqlalchemy.engine.Engine - INFO - [cached since 0.2607s ago] (23,)
+2026-05-13 14:10:17,026 - sqlalchemy.engine.Engine - INFO - SELECT count(topic.id) AS count_1 
+FROM topic
+2026-05-13 14:10:17,026 - sqlalchemy.engine.Engine - INFO - [cached since 0.004125s ago] ()
+2026-05-13 14:10:17,027 - sqlalchemy.engine.Engine - INFO - SELECT count("user".id) AS count_1 
+FROM "user"
+2026-05-13 14:10:17,027 - sqlalchemy.engine.Engine - INFO - [generated in 0.00021s] ()
+2026-05-13 14:10:17,030 - sqlalchemy.engine.Engine - INFO - SELECT "user".id, "user".email, "user".username, "user".hashed_password, "user".is_active, "user".role, "user".created_at, role_1.id AS id_1, role_1.name 
+FROM "user" LEFT OUTER JOIN role AS role_1 ON role_1.id = "user".role ORDER BY "user".id
+2026-05-13 14:10:17,030 - sqlalchemy.engine.Engine - INFO - [generated in 0.00020s] ()
+2026-05-13 14:10:17,032 - sqlalchemy.engine.Engine - INFO - SELECT count(lesson.id) AS count_1 
+FROM lesson
+2026-05-13 14:10:17,032 - sqlalchemy.engine.Engine - INFO - [generated in 0.00020s] ()
+2026-05-13 14:10:17,033 - sqlalchemy.engine.Engine - INFO - SELECT count(lesson.id) AS count_1 
+FROM lesson
+2026-05-13 14:10:17,033 - sqlalchemy.engine.Engine - INFO - [cached since 0.001153s ago] ()
+2026-05-13 14:10:17,034 - sqlalchemy.engine.Engine - INFO - SELECT count(lesson.id) AS count_1 
+FROM lesson
+2026-05-13 14:10:17,034 - sqlalchemy.engine.Engine - INFO - [cached since 0.00264s ago] ()
+2026-05-13 14:10:17,035 - sqlalchemy.engine.Engine - INFO - SELECT count(topic.id) AS count_1 
+FROM topic
+2026-05-13 14:10:17,035 - sqlalchemy.engine.Engine - INFO - [cached since 0.01344s ago] ()
+2026-05-13 14:10:17,040 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-05-13 14:10:17,041 - sqlalchemy.engine.Engine - INFO - SELECT count("user".id) AS count_1 
+FROM "user"
+2026-05-13 14:10:17,041 - sqlalchemy.engine.Engine - INFO - [cached since 0.01363s ago] ()
+2026-05-13 14:10:17,042 - sqlalchemy.engine.Engine - INFO - SELECT topic.id, topic.name, topic.description, count(lesson.id) AS lessons_count, count(CASE WHEN (lesson_progress.completed_at IS NOT NULL) THEN lesson.id END) AS completed_lessons_count 
+FROM topic LEFT OUTER JOIN lesson ON lesson.topic_id = topic.id LEFT OUTER JOIN lesson_progress ON lesson_progress.lesson_id = lesson.id AND lesson_progress.user_id = $1::INTEGER GROUP BY topic.id ORDER BY topic.id
+2026-05-13 14:10:17,043 - sqlalchemy.engine.Engine - INFO - [cached since 0.05165s ago] (23,)
+2026-05-13 14:10:17,043 - sqlalchemy.engine.Engine - INFO - SELECT count("user".id) AS count_1 
+FROM "user"
+2026-05-13 14:10:17,043 - sqlalchemy.engine.Engine - INFO - [cached since 0.01612s ago] ()
+2026-05-13 14:10:17,045 - sqlalchemy.engine.Engine - INFO - SELECT count("user".id) AS count_1 
+FROM "user"
+2026-05-13 14:10:17,045 - sqlalchemy.engine.Engine - INFO - [cached since 0.01735s ago] ()
+2026-05-13 14:10:17,046 - sqlalchemy.engine.Engine - INFO - SELECT count(lesson_progress.id) AS count_1 
+FROM lesson_progress 
+WHERE lesson_progress.user_id = $1::INTEGER AND lesson_progress.completed_at IS NOT NULL
+2026-05-13 14:10:17,046 - sqlalchemy.engine.Engine - INFO - [generated in 0.00020s] (23,)
+2026-05-13 14:10:17,048 - sqlalchemy.engine.Engine - INFO - SELECT count("user".id) AS count_1 
+FROM "user" 
+WHERE "user".is_active IS true
+2026-05-13 14:10:17,048 - sqlalchemy.engine.Engine - INFO - [generated in 0.00017s] ()
+2026-05-13 14:10:17,049 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-05-13 14:10:17,050 - sqlalchemy.engine.Engine - INFO - SELECT count("user".id) AS count_1 
+FROM "user" 
+WHERE "user".is_active IS true
+2026-05-13 14:10:17,050 - sqlalchemy.engine.Engine - INFO - [cached since 0.002078s ago] ()
+2026-05-13 14:10:17,051 - sqlalchemy.engine.Engine - INFO - SELECT count("user".id) AS count_1 
+FROM "user" 
+WHERE "user".is_active IS true
+2026-05-13 14:10:17,051 - sqlalchemy.engine.Engine - INFO - [cached since 0.003245s ago] ()
+2026-05-13 14:10:17,052 - sqlalchemy.engine.Engine - INFO - SELECT count(lesson_progress.id) AS count_1 
+FROM lesson_progress 
+WHERE lesson_progress.completed_at >= $1::TIMESTAMP WITH TIME ZONE
+2026-05-13 14:10:17,052 - sqlalchemy.engine.Engine - INFO - [generated in 0.00024s] (datetime.datetime(2026, 5, 7, 0, 0, tzinfo=datetime.timezone.utc),)
+2026-05-13 14:10:17,055 - sqlalchemy.engine.Engine - INFO - SELECT topic.id, count(lesson.id) AS lessons_count, count(CASE WHEN (lesson_progress.user_id = $1::INTEGER AND lesson_progress.completed_at IS NOT NULL) THEN lesson.id END) AS completed_lessons_count 
+FROM topic LEFT OUTER JOIN lesson ON lesson.topic_id = topic.id LEFT OUTER JOIN lesson_progress ON lesson_progress.lesson_id = lesson.id GROUP BY topic.id
+2026-05-13 14:10:17,055 - sqlalchemy.engine.Engine - INFO - [generated in 0.00027s] (23,)
+2026-05-13 14:10:17,056 - sqlalchemy.engine.Engine - INFO - SELECT count(lesson_progress.id) AS count_1 
+FROM lesson_progress 
+WHERE lesson_progress.completed_at >= $1::TIMESTAMP WITH TIME ZONE
+2026-05-13 14:10:17,056 - sqlalchemy.engine.Engine - INFO - [cached since 0.004082s ago] (datetime.datetime(2026, 4, 14, 0, 0, tzinfo=datetime.timezone.utc),)
+2026-05-13 14:10:17,057 - sqlalchemy.engine.Engine - INFO - SELECT count(lesson_progress.id) AS count_1 
+FROM lesson_progress 
+WHERE lesson_progress.completed_at >= $1::TIMESTAMP WITH TIME ZONE
+2026-05-13 14:10:17,058 - sqlalchemy.engine.Engine - INFO - [cached since 0.005352s ago] (datetime.datetime(2026, 4, 14, 0, 0, tzinfo=datetime.timezone.utc),)
+2026-05-13 14:10:17,060 - sqlalchemy.engine.Engine - INFO - SELECT topic.id, topic.name, count(lesson_progress.id) AS completions_count 
+FROM topic LEFT OUTER JOIN lesson ON lesson.topic_id = topic.id LEFT OUTER JOIN lesson_progress ON lesson_progress.lesson_id = lesson.id AND lesson_progress.completed_at IS NOT NULL AND lesson_progress.completed_at >= $1::TIMESTAMP WITH TIME ZONE GROUP BY topic.id, topic.name ORDER BY count(lesson_progress.id) DESC, topic.name ASC
+2026-05-13 14:10:17,061 - sqlalchemy.engine.Engine - INFO - [generated in 0.00027s] (datetime.datetime(2026, 5, 7, 0, 0, tzinfo=datetime.timezone.utc),)
+2026-05-13 14:10:17,062 - sqlalchemy.engine.Engine - INFO - SELECT topic.id, topic.name, count(lesson_progress.id) AS completions_count 
+FROM topic LEFT OUTER JOIN lesson ON lesson.topic_id = topic.id LEFT OUTER JOIN lesson_progress ON lesson_progress.lesson_id = lesson.id AND lesson_progress.completed_at IS NOT NULL AND lesson_progress.completed_at >= $1::TIMESTAMP WITH TIME ZONE GROUP BY topic.id, topic.name ORDER BY count(lesson_progress.id) DESC, topic.name ASC
+2026-05-13 14:10:17,063 - sqlalchemy.engine.Engine - INFO - [cached since 0.002236s ago] (datetime.datetime(2026, 4, 14, 0, 0, tzinfo=datetime.timezone.utc),)
+2026-05-13 14:10:17,065 - sqlalchemy.engine.Engine - INFO - SELECT "user".id, lesson.topic_id, count(lesson_progress.id) AS completed_lessons_count 
+FROM "user" LEFT OUTER JOIN lesson_progress ON lesson_progress.user_id = "user".id AND lesson_progress.completed_at IS NOT NULL LEFT OUTER JOIN lesson ON lesson.id = lesson_progress.lesson_id GROUP BY "user".id, lesson.topic_id
+2026-05-13 14:10:17,065 - sqlalchemy.engine.Engine - INFO - [generated in 0.00024s] ()
+2026-05-13 14:10:17,067 - sqlalchemy.engine.Engine - INFO - SELECT topic.id, topic.name, count(lesson_progress.id) AS completions_count 
+FROM topic LEFT OUTER JOIN lesson ON lesson.topic_id = topic.id LEFT OUTER JOIN lesson_progress ON lesson_progress.lesson_id = lesson.id AND lesson_progress.completed_at IS NOT NULL AND lesson_progress.completed_at >= $1::TIMESTAMP WITH TIME ZONE GROUP BY topic.id, topic.name ORDER BY count(lesson_progress.id) DESC, topic.name ASC
+2026-05-13 14:10:17,067 - sqlalchemy.engine.Engine - INFO - [cached since 0.006388s ago] (datetime.datetime(2026, 4, 14, 0, 0, tzinfo=datetime.timezone.utc),)
+2026-05-13 14:10:17,069 - sqlalchemy.engine.Engine - INFO - SELECT topic.id, topic.name, count(lesson.id) AS lessons_count 
+FROM topic LEFT OUTER JOIN lesson ON lesson.topic_id = topic.id GROUP BY topic.id, topic.name ORDER BY topic.name ASC
+2026-05-13 14:10:17,069 - sqlalchemy.engine.Engine - INFO - [generated in 0.00024s] ()
+2026-05-13 14:10:17,070 - sqlalchemy.engine.Engine - INFO - SELECT "user".id 
+FROM "user"
+2026-05-13 14:10:17,070 - sqlalchemy.engine.Engine - INFO - [generated in 0.00018s] ()
+2026-05-13 14:10:17,071 - sqlalchemy.engine.Engine - INFO - SELECT topic.id, topic.name, count(lesson.id) AS lessons_count 
+FROM topic LEFT OUTER JOIN lesson ON lesson.topic_id = topic.id GROUP BY topic.id, topic.name ORDER BY topic.name ASC
+2026-05-13 14:10:17,071 - sqlalchemy.engine.Engine - INFO - [cached since 0.002547s ago] ()
+2026-05-13 14:10:17,072 - sqlalchemy.engine.Engine - INFO - SELECT topic.id, topic.name, count(lesson.id) AS lessons_count 
+FROM topic LEFT OUTER JOIN lesson ON lesson.topic_id = topic.id GROUP BY topic.id, topic.name ORDER BY topic.name ASC
+2026-05-13 14:10:17,073 - sqlalchemy.engine.Engine - INFO - [cached since 0.003761s ago] ()
+2026-05-13 14:10:17,075 - sqlalchemy.engine.Engine - INFO - SELECT topic.id, topic.name, lesson_progress.user_id, count(lesson_progress.id) AS completed_count 
+FROM topic JOIN lesson ON lesson.topic_id = topic.id JOIN lesson_progress ON lesson_progress.lesson_id = lesson.id 
+WHERE lesson_progress.completed_at IS NOT NULL GROUP BY topic.id, topic.name, lesson_progress.user_id
+2026-05-13 14:10:17,075 - sqlalchemy.engine.Engine - INFO - [generated in 0.00025s] ()
+2026-05-13 14:10:17,076 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-05-13 14:10:17,077 - sqlalchemy.engine.Engine - INFO - SELECT topic.id, topic.name, lesson_progress.user_id, count(lesson_progress.id) AS completed_count 
+FROM topic JOIN lesson ON lesson.topic_id = topic.id JOIN lesson_progress ON lesson_progress.lesson_id = lesson.id 
+WHERE lesson_progress.completed_at IS NOT NULL GROUP BY topic.id, topic.name, lesson_progress.user_id
+2026-05-13 14:10:17,077 - sqlalchemy.engine.Engine - INFO - [cached since 0.002739s ago] ()
+2026-05-13 14:10:17,079 - sqlalchemy.engine.Engine - INFO - SELECT topic.id, topic.name, lesson_progress.user_id, count(lesson_progress.id) AS completed_count 
+FROM topic JOIN lesson ON lesson.topic_id = topic.id JOIN lesson_progress ON lesson_progress.lesson_id = lesson.id 
+WHERE lesson_progress.completed_at IS NOT NULL GROUP BY topic.id, topic.name, lesson_progress.user_id
+2026-05-13 14:10:17,079 - sqlalchemy.engine.Engine - INFO - [cached since 0.004098s ago] ()
+2026-05-13 14:10:17,081 - sqlalchemy.engine.Engine - INFO - SELECT date(lesson_progress.completed_at) AS day, count(lesson_progress.id) AS completions_count 
+FROM lesson_progress 
+WHERE lesson_progress.completed_at IS NOT NULL AND lesson_progress.completed_at >= $1::TIMESTAMP WITH TIME ZONE GROUP BY date(lesson_progress.completed_at) ORDER BY date(lesson_progress.completed_at)
+2026-05-13 14:10:17,082 - sqlalchemy.engine.Engine - INFO - [generated in 0.00025s] (datetime.datetime(2026, 5, 7, 0, 0, tzinfo=datetime.timezone.utc),)
+2026-05-13 14:10:17,083 - sqlalchemy.engine.Engine - INFO - SELECT date(lesson_progress.completed_at) AS day, count(lesson_progress.id) AS completions_count 
+FROM lesson_progress 
+WHERE lesson_progress.completed_at IS NOT NULL AND lesson_progress.completed_at >= $1::TIMESTAMP WITH TIME ZONE GROUP BY date(lesson_progress.completed_at) ORDER BY date(lesson_progress.completed_at)
+2026-05-13 14:10:17,083 - sqlalchemy.engine.Engine - INFO - [cached since 0.001993s ago] (datetime.datetime(2026, 4, 14, 0, 0, tzinfo=datetime.timezone.utc),)
+2026-05-13 14:10:17,085 - sqlalchemy.engine.Engine - INFO - SELECT date(lesson_progress.completed_at) AS day, count(lesson_progress.id) AS completions_count 
+FROM lesson_progress 
+WHERE lesson_progress.completed_at IS NOT NULL AND lesson_progress.completed_at >= $1::TIMESTAMP WITH TIME ZONE GROUP BY date(lesson_progress.completed_at) ORDER BY date(lesson_progress.completed_at)
+2026-05-13 14:10:17,085 - sqlalchemy.engine.Engine - INFO - [cached since 0.003334s ago] (datetime.datetime(2026, 4, 14, 0, 0, tzinfo=datetime.timezone.utc),)
+2026-05-13 14:10:17,087 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-05-13 14:10:17,088 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-05-13 14:10:17,089 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-05-13 14:14:00,391 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-05-13 14:14:00,393 - sqlalchemy.engine.Engine - INFO - SELECT "user".id, "user".email, "user".username, "user".hashed_password, "user".is_active, "user".role, "user".created_at, role_1.id AS id_1, role_1.name 
+FROM "user" LEFT OUTER JOIN role AS role_1 ON role_1.id = "user".role 
+WHERE "user".email = $1::VARCHAR
+2026-05-13 14:14:00,393 - sqlalchemy.engine.Engine - INFO - [generated in 0.00032s] ('ddsfsfd@sdfsfd.fsdsdf',)
+2026-05-13 14:14:00,435 - services.user_service - WARNING - Попытка входа с несуществующим email: ddsfsfd@sdfsfd.fsdsdf
+2026-05-13 14:14:00,435 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-05-13 14:14:00,436 - app - WARNING - HTTP 401: Неверный email или пароль
+2026-05-13 14:21:19,007 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-05-13 14:21:19,008 - sqlalchemy.engine.Engine - INFO - SELECT "user".id, "user".email, "user".username, "user".hashed_password, "user".is_active, "user".role, "user".created_at, role_1.id AS id_1, role_1.name 
+FROM "user" LEFT OUTER JOIN role AS role_1 ON role_1.id = "user".role 
+WHERE "user".email = $1::VARCHAR
+2026-05-13 14:21:19,008 - sqlalchemy.engine.Engine - INFO - [cached since 438.6s ago] ('qq@qq.qq',)
+2026-05-13 14:21:19,011 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-05-13 14:21:19,011 - app - ERROR - Unhandled exception: hash could not be identified
+Traceback (most recent call last):
+  File "/home/vasilisqq/MY_WORLD/music_app/.venv/lib/python3.12/site-packages/starlette/middleware/errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "/home/vasilisqq/MY_WORLD/music_app/.venv/lib/python3.12/site-packages/starlette/middleware/exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/home/vasilisqq/MY_WORLD/music_app/.venv/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/home/vasilisqq/MY_WORLD/music_app/.venv/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/home/vasilisqq/MY_WORLD/music_app/.venv/lib/python3.12/site-packages/fastapi/middleware/asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "/home/vasilisqq/MY_WORLD/music_app/.venv/lib/python3.12/site-packages/starlette/routing.py", line 716, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/home/vasilisqq/MY_WORLD/music_app/.venv/lib/python3.12/site-packages/starlette/routing.py", line 736, in app
+    await route.handle(scope, receive, send)
+  File "/home/vasilisqq/MY_WORLD/music_app/.venv/lib/python3.12/site-packages/starlette/routing.py", line 290, in handle
+    await self.app(scope, receive, send)
+  File "/home/vasilisqq/MY_WORLD/music_app/.venv/lib/python3.12/site-packages/fastapi/routing.py", line 121, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/home/vasilisqq/MY_WORLD/music_app/.venv/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/home/vasilisqq/MY_WORLD/music_app/.venv/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/home/vasilisqq/MY_WORLD/music_app/.venv/lib/python3.12/site-packages/fastapi/routing.py", line 107, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "/home/vasilisqq/MY_WORLD/music_app/.venv/lib/python3.12/site-packages/fastapi/routing.py", line 426, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vasilisqq/MY_WORLD/music_app/.venv/lib/python3.12/site-packages/fastapi/routing.py", line 314, in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vasilisqq/MY_WORLD/music_app/server/api/auth.py", line 78, in login
+    user = await auth_service.login_user(user_data)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vasilisqq/MY_WORLD/music_app/server/services/auth_service.py", line 16, in login_user
+    user = await self.user_service.authenticate_user(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vasilisqq/MY_WORLD/music_app/server/services/user_service.py", line 168, in authenticate_user
+    if not verify_password(password, user.hashed_password):
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vasilisqq/MY_WORLD/music_app/server/utils/security.py", line 9, in verify_password
+    return pwd_context.verify(plain_password, hashed_password)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vasilisqq/MY_WORLD/music_app/.venv/lib/python3.12/site-packages/passlib/context.py", line 2343, in verify
+    record = self._get_or_identify_record(hash, scheme, category)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vasilisqq/MY_WORLD/music_app/.venv/lib/python3.12/site-packages/passlib/context.py", line 2031, in _get_or_identify_record
+    return self._identify_record(hash, category)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vasilisqq/MY_WORLD/music_app/.venv/lib/python3.12/site-packages/passlib/context.py", line 1132, in identify_record
+    raise exc.UnknownHashError("hash could not be identified")
+passlib.exc.UnknownHashError: hash could not be identified
+2026-05-13 14:21:23,557 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-05-13 14:21:23,557 - sqlalchemy.engine.Engine - INFO - SELECT "user".id, "user".email, "user".username, "user".hashed_password, "user".is_active, "user".role, "user".created_at, role_1.id AS id_1, role_1.name 
+FROM "user" LEFT OUTER JOIN role AS role_1 ON role_1.id = "user".role 
+WHERE "user".email = $1::VARCHAR
+2026-05-13 14:21:23,557 - sqlalchemy.engine.Engine - INFO - [cached since 443.2s ago] ('qq@qq.qq',)
+2026-05-13 14:21:23,559 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-05-13 14:21:23,560 - app - ERROR - Unhandled exception: hash could not be identified
+Traceback (most recent call last):
+  File "/home/vasilisqq/MY_WORLD/music_app/.venv/lib/python3.12/site-packages/starlette/middleware/errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "/home/vasilisqq/MY_WORLD/music_app/.venv/lib/python3.12/site-packages/starlette/middleware/exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/home/vasilisqq/MY_WORLD/music_app/.venv/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/home/vasilisqq/MY_WORLD/music_app/.venv/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/home/vasilisqq/MY_WORLD/music_app/.venv/lib/python3.12/site-packages/fastapi/middleware/asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "/home/vasilisqq/MY_WORLD/music_app/.venv/lib/python3.12/site-packages/starlette/routing.py", line 716, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/home/vasilisqq/MY_WORLD/music_app/.venv/lib/python3.12/site-packages/starlette/routing.py", line 736, in app
+    await route.handle(scope, receive, send)
+  File "/home/vasilisqq/MY_WORLD/music_app/.venv/lib/python3.12/site-packages/starlette/routing.py", line 290, in handle
+    await self.app(scope, receive, send)
+  File "/home/vasilisqq/MY_WORLD/music_app/.venv/lib/python3.12/site-packages/fastapi/routing.py", line 121, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/home/vasilisqq/MY_WORLD/music_app/.venv/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/home/vasilisqq/MY_WORLD/music_app/.venv/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/home/vasilisqq/MY_WORLD/music_app/.venv/lib/python3.12/site-packages/fastapi/routing.py", line 107, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "/home/vasilisqq/MY_WORLD/music_app/.venv/lib/python3.12/site-packages/fastapi/routing.py", line 426, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vasilisqq/MY_WORLD/music_app/.venv/lib/python3.12/site-packages/fastapi/routing.py", line 314, in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vasilisqq/MY_WORLD/music_app/server/api/auth.py", line 78, in login
+    user = await auth_service.login_user(user_data)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vasilisqq/MY_WORLD/music_app/server/services/auth_service.py", line 16, in login_user
+    user = await self.user_service.authenticate_user(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vasilisqq/MY_WORLD/music_app/server/services/user_service.py", line 168, in authenticate_user
+    if not verify_password(password, user.hashed_password):
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vasilisqq/MY_WORLD/music_app/server/utils/security.py", line 9, in verify_password
+    return pwd_context.verify(plain_password, hashed_password)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vasilisqq/MY_WORLD/music_app/.venv/lib/python3.12/site-packages/passlib/context.py", line 2343, in verify
+    record = self._get_or_identify_record(hash, scheme, category)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vasilisqq/MY_WORLD/music_app/.venv/lib/python3.12/site-packages/passlib/context.py", line 2031, in _get_or_identify_record
+    return self._identify_record(hash, category)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vasilisqq/MY_WORLD/music_app/.venv/lib/python3.12/site-packages/passlib/context.py", line 1132, in identify_record
+    raise exc.UnknownHashError("hash could not be identified")
+passlib.exc.UnknownHashError: hash could not be identified
+2026-05-13 14:21:27,570 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-05-13 14:21:27,570 - sqlalchemy.engine.Engine - INFO - SELECT "user".id, "user".email, "user".username, "user".hashed_password, "user".is_active, "user".role, "user".created_at, role_1.id AS id_1, role_1.name 
+FROM "user" LEFT OUTER JOIN role AS role_1 ON role_1.id = "user".role 
+WHERE "user".email = $1::VARCHAR
+2026-05-13 14:21:27,571 - sqlalchemy.engine.Engine - INFO - [cached since 447.2s ago] ('qq@qq.qq',)
+2026-05-13 14:21:27,574 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-05-13 14:21:27,575 - app - ERROR - Unhandled exception: hash could not be identified
+Traceback (most recent call last):
+  File "/home/vasilisqq/MY_WORLD/music_app/.venv/lib/python3.12/site-packages/starlette/middleware/errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "/home/vasilisqq/MY_WORLD/music_app/.venv/lib/python3.12/site-packages/starlette/middleware/exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/home/vasilisqq/MY_WORLD/music_app/.venv/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/home/vasilisqq/MY_WORLD/music_app/.venv/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/home/vasilisqq/MY_WORLD/music_app/.venv/lib/python3.12/site-packages/fastapi/middleware/asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "/home/vasilisqq/MY_WORLD/music_app/.venv/lib/python3.12/site-packages/starlette/routing.py", line 716, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/home/vasilisqq/MY_WORLD/music_app/.venv/lib/python3.12/site-packages/starlette/routing.py", line 736, in app
+    await route.handle(scope, receive, send)
+  File "/home/vasilisqq/MY_WORLD/music_app/.venv/lib/python3.12/site-packages/starlette/routing.py", line 290, in handle
+    await self.app(scope, receive, send)
+  File "/home/vasilisqq/MY_WORLD/music_app/.venv/lib/python3.12/site-packages/fastapi/routing.py", line 121, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/home/vasilisqq/MY_WORLD/music_app/.venv/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/home/vasilisqq/MY_WORLD/music_app/.venv/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/home/vasilisqq/MY_WORLD/music_app/.venv/lib/python3.12/site-packages/fastapi/routing.py", line 107, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "/home/vasilisqq/MY_WORLD/music_app/.venv/lib/python3.12/site-packages/fastapi/routing.py", line 426, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vasilisqq/MY_WORLD/music_app/.venv/lib/python3.12/site-packages/fastapi/routing.py", line 314, in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vasilisqq/MY_WORLD/music_app/server/api/auth.py", line 78, in login
+    user = await auth_service.login_user(user_data)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vasilisqq/MY_WORLD/music_app/server/services/auth_service.py", line 16, in login_user
+    user = await self.user_service.authenticate_user(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vasilisqq/MY_WORLD/music_app/server/services/user_service.py", line 168, in authenticate_user
+    if not verify_password(password, user.hashed_password):
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vasilisqq/MY_WORLD/music_app/server/utils/security.py", line 9, in verify_password
+    return pwd_context.verify(plain_password, hashed_password)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vasilisqq/MY_WORLD/music_app/.venv/lib/python3.12/site-packages/passlib/context.py", line 2343, in verify
+    record = self._get_or_identify_record(hash, scheme, category)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vasilisqq/MY_WORLD/music_app/.venv/lib/python3.12/site-packages/passlib/context.py", line 2031, in _get_or_identify_record
+    return self._identify_record(hash, category)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vasilisqq/MY_WORLD/music_app/.venv/lib/python3.12/site-packages/passlib/context.py", line 1132, in identify_record
+    raise exc.UnknownHashError("hash could not be identified")
+passlib.exc.UnknownHashError: hash could not be identified
+2026-05-13 14:29:22,507 - sqlalchemy.engine.Engine - INFO - select pg_catalog.version()
+2026-05-13 14:29:22,508 - sqlalchemy.engine.Engine - INFO - [raw sql] ()
+2026-05-13 14:29:22,510 - sqlalchemy.engine.Engine - INFO - select current_schema()
+2026-05-13 14:29:22,511 - sqlalchemy.engine.Engine - INFO - [raw sql] ()
+2026-05-13 14:29:22,512 - sqlalchemy.engine.Engine - INFO - show standard_conforming_strings
+2026-05-13 14:29:22,512 - sqlalchemy.engine.Engine - INFO - [raw sql] ()
+2026-05-13 14:29:22,513 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-05-13 14:29:22,528 - sqlalchemy.engine.Engine - INFO - SELECT "user".id, "user".email, "user".username, "user".hashed_password, "user".is_active, "user".role, "user".created_at, role_1.id AS id_1, role_1.name 
+FROM "user" LEFT OUTER JOIN role AS role_1 ON role_1.id = "user".role 
+WHERE "user".email = $1::VARCHAR
+2026-05-13 14:29:22,528 - sqlalchemy.engine.Engine - INFO - [generated in 0.00029s] ('sasdfsdf@sfsfdsfd.sdfsdf',)
+2026-05-13 14:29:22,531 - services.user_service - WARNING - Попытка входа с несуществующим email: sasdfsdf@sfsfdsfd.sdfsdf
+2026-05-13 14:29:22,531 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-05-13 14:29:22,532 - app - WARNING - HTTP 401: Неверный email или пароль
+2026-05-13 14:31:59,337 - sqlalchemy.engine.Engine - INFO - select pg_catalog.version()
+2026-05-13 14:31:59,338 - sqlalchemy.engine.Engine - INFO - [raw sql] ()
+2026-05-13 14:31:59,340 - sqlalchemy.engine.Engine - INFO - select current_schema()
+2026-05-13 14:31:59,340 - sqlalchemy.engine.Engine - INFO - [raw sql] ()
+2026-05-13 14:31:59,342 - sqlalchemy.engine.Engine - INFO - show standard_conforming_strings
+2026-05-13 14:31:59,342 - sqlalchemy.engine.Engine - INFO - [raw sql] ()
+2026-05-13 14:31:59,344 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-05-13 14:31:59,362 - sqlalchemy.engine.Engine - INFO - SELECT "user".id, "user".email, "user".username, "user".hashed_password, "user".is_active, "user".role, "user".created_at, role_1.id AS id_1, role_1.name 
+FROM "user" LEFT OUTER JOIN role AS role_1 ON role_1.id = "user".role 
+WHERE "user".email = $1::VARCHAR
+2026-05-13 14:31:59,362 - sqlalchemy.engine.Engine - INFO - [generated in 0.00032s] ('sdfsdf@fsdsfd.sdf',)
+2026-05-13 14:31:59,365 - services.user_service - WARNING - Попытка входа с несуществующим email: sdfsdf@fsdsfd.sdf
+2026-05-13 14:31:59,365 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-05-13 14:31:59,366 - app - WARNING - HTTP 401: Неверный email или пароль
+2026-05-13 14:32:03,183 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-05-13 14:32:03,183 - sqlalchemy.engine.Engine - INFO - SELECT "user".id, "user".email, "user".username, "user".hashed_password, "user".is_active, "user".role, "user".created_at, role_1.id AS id_1, role_1.name 
+FROM "user" LEFT OUTER JOIN role AS role_1 ON role_1.id = "user".role 
+WHERE "user".email = $1::VARCHAR
+2026-05-13 14:32:03,183 - sqlalchemy.engine.Engine - INFO - [cached since 3.821s ago] ('sdfsdf@fsdsfd.sdf',)
+2026-05-13 14:32:03,184 - services.user_service - WARNING - Попытка входа с несуществующим email: sdfsdf@fsdsfd.sdf
+2026-05-13 14:32:03,184 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-05-13 14:32:03,185 - app - WARNING - HTTP 401: Неверный email или пароль
+2026-05-13 14:32:04,111 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-05-13 14:32:04,112 - sqlalchemy.engine.Engine - INFO - SELECT "user".id, "user".email, "user".username, "user".hashed_password, "user".is_active, "user".role, "user".created_at, role_1.id AS id_1, role_1.name 
+FROM "user" LEFT OUTER JOIN role AS role_1 ON role_1.id = "user".role 
+WHERE "user".email = $1::VARCHAR
+2026-05-13 14:32:04,112 - sqlalchemy.engine.Engine - INFO - [cached since 4.75s ago] ('sdfsdf@fsdsfd.sdf',)
+2026-05-13 14:32:04,114 - services.user_service - WARNING - Попытка входа с несуществующим email: sdfsdf@fsdsfd.sdf
+2026-05-13 14:32:04,114 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-05-13 14:32:04,115 - app - WARNING - HTTP 401: Неверный email или пароль
+2026-05-13 14:32:52,247 - sqlalchemy.engine.Engine - INFO - select pg_catalog.version()
+2026-05-13 14:32:52,247 - sqlalchemy.engine.Engine - INFO - [raw sql] ()
+2026-05-13 14:32:52,249 - sqlalchemy.engine.Engine - INFO - select current_schema()
+2026-05-13 14:32:52,249 - sqlalchemy.engine.Engine - INFO - [raw sql] ()
+2026-05-13 14:32:52,251 - sqlalchemy.engine.Engine - INFO - show standard_conforming_strings
+2026-05-13 14:32:52,251 - sqlalchemy.engine.Engine - INFO - [raw sql] ()
+2026-05-13 14:32:52,252 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-05-13 14:32:52,270 - sqlalchemy.engine.Engine - INFO - SELECT "user".id, "user".email, "user".username, "user".hashed_password, "user".is_active, "user".role, "user".created_at, role_1.id AS id_1, role_1.name 
+FROM "user" LEFT OUTER JOIN role AS role_1 ON role_1.id = "user".role 
+WHERE "user".email = $1::VARCHAR
+2026-05-13 14:32:52,271 - sqlalchemy.engine.Engine - INFO - [generated in 0.00033s] ('asdf@asdfsdf.sdf',)
+2026-05-13 14:32:52,274 - services.user_service - WARNING - Попытка входа с несуществующим email: asdf@asdfsdf.sdf
+2026-05-13 14:32:52,274 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-05-13 14:32:52,275 - app - WARNING - HTTP 401: Неверный email или пароль
+2026-05-13 14:34:03,462 - sqlalchemy.engine.Engine - INFO - select pg_catalog.version()
+2026-05-13 14:34:03,463 - sqlalchemy.engine.Engine - INFO - [raw sql] ()
+2026-05-13 14:34:03,466 - sqlalchemy.engine.Engine - INFO - select current_schema()
+2026-05-13 14:34:03,466 - sqlalchemy.engine.Engine - INFO - [raw sql] ()
+2026-05-13 14:34:03,468 - sqlalchemy.engine.Engine - INFO - show standard_conforming_strings
+2026-05-13 14:34:03,468 - sqlalchemy.engine.Engine - INFO - [raw sql] ()
+2026-05-13 14:34:03,469 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-05-13 14:34:03,492 - sqlalchemy.engine.Engine - INFO - SELECT "user".id, "user".email, "user".username, "user".hashed_password, "user".is_active, "user".role, "user".created_at, role_1.id AS id_1, role_1.name 
+FROM "user" LEFT OUTER JOIN role AS role_1 ON role_1.id = "user".role 
+WHERE "user".email = $1::VARCHAR
+2026-05-13 14:34:03,492 - sqlalchemy.engine.Engine - INFO - [generated in 0.00037s] ('qq@qq.qq',)
+2026-05-13 14:34:03,496 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-05-13 14:34:03,496 - app - ERROR - Unhandled exception: hash could not be identified
+Traceback (most recent call last):
+  File "/home/vasilisqq/MY_WORLD/music_app/.venv/lib/python3.12/site-packages/starlette/middleware/errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "/home/vasilisqq/MY_WORLD/music_app/.venv/lib/python3.12/site-packages/starlette/middleware/exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/home/vasilisqq/MY_WORLD/music_app/.venv/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/home/vasilisqq/MY_WORLD/music_app/.venv/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/home/vasilisqq/MY_WORLD/music_app/.venv/lib/python3.12/site-packages/fastapi/middleware/asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "/home/vasilisqq/MY_WORLD/music_app/.venv/lib/python3.12/site-packages/starlette/routing.py", line 716, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/home/vasilisqq/MY_WORLD/music_app/.venv/lib/python3.12/site-packages/starlette/routing.py", line 736, in app
+    await route.handle(scope, receive, send)
+  File "/home/vasilisqq/MY_WORLD/music_app/.venv/lib/python3.12/site-packages/starlette/routing.py", line 290, in handle
+    await self.app(scope, receive, send)
+  File "/home/vasilisqq/MY_WORLD/music_app/.venv/lib/python3.12/site-packages/fastapi/routing.py", line 121, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/home/vasilisqq/MY_WORLD/music_app/.venv/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/home/vasilisqq/MY_WORLD/music_app/.venv/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/home/vasilisqq/MY_WORLD/music_app/.venv/lib/python3.12/site-packages/fastapi/routing.py", line 107, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "/home/vasilisqq/MY_WORLD/music_app/.venv/lib/python3.12/site-packages/fastapi/routing.py", line 426, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vasilisqq/MY_WORLD/music_app/.venv/lib/python3.12/site-packages/fastapi/routing.py", line 314, in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vasilisqq/MY_WORLD/music_app/server/api/auth.py", line 78, in login
+    user = await auth_service.login_user(user_data)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vasilisqq/MY_WORLD/music_app/server/services/auth_service.py", line 16, in login_user
+    user = await self.user_service.authenticate_user(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vasilisqq/MY_WORLD/music_app/server/services/user_service.py", line 168, in authenticate_user
+    if not verify_password(password, user.hashed_password):
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vasilisqq/MY_WORLD/music_app/server/utils/security.py", line 9, in verify_password
+    return pwd_context.verify(plain_password, hashed_password)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vasilisqq/MY_WORLD/music_app/.venv/lib/python3.12/site-packages/passlib/context.py", line 2343, in verify
+    record = self._get_or_identify_record(hash, scheme, category)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vasilisqq/MY_WORLD/music_app/.venv/lib/python3.12/site-packages/passlib/context.py", line 2031, in _get_or_identify_record
+    return self._identify_record(hash, category)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vasilisqq/MY_WORLD/music_app/.venv/lib/python3.12/site-packages/passlib/context.py", line 1132, in identify_record
+    raise exc.UnknownHashError("hash could not be identified")
+passlib.exc.UnknownHashError: hash could not be identified
+2026-05-13 14:36:24,858 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-05-13 14:36:24,859 - sqlalchemy.engine.Engine - INFO - SELECT "user".id, "user".email, "user".username, "user".hashed_password, "user".is_active, "user".role, "user".created_at, role_1.id AS id_1, role_1.name 
+FROM "user" LEFT OUTER JOIN role AS role_1 ON role_1.id = "user".role 
+WHERE "user".email = $1::VARCHAR
+2026-05-13 14:36:24,859 - sqlalchemy.engine.Engine - INFO - [cached since 141.4s ago] ('ertybasevk@gmail.com',)
+2026-05-13 14:36:25,121 - services.user_service - INFO - Пользователь успешно аутентифицирован: ertybasevk@gmail.com
+2026-05-13 14:36:25,125 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-05-13 14:36:33,665 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-05-13 14:36:33,671 - sqlalchemy.engine.Engine - INFO - SELECT "user".id, "user".email, "user".username, "user".hashed_password, "user".is_active, "user".role, "user".created_at, role_1.id AS id_1, role_1.name 
+FROM "user" LEFT OUTER JOIN role AS role_1 ON role_1.id = "user".role 
+WHERE "user".id = $1::INTEGER
+2026-05-13 14:36:33,672 - sqlalchemy.engine.Engine - INFO - [generated in 0.00065s] (24,)
+2026-05-13 14:36:33,678 - sqlalchemy.engine.Engine - INFO - SELECT count("user".id) AS count_1 
+FROM "user"
+2026-05-13 14:36:33,678 - sqlalchemy.engine.Engine - INFO - [generated in 0.00032s] ()
+2026-05-13 14:36:33,680 - sqlalchemy.engine.Engine - INFO - SELECT count(topic.id) AS count_1 
+FROM topic
+2026-05-13 14:36:33,681 - sqlalchemy.engine.Engine - INFO - [generated in 0.00028s] ()
+2026-05-13 14:36:33,681 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-05-13 14:36:33,682 - sqlalchemy.engine.Engine - INFO - SELECT "user".id, "user".email, "user".username, "user".hashed_password, "user".is_active, "user".role, "user".created_at, role_1.id AS id_1, role_1.name 
+FROM "user" LEFT OUTER JOIN role AS role_1 ON role_1.id = "user".role 
+WHERE "user".id = $1::INTEGER
+2026-05-13 14:36:33,682 - sqlalchemy.engine.Engine - INFO - [cached since 0.01112s ago] (24,)
+2026-05-13 14:36:33,685 - sqlalchemy.engine.Engine - INFO - SELECT count(lesson_progress.id) AS count_1 
+FROM lesson_progress 
+WHERE lesson_progress.user_id = $1::INTEGER AND lesson_progress.completed_at IS NOT NULL
+2026-05-13 14:36:33,685 - sqlalchemy.engine.Engine - INFO - [generated in 0.00031s] (24,)
+2026-05-13 14:36:33,690 - sqlalchemy.engine.Engine - INFO - SELECT topic.id, count(lesson.id) AS lessons_count, count(CASE WHEN (lesson_progress.user_id = $1::INTEGER AND lesson_progress.completed_at IS NOT NULL) THEN lesson.id END) AS completed_lessons_count 
+FROM topic LEFT OUTER JOIN lesson ON lesson.topic_id = topic.id LEFT OUTER JOIN lesson_progress ON lesson_progress.lesson_id = lesson.id GROUP BY topic.id
+2026-05-13 14:36:33,690 - sqlalchemy.engine.Engine - INFO - [generated in 0.00031s] (24,)
+2026-05-13 14:36:33,695 - sqlalchemy.engine.Engine - INFO - SELECT topic.id, topic.name, topic.description, count(lesson.id) AS lessons_count, count(CASE WHEN (lesson_progress.completed_at IS NOT NULL) THEN lesson.id END) AS completed_lessons_count 
+FROM topic LEFT OUTER JOIN lesson ON lesson.topic_id = topic.id LEFT OUTER JOIN lesson_progress ON lesson_progress.lesson_id = lesson.id AND lesson_progress.user_id = $1::INTEGER GROUP BY topic.id ORDER BY topic.id
+2026-05-13 14:36:33,695 - sqlalchemy.engine.Engine - INFO - [generated in 0.00034s] (24,)
+2026-05-13 14:36:33,699 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-05-13 14:36:33,703 - sqlalchemy.engine.Engine - INFO - SELECT "user".id, lesson.topic_id, count(lesson_progress.id) AS completed_lessons_count 
+FROM "user" LEFT OUTER JOIN lesson_progress ON lesson_progress.user_id = "user".id AND lesson_progress.completed_at IS NOT NULL LEFT OUTER JOIN lesson ON lesson.id = lesson_progress.lesson_id GROUP BY "user".id, lesson.topic_id
+2026-05-13 14:36:33,704 - sqlalchemy.engine.Engine - INFO - [generated in 0.00047s] ()
+2026-05-13 14:36:33,707 - sqlalchemy.engine.Engine - INFO - SELECT "user".id 
+FROM "user"
+2026-05-13 14:36:33,707 - sqlalchemy.engine.Engine - INFO - [generated in 0.00039s] ()
+2026-05-13 14:36:33,710 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-05-13 14:39:48,863 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-05-13 14:39:48,864 - sqlalchemy.engine.Engine - INFO - SELECT "user".id, "user".email, "user".username, "user".hashed_password, "user".is_active, "user".role, "user".created_at, role_1.id AS id_1, role_1.name 
+FROM "user" LEFT OUTER JOIN role AS role_1 ON role_1.id = "user".role 
+WHERE "user".id = $1::INTEGER
+2026-05-13 14:39:48,864 - sqlalchemy.engine.Engine - INFO - [cached since 195.2s ago] (24,)
+2026-05-13 14:39:48,866 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-05-13 14:39:49,021 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-05-13 14:39:49,021 - sqlalchemy.engine.Engine - INFO - SELECT "user".id, "user".email, "user".username, "user".hashed_password, "user".is_active, "user".role, "user".created_at, role_1.id AS id_1, role_1.name 
+FROM "user" LEFT OUTER JOIN role AS role_1 ON role_1.id = "user".role 
+WHERE "user".id = $1::INTEGER
+2026-05-13 14:39:49,022 - sqlalchemy.engine.Engine - INFO - [cached since 195.4s ago] (24,)
+2026-05-13 14:39:49,024 - sqlalchemy.engine.Engine - INFO - SELECT topic.id, topic.name, topic.description, count(lesson.id) AS lessons_count, count(CASE WHEN (lesson_progress.completed_at IS NOT NULL) THEN lesson.id END) AS completed_lessons_count 
+FROM topic LEFT OUTER JOIN lesson ON lesson.topic_id = topic.id LEFT OUTER JOIN lesson_progress ON lesson_progress.lesson_id = lesson.id AND lesson_progress.user_id = $1::INTEGER GROUP BY topic.id ORDER BY topic.id
+2026-05-13 14:39:49,024 - sqlalchemy.engine.Engine - INFO - [cached since 195.3s ago] (24,)
+2026-05-13 14:39:49,027 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-05-13 14:39:49,028 - sqlalchemy.engine.Engine - INFO - SELECT "user".id, "user".email, "user".username, "user".hashed_password, "user".is_active, "user".role, "user".created_at, role_1.id AS id_1, role_1.name 
+FROM "user" LEFT OUTER JOIN role AS role_1 ON role_1.id = "user".role 
+WHERE "user".id = $1::INTEGER
+2026-05-13 14:39:49,028 - sqlalchemy.engine.Engine - INFO - [cached since 195.4s ago] (24,)
+2026-05-13 14:39:49,032 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-05-13 14:39:49,035 - sqlalchemy.engine.Engine - INFO - SELECT count(topic.id) AS count_1 
+FROM topic
+2026-05-13 14:39:49,035 - sqlalchemy.engine.Engine - INFO - [cached since 195.4s ago] ()
+2026-05-13 14:39:49,037 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-05-13 14:39:49,038 - sqlalchemy.engine.Engine - INFO - SELECT "user".id, "user".email, "user".username, "user".hashed_password, "user".is_active, "user".role, "user".created_at, role_1.id AS id_1, role_1.name 
+FROM "user" LEFT OUTER JOIN role AS role_1 ON role_1.id = "user".role 
+WHERE "user".id = $1::INTEGER
+2026-05-13 14:39:49,038 - sqlalchemy.engine.Engine - INFO - [cached since 195.4s ago] (24,)
+2026-05-13 14:39:49,044 - sqlalchemy.engine.Engine - INFO - SELECT count(lesson.id) AS count_1 
+FROM lesson
+2026-05-13 14:39:49,044 - sqlalchemy.engine.Engine - INFO - [generated in 0.00029s] ()
+2026-05-13 14:39:49,047 - sqlalchemy.engine.Engine - INFO - SELECT "user".id, "user".email, "user".username, "user".hashed_password, "user".is_active, "user".role, "user".created_at, role_1.id AS id_1, role_1.name 
+FROM "user" LEFT OUTER JOIN role AS role_1 ON role_1.id = "user".role ORDER BY "user".id
+2026-05-13 14:39:49,048 - sqlalchemy.engine.Engine - INFO - [generated in 0.00035s] ()
+2026-05-13 14:39:49,054 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-05-13 14:39:49,055 - sqlalchemy.engine.Engine - INFO - SELECT "user".id, "user".email, "user".username, "user".hashed_password, "user".is_active, "user".role, "user".created_at, role_1.id AS id_1, role_1.name 
+FROM "user" LEFT OUTER JOIN role AS role_1 ON role_1.id = "user".role 
+WHERE "user".id = $1::INTEGER
+2026-05-13 14:39:49,055 - sqlalchemy.engine.Engine - INFO - [cached since 195.4s ago] (24,)
+2026-05-13 14:39:49,060 - sqlalchemy.engine.Engine - INFO - SELECT count("user".id) AS count_1 
+FROM "user"
+2026-05-13 14:39:49,060 - sqlalchemy.engine.Engine - INFO - [cached since 195.4s ago] ()
+2026-05-13 14:39:49,068 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-05-13 14:39:49,069 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-05-13 14:39:49,070 - sqlalchemy.engine.Engine - INFO - SELECT "user".id, "user".email, "user".username, "user".hashed_password, "user".is_active, "user".role, "user".created_at, role_1.id AS id_1, role_1.name 
+FROM "user" LEFT OUTER JOIN role AS role_1 ON role_1.id = "user".role 
+WHERE "user".id = $1::INTEGER
+2026-05-13 14:39:49,070 - sqlalchemy.engine.Engine - INFO - [cached since 195.4s ago] (24,)
+2026-05-13 14:39:49,075 - sqlalchemy.engine.Engine - INFO - SELECT count("user".id) AS count_1 
+FROM "user" 
+WHERE "user".is_active IS true
+2026-05-13 14:39:49,075 - sqlalchemy.engine.Engine - INFO - [generated in 0.00028s] ()
+2026-05-13 14:39:49,076 - sqlalchemy.engine.Engine - INFO - SELECT count(topic.id) AS count_1 
+FROM topic
+2026-05-13 14:39:49,076 - sqlalchemy.engine.Engine - INFO - [cached since 195.4s ago] ()
+2026-05-13 14:39:49,079 - sqlalchemy.engine.Engine - INFO - SELECT count(topic.id) AS count_1 
+FROM topic
+2026-05-13 14:39:49,080 - sqlalchemy.engine.Engine - INFO - [cached since 195.4s ago] ()
+2026-05-13 14:39:49,081 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-05-13 14:39:49,081 - sqlalchemy.engine.Engine - INFO - SELECT "user".id, "user".email, "user".username, "user".hashed_password, "user".is_active, "user".role, "user".created_at, role_1.id AS id_1, role_1.name 
+FROM "user" LEFT OUTER JOIN role AS role_1 ON role_1.id = "user".role 
+WHERE "user".id = $1::INTEGER
+2026-05-13 14:39:49,081 - sqlalchemy.engine.Engine - INFO - [cached since 195.4s ago] (24,)
+2026-05-13 14:39:49,083 - sqlalchemy.engine.Engine - INFO - SELECT count(lesson_progress.id) AS count_1 
+FROM lesson_progress 
+WHERE lesson_progress.completed_at >= $1::TIMESTAMP WITH TIME ZONE
+2026-05-13 14:39:49,083 - sqlalchemy.engine.Engine - INFO - [generated in 0.00026s] (datetime.datetime(2026, 5, 7, 0, 0, tzinfo=datetime.timezone.utc),)
+2026-05-13 14:39:49,084 - sqlalchemy.engine.Engine - INFO - SELECT count(lesson.id) AS count_1 
+FROM lesson
+2026-05-13 14:39:49,084 - sqlalchemy.engine.Engine - INFO - [cached since 0.04026s ago] ()
+2026-05-13 14:39:49,085 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-05-13 14:39:49,085 - sqlalchemy.engine.Engine - INFO - SELECT "user".id, "user".email, "user".username, "user".hashed_password, "user".is_active, "user".role, "user".created_at, role_1.id AS id_1, role_1.name 
+FROM "user" LEFT OUTER JOIN role AS role_1 ON role_1.id = "user".role 
+WHERE "user".id = $1::INTEGER
+2026-05-13 14:39:49,085 - sqlalchemy.engine.Engine - INFO - [cached since 195.4s ago] (24,)
+2026-05-13 14:39:49,089 - sqlalchemy.engine.Engine - INFO - SELECT count(lesson.id) AS count_1 
+FROM lesson
+2026-05-13 14:39:49,089 - sqlalchemy.engine.Engine - INFO - [cached since 0.0451s ago] ()
+2026-05-13 14:39:49,093 - sqlalchemy.engine.Engine - INFO - SELECT topic.id, topic.name, count(lesson_progress.id) AS completions_count 
+FROM topic LEFT OUTER JOIN lesson ON lesson.topic_id = topic.id LEFT OUTER JOIN lesson_progress ON lesson_progress.lesson_id = lesson.id AND lesson_progress.completed_at IS NOT NULL AND lesson_progress.completed_at >= $1::TIMESTAMP WITH TIME ZONE GROUP BY topic.id, topic.name ORDER BY count(lesson_progress.id) DESC, topic.name ASC
+2026-05-13 14:39:49,093 - sqlalchemy.engine.Engine - INFO - [generated in 0.00029s] (datetime.datetime(2026, 5, 7, 0, 0, tzinfo=datetime.timezone.utc),)
+2026-05-13 14:39:49,094 - sqlalchemy.engine.Engine - INFO - SELECT count("user".id) AS count_1 
+FROM "user"
+2026-05-13 14:39:49,094 - sqlalchemy.engine.Engine - INFO - [cached since 195.4s ago] ()
+2026-05-13 14:39:49,097 - sqlalchemy.engine.Engine - INFO - SELECT count("user".id) AS count_1 
+FROM "user"
+2026-05-13 14:39:49,097 - sqlalchemy.engine.Engine - INFO - [cached since 195.4s ago] ()
+2026-05-13 14:39:49,098 - sqlalchemy.engine.Engine - INFO - SELECT topic.id, topic.name, topic.description, count(lesson.id) AS lessons_count, count(CASE WHEN (lesson_progress.completed_at IS NOT NULL) THEN lesson.id END) AS completed_lessons_count 
+FROM topic LEFT OUTER JOIN lesson ON lesson.topic_id = topic.id LEFT OUTER JOIN lesson_progress ON lesson_progress.lesson_id = lesson.id AND lesson_progress.user_id = $1::INTEGER GROUP BY topic.id ORDER BY topic.id
+2026-05-13 14:39:49,098 - sqlalchemy.engine.Engine - INFO - [cached since 195.4s ago] (24,)
+2026-05-13 14:39:49,099 - sqlalchemy.engine.Engine - INFO - SELECT count("user".id) AS count_1 
+FROM "user"
+2026-05-13 14:39:49,099 - sqlalchemy.engine.Engine - INFO - [cached since 195.4s ago] ()
+2026-05-13 14:39:49,100 - sqlalchemy.engine.Engine - INFO - SELECT count("user".id) AS count_1 
+FROM "user" 
+WHERE "user".is_active IS true
+2026-05-13 14:39:49,100 - sqlalchemy.engine.Engine - INFO - [cached since 0.02541s ago] ()
+2026-05-13 14:39:49,102 - sqlalchemy.engine.Engine - INFO - SELECT topic.id, topic.name, count(lesson.id) AS lessons_count 
+FROM topic LEFT OUTER JOIN lesson ON lesson.topic_id = topic.id GROUP BY topic.id, topic.name ORDER BY topic.name ASC
+2026-05-13 14:39:49,102 - sqlalchemy.engine.Engine - INFO - [generated in 0.00050s] ()
+2026-05-13 14:39:49,105 - sqlalchemy.engine.Engine - INFO - SELECT count(topic.id) AS count_1 
+FROM topic
+2026-05-13 14:39:49,106 - sqlalchemy.engine.Engine - INFO - [cached since 195.4s ago] ()
+2026-05-13 14:39:49,107 - sqlalchemy.engine.Engine - INFO - SELECT count("user".id) AS count_1 
+FROM "user" 
+WHERE "user".is_active IS true
+2026-05-13 14:39:49,107 - sqlalchemy.engine.Engine - INFO - [cached since 0.0327s ago] ()
+2026-05-13 14:39:49,108 - sqlalchemy.engine.Engine - INFO - SELECT count(lesson_progress.id) AS count_1 
+FROM lesson_progress 
+WHERE lesson_progress.completed_at >= $1::TIMESTAMP WITH TIME ZONE
+2026-05-13 14:39:49,108 - sqlalchemy.engine.Engine - INFO - [cached since 0.02545s ago] (datetime.datetime(2026, 4, 14, 0, 0, tzinfo=datetime.timezone.utc),)
+2026-05-13 14:39:49,111 - sqlalchemy.engine.Engine - INFO - SELECT topic.id, topic.name, lesson_progress.user_id, count(lesson_progress.id) AS completed_count 
+FROM topic JOIN lesson ON lesson.topic_id = topic.id JOIN lesson_progress ON lesson_progress.lesson_id = lesson.id 
+WHERE lesson_progress.completed_at IS NOT NULL GROUP BY topic.id, topic.name, lesson_progress.user_id
+2026-05-13 14:39:49,112 - sqlalchemy.engine.Engine - INFO - [generated in 0.00037s] ()
+2026-05-13 14:39:49,114 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-05-13 14:39:49,118 - sqlalchemy.engine.Engine - INFO - SELECT count(lesson_progress.id) AS count_1 
+FROM lesson_progress 
+WHERE lesson_progress.completed_at >= $1::TIMESTAMP WITH TIME ZONE
+2026-05-13 14:39:49,118 - sqlalchemy.engine.Engine - INFO - [cached since 0.03495s ago] (datetime.datetime(2026, 4, 14, 0, 0, tzinfo=datetime.timezone.utc),)
+2026-05-13 14:39:49,120 - sqlalchemy.engine.Engine - INFO - SELECT count(lesson_progress.id) AS count_1 
+FROM lesson_progress 
+WHERE lesson_progress.user_id = $1::INTEGER AND lesson_progress.completed_at IS NOT NULL
+2026-05-13 14:39:49,120 - sqlalchemy.engine.Engine - INFO - [cached since 195.4s ago] (24,)
+2026-05-13 14:39:49,122 - sqlalchemy.engine.Engine - INFO - SELECT topic.id, topic.name, count(lesson_progress.id) AS completions_count 
+FROM topic LEFT OUTER JOIN lesson ON lesson.topic_id = topic.id LEFT OUTER JOIN lesson_progress ON lesson_progress.lesson_id = lesson.id AND lesson_progress.completed_at IS NOT NULL AND lesson_progress.completed_at >= $1::TIMESTAMP WITH TIME ZONE GROUP BY topic.id, topic.name ORDER BY count(lesson_progress.id) DESC, topic.name ASC
+2026-05-13 14:39:49,122 - sqlalchemy.engine.Engine - INFO - [cached since 0.02932s ago] (datetime.datetime(2026, 4, 14, 0, 0, tzinfo=datetime.timezone.utc),)
+2026-05-13 14:39:49,127 - sqlalchemy.engine.Engine - INFO - SELECT date(lesson_progress.completed_at) AS day, count(lesson_progress.id) AS completions_count 
+FROM lesson_progress 
+WHERE lesson_progress.completed_at IS NOT NULL AND lesson_progress.completed_at >= $1::TIMESTAMP WITH TIME ZONE GROUP BY date(lesson_progress.completed_at) ORDER BY date(lesson_progress.completed_at)
+2026-05-13 14:39:49,127 - sqlalchemy.engine.Engine - INFO - [generated in 0.00031s] (datetime.datetime(2026, 5, 7, 0, 0, tzinfo=datetime.timezone.utc),)
+2026-05-13 14:39:49,131 - sqlalchemy.engine.Engine - INFO - SELECT topic.id, topic.name, count(lesson_progress.id) AS completions_count 
+FROM topic LEFT OUTER JOIN lesson ON lesson.topic_id = topic.id LEFT OUTER JOIN lesson_progress ON lesson_progress.lesson_id = lesson.id AND lesson_progress.completed_at IS NOT NULL AND lesson_progress.completed_at >= $1::TIMESTAMP WITH TIME ZONE GROUP BY topic.id, topic.name ORDER BY count(lesson_progress.id) DESC, topic.name ASC
+2026-05-13 14:39:49,131 - sqlalchemy.engine.Engine - INFO - [cached since 0.03863s ago] (datetime.datetime(2026, 4, 14, 0, 0, tzinfo=datetime.timezone.utc),)
+2026-05-13 14:39:49,134 - sqlalchemy.engine.Engine - INFO - SELECT topic.id, count(lesson.id) AS lessons_count, count(CASE WHEN (lesson_progress.user_id = $1::INTEGER AND lesson_progress.completed_at IS NOT NULL) THEN lesson.id END) AS completed_lessons_count 
+FROM topic LEFT OUTER JOIN lesson ON lesson.topic_id = topic.id LEFT OUTER JOIN lesson_progress ON lesson_progress.lesson_id = lesson.id GROUP BY topic.id
+2026-05-13 14:39:49,135 - sqlalchemy.engine.Engine - INFO - [cached since 195.4s ago] (24,)
+2026-05-13 14:39:49,137 - sqlalchemy.engine.Engine - INFO - SELECT topic.id, topic.name, count(lesson.id) AS lessons_count 
+FROM topic LEFT OUTER JOIN lesson ON lesson.topic_id = topic.id GROUP BY topic.id, topic.name ORDER BY topic.name ASC
+2026-05-13 14:39:49,137 - sqlalchemy.engine.Engine - INFO - [cached since 0.03474s ago] ()
+2026-05-13 14:39:49,138 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-05-13 14:39:49,141 - sqlalchemy.engine.Engine - INFO - SELECT topic.id, topic.name, lesson_progress.user_id, count(lesson_progress.id) AS completed_count 
+FROM topic JOIN lesson ON lesson.topic_id = topic.id JOIN lesson_progress ON lesson_progress.lesson_id = lesson.id 
+WHERE lesson_progress.completed_at IS NOT NULL GROUP BY topic.id, topic.name, lesson_progress.user_id
+2026-05-13 14:39:49,142 - sqlalchemy.engine.Engine - INFO - [cached since 0.0303s ago] ()
+2026-05-13 14:39:49,143 - sqlalchemy.engine.Engine - INFO - SELECT topic.id, topic.name, count(lesson.id) AS lessons_count 
+FROM topic LEFT OUTER JOIN lesson ON lesson.topic_id = topic.id GROUP BY topic.id, topic.name ORDER BY topic.name ASC
+2026-05-13 14:39:49,143 - sqlalchemy.engine.Engine - INFO - [cached since 0.04087s ago] ()
+2026-05-13 14:39:49,144 - sqlalchemy.engine.Engine - INFO - SELECT "user".id, lesson.topic_id, count(lesson_progress.id) AS completed_lessons_count 
+FROM "user" LEFT OUTER JOIN lesson_progress ON lesson_progress.user_id = "user".id AND lesson_progress.completed_at IS NOT NULL LEFT OUTER JOIN lesson ON lesson.id = lesson_progress.lesson_id GROUP BY "user".id, lesson.topic_id
+2026-05-13 14:39:49,145 - sqlalchemy.engine.Engine - INFO - [cached since 195.4s ago] ()
+2026-05-13 14:39:49,150 - sqlalchemy.engine.Engine - INFO - SELECT topic.id, topic.name, lesson_progress.user_id, count(lesson_progress.id) AS completed_count 
+FROM topic JOIN lesson ON lesson.topic_id = topic.id JOIN lesson_progress ON lesson_progress.lesson_id = lesson.id 
+WHERE lesson_progress.completed_at IS NOT NULL GROUP BY topic.id, topic.name, lesson_progress.user_id
+2026-05-13 14:39:49,150 - sqlalchemy.engine.Engine - INFO - [cached since 0.03848s ago] ()
+2026-05-13 14:39:49,151 - sqlalchemy.engine.Engine - INFO - SELECT date(lesson_progress.completed_at) AS day, count(lesson_progress.id) AS completions_count 
+FROM lesson_progress 
+WHERE lesson_progress.completed_at IS NOT NULL AND lesson_progress.completed_at >= $1::TIMESTAMP WITH TIME ZONE GROUP BY date(lesson_progress.completed_at) ORDER BY date(lesson_progress.completed_at)
+2026-05-13 14:39:49,151 - sqlalchemy.engine.Engine - INFO - [cached since 0.02476s ago] (datetime.datetime(2026, 4, 14, 0, 0, tzinfo=datetime.timezone.utc),)
+2026-05-13 14:39:49,152 - sqlalchemy.engine.Engine - INFO - SELECT "user".id 
+FROM "user"
+2026-05-13 14:39:49,152 - sqlalchemy.engine.Engine - INFO - [cached since 195.4s ago] ()
+2026-05-13 14:39:49,154 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-05-13 14:39:49,155 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-05-13 14:39:49,156 - sqlalchemy.engine.Engine - INFO - SELECT date(lesson_progress.completed_at) AS day, count(lesson_progress.id) AS completions_count 
+FROM lesson_progress 
+WHERE lesson_progress.completed_at IS NOT NULL AND lesson_progress.completed_at >= $1::TIMESTAMP WITH TIME ZONE GROUP BY date(lesson_progress.completed_at) ORDER BY date(lesson_progress.completed_at)
+2026-05-13 14:39:49,156 - sqlalchemy.engine.Engine - INFO - [cached since 0.02971s ago] (datetime.datetime(2026, 4, 14, 0, 0, tzinfo=datetime.timezone.utc),)
+2026-05-13 14:39:49,159 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-05-13 14:42:33,066 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-05-13 14:42:33,067 - sqlalchemy.engine.Engine - INFO - SELECT "user".id, "user".email, "user".username, "user".hashed_password, "user".is_active, "user".role, "user".created_at, role_1.id AS id_1, role_1.name 
+FROM "user" LEFT OUTER JOIN role AS role_1 ON role_1.id = "user".role 
+WHERE "user".id = $1::INTEGER
+2026-05-13 14:42:33,068 - sqlalchemy.engine.Engine - INFO - [cached since 359.4s ago] (24,)
+2026-05-13 14:42:33,072 - sqlalchemy.engine.Engine - INFO - SELECT topic.id, topic.name, topic.description, count(lesson.id) AS lessons_count, count(CASE WHEN (lesson_progress.completed_at IS NOT NULL) THEN lesson.id END) AS completed_lessons_count 
+FROM topic LEFT OUTER JOIN lesson ON lesson.topic_id = topic.id LEFT OUTER JOIN lesson_progress ON lesson_progress.lesson_id = lesson.id AND lesson_progress.user_id = $1::INTEGER GROUP BY topic.id ORDER BY topic.id
+2026-05-13 14:42:33,072 - sqlalchemy.engine.Engine - INFO - [cached since 359.4s ago] (24,)
+2026-05-13 14:42:33,075 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-05-13 14:44:11,966 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-05-13 14:44:11,967 - sqlalchemy.engine.Engine - INFO - SELECT "user".id, "user".email, "user".username, "user".hashed_password, "user".is_active, "user".role, "user".created_at, role_1.id AS id_1, role_1.name 
+FROM "user" LEFT OUTER JOIN role AS role_1 ON role_1.id = "user".role 
+WHERE "user".id = $1::INTEGER
+2026-05-13 14:44:11,967 - sqlalchemy.engine.Engine - INFO - [cached since 458.3s ago] (24,)
+2026-05-13 14:44:11,972 - sqlalchemy.engine.Engine - INFO - SELECT lesson.id, lesson.name, lesson.description, lesson.difficult, lesson.rhythm, lesson.notes, lesson.hand, lesson.topic_id, lesson.order_in_topic 
+FROM lesson 
+WHERE lesson.topic_id = $1::INTEGER ORDER BY lesson.order_in_topic ASC
+2026-05-13 14:44:11,973 - sqlalchemy.engine.Engine - INFO - [generated in 0.00049s] (1,)
+2026-05-13 14:44:11,976 - sqlalchemy.engine.Engine - INFO - SELECT lesson_progress.lesson_id 
+FROM lesson_progress JOIN lesson ON lesson.id = lesson_progress.lesson_id 
+WHERE lesson_progress.user_id = $1::INTEGER AND lesson.topic_id = $2::INTEGER AND lesson_progress.completed_at IS NOT NULL
+2026-05-13 14:44:11,976 - sqlalchemy.engine.Engine - INFO - [generated in 0.00033s] (24, 1)
+2026-05-13 14:44:11,982 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-05-13 14:44:11,986 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-05-13 14:44:11,987 - sqlalchemy.engine.Engine - INFO - SELECT "user".id, "user".email, "user".username, "user".hashed_password, "user".is_active, "user".role, "user".created_at, role_1.id AS id_1, role_1.name 
+FROM "user" LEFT OUTER JOIN role AS role_1 ON role_1.id = "user".role 
+WHERE "user".id = $1::INTEGER
+2026-05-13 14:44:11,987 - sqlalchemy.engine.Engine - INFO - [cached since 458.3s ago] (24,)
+2026-05-13 14:44:12,031 - sqlalchemy.engine.Engine - INFO - SELECT lesson_progress.lesson_id 
+FROM lesson_progress JOIN lesson ON lesson.id = lesson_progress.lesson_id 
+WHERE lesson_progress.user_id = $1::INTEGER AND lesson.topic_id = $2::INTEGER AND lesson_progress.completed_at IS NOT NULL
+2026-05-13 14:44:12,031 - sqlalchemy.engine.Engine - INFO - [cached since 0.05489s ago] (24, 1)
+2026-05-13 14:44:12,032 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-05-13 14:58:42,716 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-05-13 14:58:42,717 - sqlalchemy.engine.Engine - INFO - SELECT "user".id, "user".email, "user".username, "user".hashed_password, "user".is_active, "user".role, "user".created_at, role_1.id AS id_1, role_1.name 
+FROM "user" LEFT OUTER JOIN role AS role_1 ON role_1.id = "user".role 
+WHERE "user".id = $1::INTEGER
+2026-05-13 14:58:42,717 - sqlalchemy.engine.Engine - INFO - [cached since 1329s ago] (24,)
+2026-05-13 14:58:42,720 - sqlalchemy.engine.Engine - INFO - SELECT lesson.id, lesson.name, lesson.description, lesson.difficult, lesson.rhythm, lesson.notes, lesson.hand, lesson.topic_id, lesson.order_in_topic 
+FROM lesson 
+WHERE lesson.topic_id = $1::INTEGER ORDER BY lesson.order_in_topic ASC
+2026-05-13 14:58:42,720 - sqlalchemy.engine.Engine - INFO - [cached since 870.7s ago] (1,)
+2026-05-13 14:58:42,722 - sqlalchemy.engine.Engine - INFO - SELECT lesson_progress.lesson_id 
+FROM lesson_progress JOIN lesson ON lesson.id = lesson_progress.lesson_id 
+WHERE lesson_progress.user_id = $1::INTEGER AND lesson.topic_id = $2::INTEGER AND lesson_progress.completed_at IS NOT NULL
+2026-05-13 14:58:42,722 - sqlalchemy.engine.Engine - INFO - [cached since 870.7s ago] (24, 1)
+2026-05-13 14:58:42,724 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-05-13 15:09:46,027 - sqlalchemy.engine.Engine - INFO - select pg_catalog.version()
+2026-05-13 15:09:46,028 - sqlalchemy.engine.Engine - INFO - [raw sql] ()
+2026-05-13 15:09:46,029 - sqlalchemy.engine.Engine - INFO - select current_schema()
+2026-05-13 15:09:46,029 - sqlalchemy.engine.Engine - INFO - [raw sql] ()
+2026-05-13 15:09:46,031 - sqlalchemy.engine.Engine - INFO - show standard_conforming_strings
+2026-05-13 15:09:46,031 - sqlalchemy.engine.Engine - INFO - [raw sql] ()
+2026-05-13 15:09:46,032 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-05-13 15:09:46,047 - sqlalchemy.engine.Engine - INFO - SELECT "user".id, "user".email, "user".username, "user".hashed_password, "user".is_active, "user".role, "user".created_at, role_1.id AS id_1, role_1.name 
+FROM "user" LEFT OUTER JOIN role AS role_1 ON role_1.id = "user".role 
+WHERE "user".id = $1::INTEGER
+2026-05-13 15:09:46,047 - sqlalchemy.engine.Engine - INFO - [generated in 0.00029s] (24,)
+2026-05-13 15:09:46,055 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-05-13 15:09:46,180 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-05-13 15:09:46,181 - sqlalchemy.engine.Engine - INFO - SELECT "user".id, "user".email, "user".username, "user".hashed_password, "user".is_active, "user".role, "user".created_at, role_1.id AS id_1, role_1.name 
+FROM "user" LEFT OUTER JOIN role AS role_1 ON role_1.id = "user".role 
+WHERE "user".id = $1::INTEGER
+2026-05-13 15:09:46,182 - sqlalchemy.engine.Engine - INFO - [cached since 0.1345s ago] (24,)
+2026-05-13 15:09:46,195 - sqlalchemy.engine.Engine - INFO - SELECT topic.id, topic.name, topic.description, count(lesson.id) AS lessons_count, count(CASE WHEN (lesson_progress.completed_at IS NOT NULL) THEN lesson.id END) AS completed_lessons_count 
+FROM topic LEFT OUTER JOIN lesson ON lesson.topic_id = topic.id LEFT OUTER JOIN lesson_progress ON lesson_progress.lesson_id = lesson.id AND lesson_progress.user_id = $1::INTEGER GROUP BY topic.id ORDER BY topic.id
+2026-05-13 15:09:46,195 - sqlalchemy.engine.Engine - INFO - [generated in 0.00033s] (24,)
+2026-05-13 15:09:46,211 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-05-13 15:09:46,217 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-05-13 15:09:46,218 - sqlalchemy.engine.Engine - INFO - SELECT "user".id, "user".email, "user".username, "user".hashed_password, "user".is_active, "user".role, "user".created_at, role_1.id AS id_1, role_1.name 
+FROM "user" LEFT OUTER JOIN role AS role_1 ON role_1.id = "user".role 
+WHERE "user".id = $1::INTEGER
+2026-05-13 15:09:46,218 - sqlalchemy.engine.Engine - INFO - [cached since 0.1713s ago] (24,)
+2026-05-13 15:09:46,219 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-05-13 15:09:46,220 - sqlalchemy.engine.Engine - INFO - SELECT "user".id, "user".email, "user".username, "user".hashed_password, "user".is_active, "user".role, "user".created_at, role_1.id AS id_1, role_1.name 
+FROM "user" LEFT OUTER JOIN role AS role_1 ON role_1.id = "user".role 
+WHERE "user".id = $1::INTEGER
+2026-05-13 15:09:46,220 - sqlalchemy.engine.Engine - INFO - [cached since 0.1726s ago] (24,)
+2026-05-13 15:09:46,224 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-05-13 15:09:46,225 - sqlalchemy.engine.Engine - INFO - SELECT "user".id, "user".email, "user".username, "user".hashed_password, "user".is_active, "user".role, "user".created_at, role_1.id AS id_1, role_1.name 
+FROM "user" LEFT OUTER JOIN role AS role_1 ON role_1.id = "user".role 
+WHERE "user".id = $1::INTEGER
+2026-05-13 15:09:46,225 - sqlalchemy.engine.Engine - INFO - [cached since 0.1778s ago] (24,)
+2026-05-13 15:09:46,226 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-05-13 15:09:46,226 - sqlalchemy.engine.Engine - INFO - SELECT "user".id, "user".email, "user".username, "user".hashed_password, "user".is_active, "user".role, "user".created_at, role_1.id AS id_1, role_1.name 
+FROM "user" LEFT OUTER JOIN role AS role_1 ON role_1.id = "user".role 
+WHERE "user".id = $1::INTEGER
+2026-05-13 15:09:46,226 - sqlalchemy.engine.Engine - INFO - [cached since 0.1794s ago] (24,)
+2026-05-13 15:09:46,227 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-05-13 15:09:46,228 - sqlalchemy.engine.Engine - INFO - SELECT "user".id, "user".email, "user".username, "user".hashed_password, "user".is_active, "user".role, "user".created_at, role_1.id AS id_1, role_1.name 
+FROM "user" LEFT OUTER JOIN role AS role_1 ON role_1.id = "user".role 
+WHERE "user".id = $1::INTEGER
+2026-05-13 15:09:46,228 - sqlalchemy.engine.Engine - INFO - [cached since 0.1808s ago] (24,)
+2026-05-13 15:09:46,230 - sqlalchemy.engine.Engine - INFO - SELECT count(topic.id) AS count_1 
+FROM topic
+2026-05-13 15:09:46,230 - sqlalchemy.engine.Engine - INFO - [generated in 0.00037s] ()
+2026-05-13 15:09:46,232 - sqlalchemy.engine.Engine - INFO - SELECT count(topic.id) AS count_1 
+FROM topic
+2026-05-13 15:09:46,232 - sqlalchemy.engine.Engine - INFO - [cached since 0.002271s ago] ()
+2026-05-13 15:09:46,234 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-05-13 15:09:46,234 - sqlalchemy.engine.Engine - INFO - SELECT "user".id, "user".email, "user".username, "user".hashed_password, "user".is_active, "user".role, "user".created_at, role_1.id AS id_1, role_1.name 
+FROM "user" LEFT OUTER JOIN role AS role_1 ON role_1.id = "user".role 
+WHERE "user".id = $1::INTEGER
+2026-05-13 15:09:46,235 - sqlalchemy.engine.Engine - INFO - [cached since 0.1874s ago] (24,)
+2026-05-13 15:09:46,240 - sqlalchemy.engine.Engine - INFO - SELECT count(lesson.id) AS count_1 
+FROM lesson
+2026-05-13 15:09:46,240 - sqlalchemy.engine.Engine - INFO - [generated in 0.00030s] ()
+2026-05-13 15:09:46,242 - sqlalchemy.engine.Engine - INFO - SELECT count(lesson.id) AS count_1 
+FROM lesson
+2026-05-13 15:09:46,242 - sqlalchemy.engine.Engine - INFO - [cached since 0.00222s ago] ()
+2026-05-13 15:09:46,244 - sqlalchemy.engine.Engine - INFO - SELECT count(topic.id) AS count_1 
+FROM topic
+2026-05-13 15:09:46,244 - sqlalchemy.engine.Engine - INFO - [cached since 0.01433s ago] ()
+2026-05-13 15:09:46,247 - sqlalchemy.engine.Engine - INFO - SELECT "user".id, "user".email, "user".username, "user".hashed_password, "user".is_active, "user".role, "user".created_at, role_1.id AS id_1, role_1.name 
+FROM "user" LEFT OUTER JOIN role AS role_1 ON role_1.id = "user".role ORDER BY "user".id
+2026-05-13 15:09:46,248 - sqlalchemy.engine.Engine - INFO - [generated in 0.00056s] ()
+2026-05-13 15:09:46,250 - sqlalchemy.engine.Engine - INFO - SELECT count("user".id) AS count_1 
+FROM "user"
+2026-05-13 15:09:46,250 - sqlalchemy.engine.Engine - INFO - [generated in 0.00047s] ()
+2026-05-13 15:09:46,252 - sqlalchemy.engine.Engine - INFO - SELECT topic.id, topic.name, topic.description, count(lesson.id) AS lessons_count, count(CASE WHEN (lesson_progress.completed_at IS NOT NULL) THEN lesson.id END) AS completed_lessons_count 
+FROM topic LEFT OUTER JOIN lesson ON lesson.topic_id = topic.id LEFT OUTER JOIN lesson_progress ON lesson_progress.lesson_id = lesson.id AND lesson_progress.user_id = $1::INTEGER GROUP BY topic.id ORDER BY topic.id
+2026-05-13 15:09:46,253 - sqlalchemy.engine.Engine - INFO - [cached since 0.058s ago] (24,)
+2026-05-13 15:09:46,254 - sqlalchemy.engine.Engine - INFO - SELECT count("user".id) AS count_1 
+FROM "user"
+2026-05-13 15:09:46,255 - sqlalchemy.engine.Engine - INFO - [cached since 0.004966s ago] ()
+2026-05-13 15:09:46,256 - sqlalchemy.engine.Engine - INFO - SELECT count("user".id) AS count_1 
+FROM "user"
+2026-05-13 15:09:46,256 - sqlalchemy.engine.Engine - INFO - [cached since 0.00648s ago] ()
+2026-05-13 15:09:46,262 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-05-13 15:09:46,263 - sqlalchemy.engine.Engine - INFO - SELECT count(lesson.id) AS count_1 
+FROM lesson
+2026-05-13 15:09:46,263 - sqlalchemy.engine.Engine - INFO - [cached since 0.02323s ago] ()
+2026-05-13 15:09:46,264 - sqlalchemy.engine.Engine - INFO - SELECT count(topic.id) AS count_1 
+FROM topic
+2026-05-13 15:09:46,264 - sqlalchemy.engine.Engine - INFO - [cached since 0.03416s ago] ()
+2026-05-13 15:09:46,265 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-05-13 15:09:46,267 - sqlalchemy.engine.Engine - INFO - SELECT count("user".id) AS count_1 
+FROM "user" 
+WHERE "user".is_active IS true
+2026-05-13 15:09:46,267 - sqlalchemy.engine.Engine - INFO - [generated in 0.00025s] ()
+2026-05-13 15:09:46,268 - sqlalchemy.engine.Engine - INFO - SELECT count("user".id) AS count_1 
+FROM "user" 
+WHERE "user".is_active IS true
+2026-05-13 15:09:46,269 - sqlalchemy.engine.Engine - INFO - [cached since 0.001529s ago] ()
+2026-05-13 15:09:46,269 - sqlalchemy.engine.Engine - INFO - SELECT count("user".id) AS count_1 
+FROM "user"
+2026-05-13 15:09:46,270 - sqlalchemy.engine.Engine - INFO - [cached since 0.0199s ago] ()
+2026-05-13 15:09:46,271 - sqlalchemy.engine.Engine - INFO - SELECT count(lesson_progress.id) AS count_1 
+FROM lesson_progress 
+WHERE lesson_progress.user_id = $1::INTEGER AND lesson_progress.completed_at IS NOT NULL
+2026-05-13 15:09:46,271 - sqlalchemy.engine.Engine - INFO - [generated in 0.00022s] (24,)
+2026-05-13 15:09:46,273 - sqlalchemy.engine.Engine - INFO - SELECT count(lesson_progress.id) AS count_1 
+FROM lesson_progress 
+WHERE lesson_progress.completed_at >= $1::TIMESTAMP WITH TIME ZONE
+2026-05-13 15:09:46,273 - sqlalchemy.engine.Engine - INFO - [generated in 0.00025s] (datetime.datetime(2026, 4, 14, 0, 0, tzinfo=datetime.timezone.utc),)
+2026-05-13 15:09:46,274 - sqlalchemy.engine.Engine - INFO - SELECT count(lesson_progress.id) AS count_1 
+FROM lesson_progress 
+WHERE lesson_progress.completed_at >= $1::TIMESTAMP WITH TIME ZONE
+2026-05-13 15:09:46,274 - sqlalchemy.engine.Engine - INFO - [cached since 0.001495s ago] (datetime.datetime(2026, 5, 7, 0, 0, tzinfo=datetime.timezone.utc),)
+2026-05-13 15:09:46,275 - sqlalchemy.engine.Engine - INFO - SELECT count("user".id) AS count_1 
+FROM "user" 
+WHERE "user".is_active IS true
+2026-05-13 15:09:46,275 - sqlalchemy.engine.Engine - INFO - [cached since 0.007953s ago] ()
+2026-05-13 15:09:46,277 - sqlalchemy.engine.Engine - INFO - SELECT topic.id, count(lesson.id) AS lessons_count, count(CASE WHEN (lesson_progress.user_id = $1::INTEGER AND lesson_progress.completed_at IS NOT NULL) THEN lesson.id END) AS completed_lessons_count 
+FROM topic LEFT OUTER JOIN lesson ON lesson.topic_id = topic.id LEFT OUTER JOIN lesson_progress ON lesson_progress.lesson_id = lesson.id GROUP BY topic.id
+2026-05-13 15:09:46,277 - sqlalchemy.engine.Engine - INFO - [generated in 0.00021s] (24,)
+2026-05-13 15:09:46,280 - sqlalchemy.engine.Engine - INFO - SELECT topic.id, topic.name, count(lesson_progress.id) AS completions_count 
+FROM topic LEFT OUTER JOIN lesson ON lesson.topic_id = topic.id LEFT OUTER JOIN lesson_progress ON lesson_progress.lesson_id = lesson.id AND lesson_progress.completed_at IS NOT NULL AND lesson_progress.completed_at >= $1::TIMESTAMP WITH TIME ZONE GROUP BY topic.id, topic.name ORDER BY count(lesson_progress.id) DESC, topic.name ASC
+2026-05-13 15:09:46,280 - sqlalchemy.engine.Engine - INFO - [generated in 0.00033s] (datetime.datetime(2026, 4, 14, 0, 0, tzinfo=datetime.timezone.utc),)
+2026-05-13 15:09:46,282 - sqlalchemy.engine.Engine - INFO - SELECT count(lesson_progress.id) AS count_1 
+FROM lesson_progress 
+WHERE lesson_progress.completed_at >= $1::TIMESTAMP WITH TIME ZONE
+2026-05-13 15:09:46,282 - sqlalchemy.engine.Engine - INFO - [cached since 0.009167s ago] (datetime.datetime(2026, 4, 14, 0, 0, tzinfo=datetime.timezone.utc),)
+2026-05-13 15:09:46,284 - sqlalchemy.engine.Engine - INFO - SELECT topic.id, topic.name, count(lesson_progress.id) AS completions_count 
+FROM topic LEFT OUTER JOIN lesson ON lesson.topic_id = topic.id LEFT OUTER JOIN lesson_progress ON lesson_progress.lesson_id = lesson.id AND lesson_progress.completed_at IS NOT NULL AND lesson_progress.completed_at >= $1::TIMESTAMP WITH TIME ZONE GROUP BY topic.id, topic.name ORDER BY count(lesson_progress.id) DESC, topic.name ASC
+2026-05-13 15:09:46,284 - sqlalchemy.engine.Engine - INFO - [cached since 0.003718s ago] (datetime.datetime(2026, 5, 7, 0, 0, tzinfo=datetime.timezone.utc),)
+2026-05-13 15:09:46,286 - sqlalchemy.engine.Engine - INFO - SELECT "user".id, lesson.topic_id, count(lesson_progress.id) AS completed_lessons_count 
+FROM "user" LEFT OUTER JOIN lesson_progress ON lesson_progress.user_id = "user".id AND lesson_progress.completed_at IS NOT NULL LEFT OUTER JOIN lesson ON lesson.id = lesson_progress.lesson_id GROUP BY "user".id, lesson.topic_id
+2026-05-13 15:09:46,286 - sqlalchemy.engine.Engine - INFO - [generated in 0.00025s] ()
+2026-05-13 15:09:46,288 - sqlalchemy.engine.Engine - INFO - SELECT topic.id, topic.name, count(lesson.id) AS lessons_count 
+FROM topic LEFT OUTER JOIN lesson ON lesson.topic_id = topic.id GROUP BY topic.id, topic.name ORDER BY topic.name ASC
+2026-05-13 15:09:46,289 - sqlalchemy.engine.Engine - INFO - [generated in 0.00024s] ()
+2026-05-13 15:09:46,290 - sqlalchemy.engine.Engine - INFO - SELECT topic.id, topic.name, count(lesson_progress.id) AS completions_count 
+FROM topic LEFT OUTER JOIN lesson ON lesson.topic_id = topic.id LEFT OUTER JOIN lesson_progress ON lesson_progress.lesson_id = lesson.id AND lesson_progress.completed_at IS NOT NULL AND lesson_progress.completed_at >= $1::TIMESTAMP WITH TIME ZONE GROUP BY topic.id, topic.name ORDER BY count(lesson_progress.id) DESC, topic.name ASC
+2026-05-13 15:09:46,290 - sqlalchemy.engine.Engine - INFO - [cached since 0.01038s ago] (datetime.datetime(2026, 4, 14, 0, 0, tzinfo=datetime.timezone.utc),)
+2026-05-13 15:09:46,291 - sqlalchemy.engine.Engine - INFO - SELECT topic.id, topic.name, count(lesson.id) AS lessons_count 
+FROM topic LEFT OUTER JOIN lesson ON lesson.topic_id = topic.id GROUP BY topic.id, topic.name ORDER BY topic.name ASC
+2026-05-13 15:09:46,291 - sqlalchemy.engine.Engine - INFO - [cached since 0.003182s ago] ()
+2026-05-13 15:09:46,293 - sqlalchemy.engine.Engine - INFO - SELECT "user".id 
+FROM "user"
+2026-05-13 15:09:46,293 - sqlalchemy.engine.Engine - INFO - [generated in 0.00016s] ()
+2026-05-13 15:09:46,295 - sqlalchemy.engine.Engine - INFO - SELECT topic.id, topic.name, lesson_progress.user_id, count(lesson_progress.id) AS completed_count 
+FROM topic JOIN lesson ON lesson.topic_id = topic.id JOIN lesson_progress ON lesson_progress.lesson_id = lesson.id 
+WHERE lesson_progress.completed_at IS NOT NULL GROUP BY topic.id, topic.name, lesson_progress.user_id
+2026-05-13 15:09:46,295 - sqlalchemy.engine.Engine - INFO - [generated in 0.00018s] ()
+2026-05-13 15:09:46,296 - sqlalchemy.engine.Engine - INFO - SELECT topic.id, topic.name, lesson_progress.user_id, count(lesson_progress.id) AS completed_count 
+FROM topic JOIN lesson ON lesson.topic_id = topic.id JOIN lesson_progress ON lesson_progress.lesson_id = lesson.id 
+WHERE lesson_progress.completed_at IS NOT NULL GROUP BY topic.id, topic.name, lesson_progress.user_id
+2026-05-13 15:09:46,296 - sqlalchemy.engine.Engine - INFO - [cached since 0.001602s ago] ()
+2026-05-13 15:09:46,297 - sqlalchemy.engine.Engine - INFO - SELECT topic.id, topic.name, count(lesson.id) AS lessons_count 
+FROM topic LEFT OUTER JOIN lesson ON lesson.topic_id = topic.id GROUP BY topic.id, topic.name ORDER BY topic.name ASC
+2026-05-13 15:09:46,297 - sqlalchemy.engine.Engine - INFO - [cached since 0.00886s ago] ()
+2026-05-13 15:09:46,298 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-05-13 15:09:46,301 - sqlalchemy.engine.Engine - INFO - SELECT date(lesson_progress.completed_at) AS day, count(lesson_progress.id) AS completions_count 
+FROM lesson_progress 
+WHERE lesson_progress.completed_at IS NOT NULL AND lesson_progress.completed_at >= $1::TIMESTAMP WITH TIME ZONE GROUP BY date(lesson_progress.completed_at) ORDER BY date(lesson_progress.completed_at)
+2026-05-13 15:09:46,301 - sqlalchemy.engine.Engine - INFO - [generated in 0.00025s] (datetime.datetime(2026, 4, 14, 0, 0, tzinfo=datetime.timezone.utc),)
+2026-05-13 15:09:46,303 - sqlalchemy.engine.Engine - INFO - SELECT topic.id, topic.name, lesson_progress.user_id, count(lesson_progress.id) AS completed_count 
+FROM topic JOIN lesson ON lesson.topic_id = topic.id JOIN lesson_progress ON lesson_progress.lesson_id = lesson.id 
+WHERE lesson_progress.completed_at IS NOT NULL GROUP BY topic.id, topic.name, lesson_progress.user_id
+2026-05-13 15:09:46,303 - sqlalchemy.engine.Engine - INFO - [cached since 0.008293s ago] ()
+2026-05-13 15:09:46,304 - sqlalchemy.engine.Engine - INFO - SELECT date(lesson_progress.completed_at) AS day, count(lesson_progress.id) AS completions_count 
+FROM lesson_progress 
+WHERE lesson_progress.completed_at IS NOT NULL AND lesson_progress.completed_at >= $1::TIMESTAMP WITH TIME ZONE GROUP BY date(lesson_progress.completed_at) ORDER BY date(lesson_progress.completed_at)
+2026-05-13 15:09:46,304 - sqlalchemy.engine.Engine - INFO - [cached since 0.003076s ago] (datetime.datetime(2026, 5, 7, 0, 0, tzinfo=datetime.timezone.utc),)
+2026-05-13 15:09:46,306 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-05-13 15:09:46,308 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-05-13 15:09:46,309 - sqlalchemy.engine.Engine - INFO - SELECT date(lesson_progress.completed_at) AS day, count(lesson_progress.id) AS completions_count 
+FROM lesson_progress 
+WHERE lesson_progress.completed_at IS NOT NULL AND lesson_progress.completed_at >= $1::TIMESTAMP WITH TIME ZONE GROUP BY date(lesson_progress.completed_at) ORDER BY date(lesson_progress.completed_at)
+2026-05-13 15:09:46,310 - sqlalchemy.engine.Engine - INFO - [cached since 0.008554s ago] (datetime.datetime(2026, 4, 14, 0, 0, tzinfo=datetime.timezone.utc),)
+2026-05-13 15:09:46,312 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-05-13 15:09:49,003 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-05-13 15:09:49,003 - sqlalchemy.engine.Engine - INFO - SELECT "user".id, "user".email, "user".username, "user".hashed_password, "user".is_active, "user".role, "user".created_at, role_1.id AS id_1, role_1.name 
+FROM "user" LEFT OUTER JOIN role AS role_1 ON role_1.id = "user".role 
+WHERE "user".id = $1::INTEGER
+2026-05-13 15:09:49,004 - sqlalchemy.engine.Engine - INFO - [cached since 2.956s ago] (24,)
+2026-05-13 15:09:49,010 - sqlalchemy.engine.Engine - INFO - SELECT lesson.id, lesson.name, lesson.description, lesson.difficult, lesson.rhythm, lesson.notes, lesson.hand, lesson.topic_id, lesson.order_in_topic 
+FROM lesson 
+WHERE lesson.topic_id = $1::INTEGER ORDER BY lesson.order_in_topic ASC
+2026-05-13 15:09:49,010 - sqlalchemy.engine.Engine - INFO - [generated in 0.00061s] (1,)
+2026-05-13 15:09:49,016 - sqlalchemy.engine.Engine - INFO - SELECT lesson_progress.lesson_id 
+FROM lesson_progress JOIN lesson ON lesson.id = lesson_progress.lesson_id 
+WHERE lesson_progress.user_id = $1::INTEGER AND lesson.topic_id = $2::INTEGER AND lesson_progress.completed_at IS NOT NULL
+2026-05-13 15:09:49,016 - sqlalchemy.engine.Engine - INFO - [generated in 0.00057s] (24, 1)
+2026-05-13 15:09:49,021 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-05-13 15:14:41,267 - sqlalchemy.engine.Engine - INFO - select pg_catalog.version()
+2026-05-13 15:14:41,268 - sqlalchemy.engine.Engine - INFO - [raw sql] ()
+2026-05-13 15:14:41,269 - sqlalchemy.engine.Engine - INFO - select current_schema()
+2026-05-13 15:14:41,270 - sqlalchemy.engine.Engine - INFO - [raw sql] ()
+2026-05-13 15:14:41,271 - sqlalchemy.engine.Engine - INFO - show standard_conforming_strings
+2026-05-13 15:14:41,271 - sqlalchemy.engine.Engine - INFO - [raw sql] ()
+2026-05-13 15:14:41,273 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-05-13 15:14:41,287 - sqlalchemy.engine.Engine - INFO - SELECT "user".id, "user".email, "user".username, "user".hashed_password, "user".is_active, "user".role, "user".created_at, role_1.id AS id_1, role_1.name 
+FROM "user" LEFT OUTER JOIN role AS role_1 ON role_1.id = "user".role 
+WHERE "user".id = $1::INTEGER
+2026-05-13 15:14:41,288 - sqlalchemy.engine.Engine - INFO - [generated in 0.00029s] (24,)
+2026-05-13 15:14:41,296 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-05-13 15:14:41,419 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-05-13 15:14:41,419 - sqlalchemy.engine.Engine - INFO - SELECT "user".id, "user".email, "user".username, "user".hashed_password, "user".is_active, "user".role, "user".created_at, role_1.id AS id_1, role_1.name 
+FROM "user" LEFT OUTER JOIN role AS role_1 ON role_1.id = "user".role 
+WHERE "user".id = $1::INTEGER
+2026-05-13 15:14:41,419 - sqlalchemy.engine.Engine - INFO - [cached since 0.1319s ago] (24,)
+2026-05-13 15:14:41,431 - sqlalchemy.engine.Engine - INFO - SELECT topic.id, topic.name, topic.description, count(lesson.id) AS lessons_count, count(CASE WHEN (lesson_progress.completed_at IS NOT NULL) THEN lesson.id END) AS completed_lessons_count 
+FROM topic LEFT OUTER JOIN lesson ON lesson.topic_id = topic.id LEFT OUTER JOIN lesson_progress ON lesson_progress.lesson_id = lesson.id AND lesson_progress.user_id = $1::INTEGER GROUP BY topic.id ORDER BY topic.id
+2026-05-13 15:14:41,431 - sqlalchemy.engine.Engine - INFO - [generated in 0.00046s] (24,)
+2026-05-13 15:14:41,447 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-05-13 15:14:41,457 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-05-13 15:14:41,458 - sqlalchemy.engine.Engine - INFO - SELECT "user".id, "user".email, "user".username, "user".hashed_password, "user".is_active, "user".role, "user".created_at, role_1.id AS id_1, role_1.name 
+FROM "user" LEFT OUTER JOIN role AS role_1 ON role_1.id = "user".role 
+WHERE "user".id = $1::INTEGER
+2026-05-13 15:14:41,458 - sqlalchemy.engine.Engine - INFO - [cached since 0.1708s ago] (24,)
+2026-05-13 15:14:41,459 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-05-13 15:14:41,459 - sqlalchemy.engine.Engine - INFO - SELECT "user".id, "user".email, "user".username, "user".hashed_password, "user".is_active, "user".role, "user".created_at, role_1.id AS id_1, role_1.name 
+FROM "user" LEFT OUTER JOIN role AS role_1 ON role_1.id = "user".role 
+WHERE "user".id = $1::INTEGER
+2026-05-13 15:14:41,460 - sqlalchemy.engine.Engine - INFO - [cached since 0.1723s ago] (24,)
+2026-05-13 15:14:41,466 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-05-13 15:14:41,466 - sqlalchemy.engine.Engine - INFO - SELECT "user".id, "user".email, "user".username, "user".hashed_password, "user".is_active, "user".role, "user".created_at, role_1.id AS id_1, role_1.name 
+FROM "user" LEFT OUTER JOIN role AS role_1 ON role_1.id = "user".role 
+WHERE "user".id = $1::INTEGER
+2026-05-13 15:14:41,467 - sqlalchemy.engine.Engine - INFO - [cached since 0.1792s ago] (24,)
+2026-05-13 15:14:41,467 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-05-13 15:14:41,468 - sqlalchemy.engine.Engine - INFO - SELECT "user".id, "user".email, "user".username, "user".hashed_password, "user".is_active, "user".role, "user".created_at, role_1.id AS id_1, role_1.name 
+FROM "user" LEFT OUTER JOIN role AS role_1 ON role_1.id = "user".role 
+WHERE "user".id = $1::INTEGER
+2026-05-13 15:14:41,468 - sqlalchemy.engine.Engine - INFO - [cached since 0.1805s ago] (24,)
+2026-05-13 15:14:41,468 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-05-13 15:14:41,469 - sqlalchemy.engine.Engine - INFO - SELECT "user".id, "user".email, "user".username, "user".hashed_password, "user".is_active, "user".role, "user".created_at, role_1.id AS id_1, role_1.name 
+FROM "user" LEFT OUTER JOIN role AS role_1 ON role_1.id = "user".role 
+WHERE "user".id = $1::INTEGER
+2026-05-13 15:14:41,469 - sqlalchemy.engine.Engine - INFO - [cached since 0.1816s ago] (24,)
+2026-05-13 15:14:41,473 - sqlalchemy.engine.Engine - INFO - SELECT count(topic.id) AS count_1 
+FROM topic
+2026-05-13 15:14:41,473 - sqlalchemy.engine.Engine - INFO - [generated in 0.00036s] ()
+2026-05-13 15:14:41,475 - sqlalchemy.engine.Engine - INFO - SELECT count(topic.id) AS count_1 
+FROM topic
+2026-05-13 15:14:41,476 - sqlalchemy.engine.Engine - INFO - [cached since 0.002981s ago] ()
+2026-05-13 15:14:41,478 - sqlalchemy.engine.Engine - INFO - SELECT count(topic.id) AS count_1 
+FROM topic
+2026-05-13 15:14:41,478 - sqlalchemy.engine.Engine - INFO - [cached since 0.00578s ago] ()
+2026-05-13 15:14:41,479 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-05-13 15:14:41,480 - sqlalchemy.engine.Engine - INFO - SELECT "user".id, "user".email, "user".username, "user".hashed_password, "user".is_active, "user".role, "user".created_at, role_1.id AS id_1, role_1.name 
+FROM "user" LEFT OUTER JOIN role AS role_1 ON role_1.id = "user".role 
+WHERE "user".id = $1::INTEGER
+2026-05-13 15:14:41,480 - sqlalchemy.engine.Engine - INFO - [cached since 0.1925s ago] (24,)
+2026-05-13 15:14:41,481 - sqlalchemy.engine.Engine - INFO - SELECT count(lesson.id) AS count_1 
+FROM lesson
+2026-05-13 15:14:41,482 - sqlalchemy.engine.Engine - INFO - [generated in 0.00027s] ()
+2026-05-13 15:14:41,485 - sqlalchemy.engine.Engine - INFO - SELECT "user".id, "user".email, "user".username, "user".hashed_password, "user".is_active, "user".role, "user".created_at, role_1.id AS id_1, role_1.name 
+FROM "user" LEFT OUTER JOIN role AS role_1 ON role_1.id = "user".role ORDER BY "user".id
+2026-05-13 15:14:41,486 - sqlalchemy.engine.Engine - INFO - [generated in 0.00130s] ()
+2026-05-13 15:14:41,488 - sqlalchemy.engine.Engine - INFO - SELECT count("user".id) AS count_1 
+FROM "user"
+2026-05-13 15:14:41,489 - sqlalchemy.engine.Engine - INFO - [generated in 0.00057s] ()
+2026-05-13 15:14:41,491 - sqlalchemy.engine.Engine - INFO - SELECT count(lesson.id) AS count_1 
+FROM lesson
+2026-05-13 15:14:41,491 - sqlalchemy.engine.Engine - INFO - [cached since 0.01011s ago] ()
+2026-05-13 15:14:41,493 - sqlalchemy.engine.Engine - INFO - SELECT count(lesson.id) AS count_1 
+FROM lesson
+2026-05-13 15:14:41,493 - sqlalchemy.engine.Engine - INFO - [cached since 0.01166s ago] ()
+2026-05-13 15:14:41,495 - sqlalchemy.engine.Engine - INFO - SELECT count("user".id) AS count_1 
+FROM "user"
+2026-05-13 15:14:41,495 - sqlalchemy.engine.Engine - INFO - [cached since 0.00698s ago] ()
+2026-05-13 15:14:41,501 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-05-13 15:14:41,503 - sqlalchemy.engine.Engine - INFO - SELECT count(topic.id) AS count_1 
+FROM topic
+2026-05-13 15:14:41,503 - sqlalchemy.engine.Engine - INFO - [cached since 0.03012s ago] ()
+2026-05-13 15:14:41,505 - sqlalchemy.engine.Engine - INFO - SELECT topic.id, topic.name, topic.description, count(lesson.id) AS lessons_count, count(CASE WHEN (lesson_progress.completed_at IS NOT NULL) THEN lesson.id END) AS completed_lessons_count 
+FROM topic LEFT OUTER JOIN lesson ON lesson.topic_id = topic.id LEFT OUTER JOIN lesson_progress ON lesson_progress.lesson_id = lesson.id AND lesson_progress.user_id = $1::INTEGER GROUP BY topic.id ORDER BY topic.id
+2026-05-13 15:14:41,505 - sqlalchemy.engine.Engine - INFO - [cached since 0.07382s ago] (24,)
+2026-05-13 15:14:41,506 - sqlalchemy.engine.Engine - INFO - SELECT count("user".id) AS count_1 
+FROM "user"
+2026-05-13 15:14:41,506 - sqlalchemy.engine.Engine - INFO - [cached since 0.01821s ago] ()
+2026-05-13 15:14:41,507 - sqlalchemy.engine.Engine - INFO - SELECT count("user".id) AS count_1 
+FROM "user"
+2026-05-13 15:14:41,508 - sqlalchemy.engine.Engine - INFO - [cached since 0.01949s ago] ()
+2026-05-13 15:14:41,510 - sqlalchemy.engine.Engine - INFO - SELECT count("user".id) AS count_1 
+FROM "user" 
+WHERE "user".is_active IS true
+2026-05-13 15:14:41,510 - sqlalchemy.engine.Engine - INFO - [generated in 0.00033s] ()
+2026-05-13 15:14:41,513 - sqlalchemy.engine.Engine - INFO - SELECT count(lesson_progress.id) AS count_1 
+FROM lesson_progress 
+WHERE lesson_progress.user_id = $1::INTEGER AND lesson_progress.completed_at IS NOT NULL
+2026-05-13 15:14:41,513 - sqlalchemy.engine.Engine - INFO - [generated in 0.00036s] (24,)
+2026-05-13 15:14:41,514 - sqlalchemy.engine.Engine - INFO - SELECT count("user".id) AS count_1 
+FROM "user" 
+WHERE "user".is_active IS true
+2026-05-13 15:14:41,515 - sqlalchemy.engine.Engine - INFO - [cached since 0.005059s ago] ()
+2026-05-13 15:14:41,516 - sqlalchemy.engine.Engine - INFO - SELECT count("user".id) AS count_1 
+FROM "user" 
+WHERE "user".is_active IS true
+2026-05-13 15:14:41,516 - sqlalchemy.engine.Engine - INFO - [cached since 0.006194s ago] ()
+2026-05-13 15:14:41,517 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-05-13 15:14:41,519 - sqlalchemy.engine.Engine - INFO - SELECT count(lesson_progress.id) AS count_1 
+FROM lesson_progress 
+WHERE lesson_progress.completed_at >= $1::TIMESTAMP WITH TIME ZONE
+2026-05-13 15:14:41,519 - sqlalchemy.engine.Engine - INFO - [generated in 0.00025s] (datetime.datetime(2026, 4, 14, 0, 0, tzinfo=datetime.timezone.utc),)
+2026-05-13 15:14:41,522 - sqlalchemy.engine.Engine - INFO - SELECT topic.id, count(lesson.id) AS lessons_count, count(CASE WHEN (lesson_progress.user_id = $1::INTEGER AND lesson_progress.completed_at IS NOT NULL) THEN lesson.id END) AS completed_lessons_count 
+FROM topic LEFT OUTER JOIN lesson ON lesson.topic_id = topic.id LEFT OUTER JOIN lesson_progress ON lesson_progress.lesson_id = lesson.id GROUP BY topic.id
+2026-05-13 15:14:41,522 - sqlalchemy.engine.Engine - INFO - [generated in 0.00026s] (24,)
+2026-05-13 15:14:41,524 - sqlalchemy.engine.Engine - INFO - SELECT count(lesson_progress.id) AS count_1 
+FROM lesson_progress 
+WHERE lesson_progress.completed_at >= $1::TIMESTAMP WITH TIME ZONE
+2026-05-13 15:14:41,524 - sqlalchemy.engine.Engine - INFO - [cached since 0.005205s ago] (datetime.datetime(2026, 5, 7, 0, 0, tzinfo=datetime.timezone.utc),)
+2026-05-13 15:14:41,525 - sqlalchemy.engine.Engine - INFO - SELECT count(lesson_progress.id) AS count_1 
+FROM lesson_progress 
+WHERE lesson_progress.completed_at >= $1::TIMESTAMP WITH TIME ZONE
+2026-05-13 15:14:41,525 - sqlalchemy.engine.Engine - INFO - [cached since 0.00665s ago] (datetime.datetime(2026, 4, 14, 0, 0, tzinfo=datetime.timezone.utc),)
+2026-05-13 15:14:41,529 - sqlalchemy.engine.Engine - INFO - SELECT topic.id, topic.name, count(lesson_progress.id) AS completions_count 
+FROM topic LEFT OUTER JOIN lesson ON lesson.topic_id = topic.id LEFT OUTER JOIN lesson_progress ON lesson_progress.lesson_id = lesson.id AND lesson_progress.completed_at IS NOT NULL AND lesson_progress.completed_at >= $1::TIMESTAMP WITH TIME ZONE GROUP BY topic.id, topic.name ORDER BY count(lesson_progress.id) DESC, topic.name ASC
+2026-05-13 15:14:41,529 - sqlalchemy.engine.Engine - INFO - [generated in 0.00031s] (datetime.datetime(2026, 4, 14, 0, 0, tzinfo=datetime.timezone.utc),)
+2026-05-13 15:14:41,532 - sqlalchemy.engine.Engine - INFO - SELECT "user".id, lesson.topic_id, count(lesson_progress.id) AS completed_lessons_count 
+FROM "user" LEFT OUTER JOIN lesson_progress ON lesson_progress.user_id = "user".id AND lesson_progress.completed_at IS NOT NULL LEFT OUTER JOIN lesson ON lesson.id = lesson_progress.lesson_id GROUP BY "user".id, lesson.topic_id
+2026-05-13 15:14:41,532 - sqlalchemy.engine.Engine - INFO - [generated in 0.00029s] ()
+2026-05-13 15:14:41,534 - sqlalchemy.engine.Engine - INFO - SELECT topic.id, topic.name, count(lesson_progress.id) AS completions_count 
+FROM topic LEFT OUTER JOIN lesson ON lesson.topic_id = topic.id LEFT OUTER JOIN lesson_progress ON lesson_progress.lesson_id = lesson.id AND lesson_progress.completed_at IS NOT NULL AND lesson_progress.completed_at >= $1::TIMESTAMP WITH TIME ZONE GROUP BY topic.id, topic.name ORDER BY count(lesson_progress.id) DESC, topic.name ASC
+2026-05-13 15:14:41,534 - sqlalchemy.engine.Engine - INFO - [cached since 0.005514s ago] (datetime.datetime(2026, 5, 7, 0, 0, tzinfo=datetime.timezone.utc),)
+2026-05-13 15:14:41,536 - sqlalchemy.engine.Engine - INFO - SELECT topic.id, topic.name, count(lesson_progress.id) AS completions_count 
+FROM topic LEFT OUTER JOIN lesson ON lesson.topic_id = topic.id LEFT OUTER JOIN lesson_progress ON lesson_progress.lesson_id = lesson.id AND lesson_progress.completed_at IS NOT NULL AND lesson_progress.completed_at >= $1::TIMESTAMP WITH TIME ZONE GROUP BY topic.id, topic.name ORDER BY count(lesson_progress.id) DESC, topic.name ASC
+2026-05-13 15:14:41,536 - sqlalchemy.engine.Engine - INFO - [cached since 0.006962s ago] (datetime.datetime(2026, 4, 14, 0, 0, tzinfo=datetime.timezone.utc),)
+2026-05-13 15:14:41,538 - sqlalchemy.engine.Engine - INFO - SELECT "user".id 
+FROM "user"
+2026-05-13 15:14:41,538 - sqlalchemy.engine.Engine - INFO - [generated in 0.00024s] ()
+2026-05-13 15:14:41,540 - sqlalchemy.engine.Engine - INFO - SELECT topic.id, topic.name, count(lesson.id) AS lessons_count 
+FROM topic LEFT OUTER JOIN lesson ON lesson.topic_id = topic.id GROUP BY topic.id, topic.name ORDER BY topic.name ASC
+2026-05-13 15:14:41,540 - sqlalchemy.engine.Engine - INFO - [generated in 0.00030s] ()
+2026-05-13 15:14:41,542 - sqlalchemy.engine.Engine - INFO - SELECT topic.id, topic.name, count(lesson.id) AS lessons_count 
+FROM topic LEFT OUTER JOIN lesson ON lesson.topic_id = topic.id GROUP BY topic.id, topic.name ORDER BY topic.name ASC
+2026-05-13 15:14:41,542 - sqlalchemy.engine.Engine - INFO - [cached since 0.001901s ago] ()
+2026-05-13 15:14:41,543 - sqlalchemy.engine.Engine - INFO - SELECT topic.id, topic.name, count(lesson.id) AS lessons_count 
+FROM topic LEFT OUTER JOIN lesson ON lesson.topic_id = topic.id GROUP BY topic.id, topic.name ORDER BY topic.name ASC
+2026-05-13 15:14:41,543 - sqlalchemy.engine.Engine - INFO - [cached since 0.003379s ago] ()
+2026-05-13 15:14:41,545 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-05-13 15:14:41,548 - sqlalchemy.engine.Engine - INFO - SELECT topic.id, topic.name, lesson_progress.user_id, count(lesson_progress.id) AS completed_count 
+FROM topic JOIN lesson ON lesson.topic_id = topic.id JOIN lesson_progress ON lesson_progress.lesson_id = lesson.id 
+WHERE lesson_progress.completed_at IS NOT NULL GROUP BY topic.id, topic.name, lesson_progress.user_id
+2026-05-13 15:14:41,548 - sqlalchemy.engine.Engine - INFO - [generated in 0.00027s] ()
+2026-05-13 15:14:41,549 - sqlalchemy.engine.Engine - INFO - SELECT topic.id, topic.name, lesson_progress.user_id, count(lesson_progress.id) AS completed_count 
+FROM topic JOIN lesson ON lesson.topic_id = topic.id JOIN lesson_progress ON lesson_progress.lesson_id = lesson.id 
+WHERE lesson_progress.completed_at IS NOT NULL GROUP BY topic.id, topic.name, lesson_progress.user_id
+2026-05-13 15:14:41,549 - sqlalchemy.engine.Engine - INFO - [cached since 0.001736s ago] ()
+2026-05-13 15:14:41,550 - sqlalchemy.engine.Engine - INFO - SELECT topic.id, topic.name, lesson_progress.user_id, count(lesson_progress.id) AS completed_count 
+FROM topic JOIN lesson ON lesson.topic_id = topic.id JOIN lesson_progress ON lesson_progress.lesson_id = lesson.id 
+WHERE lesson_progress.completed_at IS NOT NULL GROUP BY topic.id, topic.name, lesson_progress.user_id
+2026-05-13 15:14:41,550 - sqlalchemy.engine.Engine - INFO - [cached since 0.002835s ago] ()
+2026-05-13 15:14:41,555 - sqlalchemy.engine.Engine - INFO - SELECT date(lesson_progress.completed_at) AS day, count(lesson_progress.id) AS completions_count 
+FROM lesson_progress 
+WHERE lesson_progress.completed_at IS NOT NULL AND lesson_progress.completed_at >= $1::TIMESTAMP WITH TIME ZONE GROUP BY date(lesson_progress.completed_at) ORDER BY date(lesson_progress.completed_at)
+2026-05-13 15:14:41,555 - sqlalchemy.engine.Engine - INFO - [generated in 0.00031s] (datetime.datetime(2026, 4, 14, 0, 0, tzinfo=datetime.timezone.utc),)
+2026-05-13 15:14:41,557 - sqlalchemy.engine.Engine - INFO - SELECT date(lesson_progress.completed_at) AS day, count(lesson_progress.id) AS completions_count 
+FROM lesson_progress 
+WHERE lesson_progress.completed_at IS NOT NULL AND lesson_progress.completed_at >= $1::TIMESTAMP WITH TIME ZONE GROUP BY date(lesson_progress.completed_at) ORDER BY date(lesson_progress.completed_at)
+2026-05-13 15:14:41,557 - sqlalchemy.engine.Engine - INFO - [cached since 0.002006s ago] (datetime.datetime(2026, 5, 7, 0, 0, tzinfo=datetime.timezone.utc),)
+2026-05-13 15:14:41,559 - sqlalchemy.engine.Engine - INFO - SELECT date(lesson_progress.completed_at) AS day, count(lesson_progress.id) AS completions_count 
+FROM lesson_progress 
+WHERE lesson_progress.completed_at IS NOT NULL AND lesson_progress.completed_at >= $1::TIMESTAMP WITH TIME ZONE GROUP BY date(lesson_progress.completed_at) ORDER BY date(lesson_progress.completed_at)
+2026-05-13 15:14:41,559 - sqlalchemy.engine.Engine - INFO - [cached since 0.003719s ago] (datetime.datetime(2026, 4, 14, 0, 0, tzinfo=datetime.timezone.utc),)
+2026-05-13 15:14:41,561 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-05-13 15:14:41,563 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-05-13 15:14:41,566 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-05-13 15:14:43,694 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-05-13 15:14:43,695 - sqlalchemy.engine.Engine - INFO - SELECT "user".id, "user".email, "user".username, "user".hashed_password, "user".is_active, "user".role, "user".created_at, role_1.id AS id_1, role_1.name 
+FROM "user" LEFT OUTER JOIN role AS role_1 ON role_1.id = "user".role 
+WHERE "user".id = $1::INTEGER
+2026-05-13 15:14:43,695 - sqlalchemy.engine.Engine - INFO - [cached since 2.408s ago] (24,)
+2026-05-13 15:14:43,698 - sqlalchemy.engine.Engine - INFO - SELECT lesson.id, lesson.name, lesson.description, lesson.difficult, lesson.rhythm, lesson.notes, lesson.hand, lesson.topic_id, lesson.order_in_topic 
+FROM lesson 
+WHERE lesson.topic_id = $1::INTEGER ORDER BY lesson.order_in_topic ASC
+2026-05-13 15:14:43,698 - sqlalchemy.engine.Engine - INFO - [generated in 0.00039s] (1,)
+2026-05-13 15:14:43,701 - sqlalchemy.engine.Engine - INFO - SELECT lesson_progress.lesson_id 
+FROM lesson_progress JOIN lesson ON lesson.id = lesson_progress.lesson_id 
+WHERE lesson_progress.user_id = $1::INTEGER AND lesson.topic_id = $2::INTEGER AND lesson_progress.completed_at IS NOT NULL
+2026-05-13 15:14:43,702 - sqlalchemy.engine.Engine - INFO - [generated in 0.00027s] (24, 1)
+2026-05-13 15:14:43,704 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-05-13 15:15:34,152 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-05-13 15:15:34,152 - sqlalchemy.engine.Engine - INFO - SELECT "user".id, "user".email, "user".username, "user".hashed_password, "user".is_active, "user".role, "user".created_at, role_1.id AS id_1, role_1.name 
+FROM "user" LEFT OUTER JOIN role AS role_1 ON role_1.id = "user".role 
+WHERE "user".id = $1::INTEGER
+2026-05-13 15:15:34,153 - sqlalchemy.engine.Engine - INFO - [cached since 52.87s ago] (24,)
+2026-05-13 15:15:34,155 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-05-13 15:15:34,289 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-05-13 15:15:34,289 - sqlalchemy.engine.Engine - INFO - SELECT "user".id, "user".email, "user".username, "user".hashed_password, "user".is_active, "user".role, "user".created_at, role_1.id AS id_1, role_1.name 
+FROM "user" LEFT OUTER JOIN role AS role_1 ON role_1.id = "user".role 
+WHERE "user".id = $1::INTEGER
+2026-05-13 15:15:34,289 - sqlalchemy.engine.Engine - INFO - [cached since 53s ago] (24,)
+2026-05-13 15:15:34,291 - sqlalchemy.engine.Engine - INFO - SELECT topic.id, topic.name, topic.description, count(lesson.id) AS lessons_count, count(CASE WHEN (lesson_progress.completed_at IS NOT NULL) THEN lesson.id END) AS completed_lessons_count 
+FROM topic LEFT OUTER JOIN lesson ON lesson.topic_id = topic.id LEFT OUTER JOIN lesson_progress ON lesson_progress.lesson_id = lesson.id AND lesson_progress.user_id = $1::INTEGER GROUP BY topic.id ORDER BY topic.id
+2026-05-13 15:15:34,292 - sqlalchemy.engine.Engine - INFO - [cached since 52.86s ago] (24,)
+2026-05-13 15:15:34,293 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-05-13 15:15:34,293 - sqlalchemy.engine.Engine - INFO - SELECT "user".id, "user".email, "user".username, "user".hashed_password, "user".is_active, "user".role, "user".created_at, role_1.id AS id_1, role_1.name 
+FROM "user" LEFT OUTER JOIN role AS role_1 ON role_1.id = "user".role 
+WHERE "user".id = $1::INTEGER
+2026-05-13 15:15:34,293 - sqlalchemy.engine.Engine - INFO - [cached since 53.01s ago] (24,)
+2026-05-13 15:15:34,296 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-05-13 15:15:34,296 - sqlalchemy.engine.Engine - INFO - SELECT "user".id, "user".email, "user".username, "user".hashed_password, "user".is_active, "user".role, "user".created_at, role_1.id AS id_1, role_1.name 
+FROM "user" LEFT OUTER JOIN role AS role_1 ON role_1.id = "user".role 
+WHERE "user".id = $1::INTEGER
+2026-05-13 15:15:34,296 - sqlalchemy.engine.Engine - INFO - [cached since 53.01s ago] (24,)
+2026-05-13 15:15:34,298 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-05-13 15:15:34,300 - sqlalchemy.engine.Engine - INFO - SELECT count(topic.id) AS count_1 
+FROM topic
+2026-05-13 15:15:34,300 - sqlalchemy.engine.Engine - INFO - [cached since 52.83s ago] ()
+2026-05-13 15:15:34,302 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-05-13 15:15:34,302 - sqlalchemy.engine.Engine - INFO - SELECT "user".id, "user".email, "user".username, "user".hashed_password, "user".is_active, "user".role, "user".created_at, role_1.id AS id_1, role_1.name 
+FROM "user" LEFT OUTER JOIN role AS role_1 ON role_1.id = "user".role 
+WHERE "user".id = $1::INTEGER
+2026-05-13 15:15:34,303 - sqlalchemy.engine.Engine - INFO - [cached since 53.02s ago] (24,)
+2026-05-13 15:15:34,304 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-05-13 15:15:34,304 - sqlalchemy.engine.Engine - INFO - SELECT "user".id, "user".email, "user".username, "user".hashed_password, "user".is_active, "user".role, "user".created_at, role_1.id AS id_1, role_1.name 
+FROM "user" LEFT OUTER JOIN role AS role_1 ON role_1.id = "user".role 
+WHERE "user".id = $1::INTEGER
+2026-05-13 15:15:34,304 - sqlalchemy.engine.Engine - INFO - [cached since 53.02s ago] (24,)
+2026-05-13 15:15:34,306 - sqlalchemy.engine.Engine - INFO - SELECT count(topic.id) AS count_1 
+FROM topic
+2026-05-13 15:15:34,306 - sqlalchemy.engine.Engine - INFO - [cached since 52.83s ago] ()
+2026-05-13 15:15:34,307 - sqlalchemy.engine.Engine - INFO - SELECT count(lesson.id) AS count_1 
+FROM lesson
+2026-05-13 15:15:34,307 - sqlalchemy.engine.Engine - INFO - [cached since 52.83s ago] ()
+2026-05-13 15:15:34,312 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-05-13 15:15:34,312 - sqlalchemy.engine.Engine - INFO - SELECT "user".id, "user".email, "user".username, "user".hashed_password, "user".is_active, "user".role, "user".created_at, role_1.id AS id_1, role_1.name 
+FROM "user" LEFT OUTER JOIN role AS role_1 ON role_1.id = "user".role 
+WHERE "user".id = $1::INTEGER
+2026-05-13 15:15:34,312 - sqlalchemy.engine.Engine - INFO - [cached since 53.02s ago] (24,)
+2026-05-13 15:15:34,313 - sqlalchemy.engine.Engine - INFO - SELECT count(lesson.id) AS count_1 
+FROM lesson
+2026-05-13 15:15:34,314 - sqlalchemy.engine.Engine - INFO - [cached since 52.83s ago] ()
+2026-05-13 15:15:34,315 - sqlalchemy.engine.Engine - INFO - SELECT count(topic.id) AS count_1 
+FROM topic
+2026-05-13 15:15:34,316 - sqlalchemy.engine.Engine - INFO - [cached since 52.84s ago] ()
+2026-05-13 15:15:34,317 - sqlalchemy.engine.Engine - INFO - SELECT "user".id, "user".email, "user".username, "user".hashed_password, "user".is_active, "user".role, "user".created_at, role_1.id AS id_1, role_1.name 
+FROM "user" LEFT OUTER JOIN role AS role_1 ON role_1.id = "user".role ORDER BY "user".id
+2026-05-13 15:15:34,317 - sqlalchemy.engine.Engine - INFO - [cached since 52.83s ago] ()
+2026-05-13 15:15:34,321 - sqlalchemy.engine.Engine - INFO - SELECT count("user".id) AS count_1 
+FROM "user"
+2026-05-13 15:15:34,321 - sqlalchemy.engine.Engine - INFO - [cached since 52.83s ago] ()
+2026-05-13 15:15:34,322 - sqlalchemy.engine.Engine - INFO - SELECT count("user".id) AS count_1 
+FROM "user"
+2026-05-13 15:15:34,322 - sqlalchemy.engine.Engine - INFO - [cached since 52.83s ago] ()
+2026-05-13 15:15:34,378 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-05-13 15:15:34,379 - sqlalchemy.engine.Engine - INFO - SELECT count("user".id) AS count_1 
+FROM "user"
+2026-05-13 15:15:34,379 - sqlalchemy.engine.Engine - INFO - [cached since 52.89s ago] ()
+2026-05-13 15:15:34,380 - sqlalchemy.engine.Engine - INFO - SELECT count("user".id) AS count_1 
+FROM "user" 
+WHERE "user".is_active IS true
+2026-05-13 15:15:34,380 - sqlalchemy.engine.Engine - INFO - [cached since 52.87s ago] ()
+2026-05-13 15:15:34,380 - sqlalchemy.engine.Engine - INFO - SELECT count("user".id) AS count_1 
+FROM "user" 
+WHERE "user".is_active IS true
+2026-05-13 15:15:34,381 - sqlalchemy.engine.Engine - INFO - [cached since 52.87s ago] ()
+2026-05-13 15:15:34,381 - sqlalchemy.engine.Engine - INFO - SELECT count(lesson.id) AS count_1 
+FROM lesson
+2026-05-13 15:15:34,382 - sqlalchemy.engine.Engine - INFO - [cached since 52.9s ago] ()
+2026-05-13 15:15:34,383 - sqlalchemy.engine.Engine - INFO - SELECT count(lesson_progress.id) AS count_1 
+FROM lesson_progress 
+WHERE lesson_progress.completed_at >= $1::TIMESTAMP WITH TIME ZONE
+2026-05-13 15:15:34,383 - sqlalchemy.engine.Engine - INFO - [cached since 52.86s ago] (datetime.datetime(2026, 4, 14, 0, 0, tzinfo=datetime.timezone.utc),)
+2026-05-13 15:15:34,385 - sqlalchemy.engine.Engine - INFO - SELECT count(topic.id) AS count_1 
+FROM topic
+2026-05-13 15:15:34,385 - sqlalchemy.engine.Engine - INFO - [cached since 52.91s ago] ()
+2026-05-13 15:15:34,386 - sqlalchemy.engine.Engine - INFO - SELECT topic.id, topic.name, count(lesson_progress.id) AS completions_count 
+FROM topic LEFT OUTER JOIN lesson ON lesson.topic_id = topic.id LEFT OUTER JOIN lesson_progress ON lesson_progress.lesson_id = lesson.id AND lesson_progress.completed_at IS NOT NULL AND lesson_progress.completed_at >= $1::TIMESTAMP WITH TIME ZONE GROUP BY topic.id, topic.name ORDER BY count(lesson_progress.id) DESC, topic.name ASC
+2026-05-13 15:15:34,386 - sqlalchemy.engine.Engine - INFO - [cached since 52.86s ago] (datetime.datetime(2026, 4, 14, 0, 0, tzinfo=datetime.timezone.utc),)
+2026-05-13 15:15:34,387 - sqlalchemy.engine.Engine - INFO - SELECT count(lesson_progress.id) AS count_1 
+FROM lesson_progress 
+WHERE lesson_progress.completed_at >= $1::TIMESTAMP WITH TIME ZONE
+2026-05-13 15:15:34,387 - sqlalchemy.engine.Engine - INFO - [cached since 52.87s ago] (datetime.datetime(2026, 5, 7, 0, 0, tzinfo=datetime.timezone.utc),)
+2026-05-13 15:15:34,388 - sqlalchemy.engine.Engine - INFO - SELECT count("user".id) AS count_1 
+FROM "user"
+2026-05-13 15:15:34,388 - sqlalchemy.engine.Engine - INFO - [cached since 52.9s ago] ()
+2026-05-13 15:15:34,390 - sqlalchemy.engine.Engine - INFO - SELECT topic.id, topic.name, count(lesson.id) AS lessons_count 
+FROM topic LEFT OUTER JOIN lesson ON lesson.topic_id = topic.id GROUP BY topic.id, topic.name ORDER BY topic.name ASC
+2026-05-13 15:15:34,390 - sqlalchemy.engine.Engine - INFO - [cached since 52.85s ago] ()
+2026-05-13 15:15:34,391 - sqlalchemy.engine.Engine - INFO - SELECT count(lesson_progress.id) AS count_1 
+FROM lesson_progress 
+WHERE lesson_progress.user_id = $1::INTEGER AND lesson_progress.completed_at IS NOT NULL
+2026-05-13 15:15:34,391 - sqlalchemy.engine.Engine - INFO - [cached since 52.88s ago] (24,)
+2026-05-13 15:15:34,392 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-05-13 15:15:34,392 - sqlalchemy.engine.Engine - INFO - SELECT "user".id, "user".email, "user".username, "user".hashed_password, "user".is_active, "user".role, "user".created_at, role_1.id AS id_1, role_1.name 
+FROM "user" LEFT OUTER JOIN role AS role_1 ON role_1.id = "user".role 
+WHERE "user".id = $1::INTEGER
+2026-05-13 15:15:34,392 - sqlalchemy.engine.Engine - INFO - [cached since 53.11s ago] (24,)
+2026-05-13 15:15:34,393 - sqlalchemy.engine.Engine - INFO - SELECT topic.id, topic.name, lesson_progress.user_id, count(lesson_progress.id) AS completed_count 
+FROM topic JOIN lesson ON lesson.topic_id = topic.id JOIN lesson_progress ON lesson_progress.lesson_id = lesson.id 
+WHERE lesson_progress.completed_at IS NOT NULL GROUP BY topic.id, topic.name, lesson_progress.user_id
+2026-05-13 15:15:34,394 - sqlalchemy.engine.Engine - INFO - [cached since 52.85s ago] ()
+2026-05-13 15:15:34,395 - sqlalchemy.engine.Engine - INFO - SELECT topic.id, topic.name, count(lesson_progress.id) AS completions_count 
+FROM topic LEFT OUTER JOIN lesson ON lesson.topic_id = topic.id LEFT OUTER JOIN lesson_progress ON lesson_progress.lesson_id = lesson.id AND lesson_progress.completed_at IS NOT NULL AND lesson_progress.completed_at >= $1::TIMESTAMP WITH TIME ZONE GROUP BY topic.id, topic.name ORDER BY count(lesson_progress.id) DESC, topic.name ASC
+2026-05-13 15:15:34,395 - sqlalchemy.engine.Engine - INFO - [cached since 52.87s ago] (datetime.datetime(2026, 5, 7, 0, 0, tzinfo=datetime.timezone.utc),)
+2026-05-13 15:15:34,396 - sqlalchemy.engine.Engine - INFO - SELECT count("user".id) AS count_1 
+FROM "user" 
+WHERE "user".is_active IS true
+2026-05-13 15:15:34,396 - sqlalchemy.engine.Engine - INFO - [cached since 52.89s ago] ()
+2026-05-13 15:15:34,398 - sqlalchemy.engine.Engine - INFO - SELECT date(lesson_progress.completed_at) AS day, count(lesson_progress.id) AS completions_count 
+FROM lesson_progress 
+WHERE lesson_progress.completed_at IS NOT NULL AND lesson_progress.completed_at >= $1::TIMESTAMP WITH TIME ZONE GROUP BY date(lesson_progress.completed_at) ORDER BY date(lesson_progress.completed_at)
+2026-05-13 15:15:34,398 - sqlalchemy.engine.Engine - INFO - [cached since 52.84s ago] (datetime.datetime(2026, 4, 14, 0, 0, tzinfo=datetime.timezone.utc),)
+2026-05-13 15:15:34,400 - sqlalchemy.engine.Engine - INFO - SELECT topic.id, count(lesson.id) AS lessons_count, count(CASE WHEN (lesson_progress.user_id = $1::INTEGER AND lesson_progress.completed_at IS NOT NULL) THEN lesson.id END) AS completed_lessons_count 
+FROM topic LEFT OUTER JOIN lesson ON lesson.topic_id = topic.id LEFT OUTER JOIN lesson_progress ON lesson_progress.lesson_id = lesson.id GROUP BY topic.id
+2026-05-13 15:15:34,401 - sqlalchemy.engine.Engine - INFO - [cached since 52.88s ago] (24,)
+2026-05-13 15:15:34,403 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-05-13 15:15:34,405 - sqlalchemy.engine.Engine - INFO - SELECT topic.id, topic.name, count(lesson.id) AS lessons_count 
+FROM topic LEFT OUTER JOIN lesson ON lesson.topic_id = topic.id GROUP BY topic.id, topic.name ORDER BY topic.name ASC
+2026-05-13 15:15:34,406 - sqlalchemy.engine.Engine - INFO - [cached since 52.87s ago] ()
+2026-05-13 15:15:34,408 - sqlalchemy.engine.Engine - INFO - SELECT count(lesson_progress.id) AS count_1 
+FROM lesson_progress 
+WHERE lesson_progress.completed_at >= $1::TIMESTAMP WITH TIME ZONE
+2026-05-13 15:15:34,408 - sqlalchemy.engine.Engine - INFO - [cached since 52.89s ago] (datetime.datetime(2026, 4, 14, 0, 0, tzinfo=datetime.timezone.utc),)
+2026-05-13 15:15:34,411 - sqlalchemy.engine.Engine - INFO - SELECT topic.id, topic.name, topic.description, count(lesson.id) AS lessons_count, count(CASE WHEN (lesson_progress.completed_at IS NOT NULL) THEN lesson.id END) AS completed_lessons_count 
+FROM topic LEFT OUTER JOIN lesson ON lesson.topic_id = topic.id LEFT OUTER JOIN lesson_progress ON lesson_progress.lesson_id = lesson.id AND lesson_progress.user_id = $1::INTEGER GROUP BY topic.id ORDER BY topic.id
+2026-05-13 15:15:34,411 - sqlalchemy.engine.Engine - INFO - [cached since 52.98s ago] (24,)
+2026-05-13 15:15:34,414 - sqlalchemy.engine.Engine - INFO - SELECT "user".id, lesson.topic_id, count(lesson_progress.id) AS completed_lessons_count 
+FROM "user" LEFT OUTER JOIN lesson_progress ON lesson_progress.user_id = "user".id AND lesson_progress.completed_at IS NOT NULL LEFT OUTER JOIN lesson ON lesson.id = lesson_progress.lesson_id GROUP BY "user".id, lesson.topic_id
+2026-05-13 15:15:34,414 - sqlalchemy.engine.Engine - INFO - [cached since 52.88s ago] ()
+2026-05-13 15:15:34,418 - sqlalchemy.engine.Engine - INFO - SELECT topic.id, topic.name, lesson_progress.user_id, count(lesson_progress.id) AS completed_count 
+FROM topic JOIN lesson ON lesson.topic_id = topic.id JOIN lesson_progress ON lesson_progress.lesson_id = lesson.id 
+WHERE lesson_progress.completed_at IS NOT NULL GROUP BY topic.id, topic.name, lesson_progress.user_id
+2026-05-13 15:15:34,418 - sqlalchemy.engine.Engine - INFO - [cached since 52.87s ago] ()
+2026-05-13 15:15:34,421 - sqlalchemy.engine.Engine - INFO - SELECT topic.id, topic.name, count(lesson_progress.id) AS completions_count 
+FROM topic LEFT OUTER JOIN lesson ON lesson.topic_id = topic.id LEFT OUTER JOIN lesson_progress ON lesson_progress.lesson_id = lesson.id AND lesson_progress.completed_at IS NOT NULL AND lesson_progress.completed_at >= $1::TIMESTAMP WITH TIME ZONE GROUP BY topic.id, topic.name ORDER BY count(lesson_progress.id) DESC, topic.name ASC
+2026-05-13 15:15:34,421 - sqlalchemy.engine.Engine - INFO - [cached since 52.89s ago] (datetime.datetime(2026, 4, 14, 0, 0, tzinfo=datetime.timezone.utc),)
+2026-05-13 15:15:34,424 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-05-13 15:15:34,427 - sqlalchemy.engine.Engine - INFO - SELECT "user".id 
+FROM "user"
+2026-05-13 15:15:34,428 - sqlalchemy.engine.Engine - INFO - [cached since 52.89s ago] ()
+2026-05-13 15:15:34,430 - sqlalchemy.engine.Engine - INFO - SELECT date(lesson_progress.completed_at) AS day, count(lesson_progress.id) AS completions_count 
+FROM lesson_progress 
+WHERE lesson_progress.completed_at IS NOT NULL AND lesson_progress.completed_at >= $1::TIMESTAMP WITH TIME ZONE GROUP BY date(lesson_progress.completed_at) ORDER BY date(lesson_progress.completed_at)
+2026-05-13 15:15:34,431 - sqlalchemy.engine.Engine - INFO - [cached since 52.88s ago] (datetime.datetime(2026, 5, 7, 0, 0, tzinfo=datetime.timezone.utc),)
+2026-05-13 15:15:34,433 - sqlalchemy.engine.Engine - INFO - SELECT topic.id, topic.name, count(lesson.id) AS lessons_count 
+FROM topic LEFT OUTER JOIN lesson ON lesson.topic_id = topic.id GROUP BY topic.id, topic.name ORDER BY topic.name ASC
+2026-05-13 15:15:34,434 - sqlalchemy.engine.Engine - INFO - [cached since 52.89s ago] ()
+2026-05-13 15:15:34,437 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-05-13 15:15:34,439 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-05-13 15:15:34,440 - sqlalchemy.engine.Engine - INFO - SELECT topic.id, topic.name, lesson_progress.user_id, count(lesson_progress.id) AS completed_count 
+FROM topic JOIN lesson ON lesson.topic_id = topic.id JOIN lesson_progress ON lesson_progress.lesson_id = lesson.id 
+WHERE lesson_progress.completed_at IS NOT NULL GROUP BY topic.id, topic.name, lesson_progress.user_id
+2026-05-13 15:15:34,441 - sqlalchemy.engine.Engine - INFO - [cached since 52.89s ago] ()
+2026-05-13 15:15:34,444 - sqlalchemy.engine.Engine - INFO - SELECT date(lesson_progress.completed_at) AS day, count(lesson_progress.id) AS completions_count 
+FROM lesson_progress 
+WHERE lesson_progress.completed_at IS NOT NULL AND lesson_progress.completed_at >= $1::TIMESTAMP WITH TIME ZONE GROUP BY date(lesson_progress.completed_at) ORDER BY date(lesson_progress.completed_at)
+2026-05-13 15:15:34,444 - sqlalchemy.engine.Engine - INFO - [cached since 52.89s ago] (datetime.datetime(2026, 4, 14, 0, 0, tzinfo=datetime.timezone.utc),)
+2026-05-13 15:15:34,447 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-05-13 15:15:35,926 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-05-13 15:15:35,927 - sqlalchemy.engine.Engine - INFO - SELECT "user".id, "user".email, "user".username, "user".hashed_password, "user".is_active, "user".role, "user".created_at, role_1.id AS id_1, role_1.name 
+FROM "user" LEFT OUTER JOIN role AS role_1 ON role_1.id = "user".role 
+WHERE "user".id = $1::INTEGER
+2026-05-13 15:15:35,927 - sqlalchemy.engine.Engine - INFO - [cached since 54.64s ago] (24,)
+2026-05-13 15:15:35,928 - sqlalchemy.engine.Engine - INFO - SELECT lesson.id, lesson.name, lesson.description, lesson.difficult, lesson.rhythm, lesson.notes, lesson.hand, lesson.topic_id, lesson.order_in_topic 
+FROM lesson 
+WHERE lesson.topic_id = $1::INTEGER ORDER BY lesson.order_in_topic ASC
+2026-05-13 15:15:35,929 - sqlalchemy.engine.Engine - INFO - [cached since 52.23s ago] (1,)
+2026-05-13 15:15:35,931 - sqlalchemy.engine.Engine - INFO - SELECT lesson_progress.lesson_id 
+FROM lesson_progress JOIN lesson ON lesson.id = lesson_progress.lesson_id 
+WHERE lesson_progress.user_id = $1::INTEGER AND lesson.topic_id = $2::INTEGER AND lesson_progress.completed_at IS NOT NULL
+2026-05-13 15:15:35,931 - sqlalchemy.engine.Engine - INFO - [cached since 52.23s ago] (24, 1)
+2026-05-13 15:15:35,934 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-05-13 15:17:13,429 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-05-13 15:17:13,429 - sqlalchemy.engine.Engine - INFO - SELECT "user".id, "user".email, "user".username, "user".hashed_password, "user".is_active, "user".role, "user".created_at, role_1.id AS id_1, role_1.name 
+FROM "user" LEFT OUTER JOIN role AS role_1 ON role_1.id = "user".role 
+WHERE "user".id = $1::INTEGER
+2026-05-13 15:17:13,429 - sqlalchemy.engine.Engine - INFO - [cached since 152.1s ago] (24,)
+2026-05-13 15:17:13,432 - sqlalchemy.engine.Engine - INFO - SELECT lesson.id, lesson.name, lesson.description, lesson.difficult, lesson.rhythm, lesson.notes, lesson.hand, lesson.topic_id, lesson.order_in_topic 
+FROM lesson 
+WHERE lesson.name = $1::VARCHAR
+2026-05-13 15:17:13,432 - sqlalchemy.engine.Engine - INFO - [generated in 0.00030s] ('ываываыва',)
+2026-05-13 15:17:13,435 - sqlalchemy.engine.Engine - INFO - SELECT lesson.id, lesson.name, lesson.description, lesson.difficult, lesson.rhythm, lesson.notes, lesson.hand, lesson.topic_id, lesson.order_in_topic 
+FROM lesson 
+WHERE lesson.notes = $1::JSONB
+2026-05-13 15:17:13,435 - sqlalchemy.engine.Engine - INFO - [generated in 0.00039s] ('{"right_hand": [[{"duration": 0.25, "notes": ["A4"]}, {"duration": 0.25, "notes": ["A4"]}, {"duration": 0.25, "notes": ["A4"]}, {"duration": 0.25, "notes": ["C5"]}]]}',)
+2026-05-13 15:17:13,439 - sqlalchemy.engine.Engine - INFO - SELECT max(lesson.order_in_topic) AS max_1 
+FROM lesson 
+WHERE lesson.topic_id = $1::INTEGER
+2026-05-13 15:17:13,439 - sqlalchemy.engine.Engine - INFO - [generated in 0.00038s] (1,)
+2026-05-13 15:17:13,445 - sqlalchemy.engine.Engine - INFO - INSERT INTO lesson (name, description, difficult, rhythm, notes, hand, topic_id, order_in_topic) VALUES ($1::VARCHAR, $2::VARCHAR, $3::INTEGER, $4::NUMERIC, $5::JSONB, $6::VARCHAR, $7::INTEGER, $8::INTEGER) RETURNING lesson.id
+2026-05-13 15:17:13,445 - sqlalchemy.engine.Engine - INFO - [generated in 0.00040s] ('ываываыва', 'ываываыав', 2, 1.0, '{"right_hand": [[{"duration": 0.25, "notes": ["A4"]}, {"duration": 0.25, "notes": ["A4"]}, {"duration": 0.25, "notes": ["A4"]}, {"duration": 0.25, "notes": ["C5"]}]]}', 'right', 1, 4)
+2026-05-13 15:17:13,448 - sqlalchemy.engine.Engine - INFO - COMMIT
+2026-05-13 15:17:13,451 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-05-13 15:17:13,453 - sqlalchemy.engine.Engine - INFO - SELECT lesson.id, lesson.name, lesson.description, lesson.difficult, lesson.rhythm, lesson.notes, lesson.hand, lesson.topic_id, lesson.order_in_topic 
+FROM lesson 
+WHERE lesson.id = $1::INTEGER
+2026-05-13 15:17:13,453 - sqlalchemy.engine.Engine - INFO - [generated in 0.00026s] (18,)
+2026-05-13 15:17:13,456 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-05-13 15:17:14,266 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-05-13 15:17:14,267 - sqlalchemy.engine.Engine - INFO - SELECT "user".id, "user".email, "user".username, "user".hashed_password, "user".is_active, "user".role, "user".created_at, role_1.id AS id_1, role_1.name 
+FROM "user" LEFT OUTER JOIN role AS role_1 ON role_1.id = "user".role 
+WHERE "user".id = $1::INTEGER
+2026-05-13 15:17:14,267 - sqlalchemy.engine.Engine - INFO - [cached since 153s ago] (24,)
+2026-05-13 15:17:14,270 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-05-13 15:17:14,270 - sqlalchemy.engine.Engine - INFO - SELECT "user".id, "user".email, "user".username, "user".hashed_password, "user".is_active, "user".role, "user".created_at, role_1.id AS id_1, role_1.name 
+FROM "user" LEFT OUTER JOIN role AS role_1 ON role_1.id = "user".role 
+WHERE "user".id = $1::INTEGER
+2026-05-13 15:17:14,270 - sqlalchemy.engine.Engine - INFO - [cached since 153s ago] (24,)
+2026-05-13 15:17:14,273 - sqlalchemy.engine.Engine - INFO - SELECT topic.id, topic.name, topic.description, count(lesson.id) AS lessons_count, count(CASE WHEN (lesson_progress.completed_at IS NOT NULL) THEN lesson.id END) AS completed_lessons_count 
+FROM topic LEFT OUTER JOIN lesson ON lesson.topic_id = topic.id LEFT OUTER JOIN lesson_progress ON lesson_progress.lesson_id = lesson.id AND lesson_progress.user_id = $1::INTEGER GROUP BY topic.id ORDER BY topic.id
+2026-05-13 15:17:14,274 - sqlalchemy.engine.Engine - INFO - [cached since 152.8s ago] (24,)
+2026-05-13 15:17:14,275 - sqlalchemy.engine.Engine - INFO - SELECT lesson.id, lesson.name, lesson.description, lesson.difficult, lesson.rhythm, lesson.notes, lesson.hand, lesson.topic_id, lesson.order_in_topic 
+FROM lesson 
+WHERE lesson.topic_id = $1::INTEGER ORDER BY lesson.order_in_topic ASC
+2026-05-13 15:17:14,275 - sqlalchemy.engine.Engine - INFO - [cached since 150.6s ago] (1,)
+2026-05-13 15:17:14,278 - sqlalchemy.engine.Engine - INFO - SELECT lesson_progress.lesson_id 
+FROM lesson_progress JOIN lesson ON lesson.id = lesson_progress.lesson_id 
+WHERE lesson_progress.user_id = $1::INTEGER AND lesson.topic_id = $2::INTEGER AND lesson_progress.completed_at IS NOT NULL
+2026-05-13 15:17:14,278 - sqlalchemy.engine.Engine - INFO - [cached since 150.6s ago] (24, 1)
+2026-05-13 15:17:14,280 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-05-13 15:17:14,282 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-05-13 15:17:14,288 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-05-13 15:17:14,288 - sqlalchemy.engine.Engine - INFO - SELECT "user".id, "user".email, "user".username, "user".hashed_password, "user".is_active, "user".role, "user".created_at, role_1.id AS id_1, role_1.name 
+FROM "user" LEFT OUTER JOIN role AS role_1 ON role_1.id = "user".role 
+WHERE "user".id = $1::INTEGER
+2026-05-13 15:17:14,288 - sqlalchemy.engine.Engine - INFO - [cached since 153s ago] (24,)
+2026-05-13 15:17:14,291 - sqlalchemy.engine.Engine - INFO - SELECT lesson.id, lesson.name, lesson.description, lesson.difficult, lesson.rhythm, lesson.notes, lesson.hand, lesson.topic_id, lesson.order_in_topic 
+FROM lesson 
+WHERE lesson.topic_id = $1::INTEGER ORDER BY lesson.order_in_topic ASC
+2026-05-13 15:17:14,291 - sqlalchemy.engine.Engine - INFO - [cached since 150.6s ago] (1,)
+2026-05-13 15:17:14,293 - sqlalchemy.engine.Engine - INFO - SELECT lesson_progress.lesson_id 
+FROM lesson_progress JOIN lesson ON lesson.id = lesson_progress.lesson_id 
+WHERE lesson_progress.user_id = $1::INTEGER AND lesson.topic_id = $2::INTEGER AND lesson_progress.completed_at IS NOT NULL
+2026-05-13 15:17:14,294 - sqlalchemy.engine.Engine - INFO - [cached since 150.6s ago] (24, 1)
+2026-05-13 15:17:14,297 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-05-13 15:19:09,711 - sqlalchemy.engine.Engine - INFO - select pg_catalog.version()
+2026-05-13 15:19:09,712 - sqlalchemy.engine.Engine - INFO - [raw sql] ()
+2026-05-13 15:19:09,714 - sqlalchemy.engine.Engine - INFO - select current_schema()
+2026-05-13 15:19:09,715 - sqlalchemy.engine.Engine - INFO - [raw sql] ()
+2026-05-13 15:19:09,716 - sqlalchemy.engine.Engine - INFO - show standard_conforming_strings
+2026-05-13 15:19:09,716 - sqlalchemy.engine.Engine - INFO - [raw sql] ()
+2026-05-13 15:19:09,718 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-05-13 15:19:09,733 - sqlalchemy.engine.Engine - INFO - SELECT "user".id, "user".email, "user".username, "user".hashed_password, "user".is_active, "user".role, "user".created_at, role_1.id AS id_1, role_1.name 
+FROM "user" LEFT OUTER JOIN role AS role_1 ON role_1.id = "user".role 
+WHERE "user".id = $1::INTEGER
+2026-05-13 15:19:09,734 - sqlalchemy.engine.Engine - INFO - [generated in 0.00028s] (24,)
+2026-05-13 15:19:09,743 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-05-13 15:19:09,866 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-05-13 15:19:09,867 - sqlalchemy.engine.Engine - INFO - SELECT "user".id, "user".email, "user".username, "user".hashed_password, "user".is_active, "user".role, "user".created_at, role_1.id AS id_1, role_1.name 
+FROM "user" LEFT OUTER JOIN role AS role_1 ON role_1.id = "user".role 
+WHERE "user".id = $1::INTEGER
+2026-05-13 15:19:09,867 - sqlalchemy.engine.Engine - INFO - [cached since 0.1334s ago] (24,)
+2026-05-13 15:19:09,875 - sqlalchemy.engine.Engine - INFO - SELECT topic.id, topic.name, topic.description, count(lesson.id) AS lessons_count, count(CASE WHEN (lesson_progress.completed_at IS NOT NULL) THEN lesson.id END) AS completed_lessons_count 
+FROM topic LEFT OUTER JOIN lesson ON lesson.topic_id = topic.id LEFT OUTER JOIN lesson_progress ON lesson_progress.lesson_id = lesson.id AND lesson_progress.user_id = $1::INTEGER GROUP BY topic.id ORDER BY topic.id
+2026-05-13 15:19:09,875 - sqlalchemy.engine.Engine - INFO - [generated in 0.00042s] (24,)
+2026-05-13 15:19:09,889 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-05-13 15:19:09,897 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-05-13 15:19:09,898 - sqlalchemy.engine.Engine - INFO - SELECT "user".id, "user".email, "user".username, "user".hashed_password, "user".is_active, "user".role, "user".created_at, role_1.id AS id_1, role_1.name 
+FROM "user" LEFT OUTER JOIN role AS role_1 ON role_1.id = "user".role 
+WHERE "user".id = $1::INTEGER
+2026-05-13 15:19:09,898 - sqlalchemy.engine.Engine - INFO - [cached since 0.1648s ago] (24,)
+2026-05-13 15:19:09,901 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-05-13 15:19:09,902 - sqlalchemy.engine.Engine - INFO - SELECT "user".id, "user".email, "user".username, "user".hashed_password, "user".is_active, "user".role, "user".created_at, role_1.id AS id_1, role_1.name 
+FROM "user" LEFT OUTER JOIN role AS role_1 ON role_1.id = "user".role 
+WHERE "user".id = $1::INTEGER
+2026-05-13 15:19:09,903 - sqlalchemy.engine.Engine - INFO - [cached since 0.1692s ago] (24,)
+2026-05-13 15:19:09,904 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-05-13 15:19:09,904 - sqlalchemy.engine.Engine - INFO - SELECT "user".id, "user".email, "user".username, "user".hashed_password, "user".is_active, "user".role, "user".created_at, role_1.id AS id_1, role_1.name 
+FROM "user" LEFT OUTER JOIN role AS role_1 ON role_1.id = "user".role 
+WHERE "user".id = $1::INTEGER
+2026-05-13 15:19:09,904 - sqlalchemy.engine.Engine - INFO - [cached since 0.171s ago] (24,)
+2026-05-13 15:19:09,905 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-05-13 15:19:09,905 - sqlalchemy.engine.Engine - INFO - SELECT "user".id, "user".email, "user".username, "user".hashed_password, "user".is_active, "user".role, "user".created_at, role_1.id AS id_1, role_1.name 
+FROM "user" LEFT OUTER JOIN role AS role_1 ON role_1.id = "user".role 
+WHERE "user".id = $1::INTEGER
+2026-05-13 15:19:09,905 - sqlalchemy.engine.Engine - INFO - [cached since 0.172s ago] (24,)
+2026-05-13 15:19:09,906 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-05-13 15:19:09,907 - sqlalchemy.engine.Engine - INFO - SELECT "user".id, "user".email, "user".username, "user".hashed_password, "user".is_active, "user".role, "user".created_at, role_1.id AS id_1, role_1.name 
+FROM "user" LEFT OUTER JOIN role AS role_1 ON role_1.id = "user".role 
+WHERE "user".id = $1::INTEGER
+2026-05-13 15:19:09,907 - sqlalchemy.engine.Engine - INFO - [cached since 0.1735s ago] (24,)
+2026-05-13 15:19:09,909 - sqlalchemy.engine.Engine - INFO - SELECT count(topic.id) AS count_1 
+FROM topic
+2026-05-13 15:19:09,909 - sqlalchemy.engine.Engine - INFO - [generated in 0.00026s] ()
+2026-05-13 15:19:09,911 - sqlalchemy.engine.Engine - INFO - SELECT count(topic.id) AS count_1 
+FROM topic
+2026-05-13 15:19:09,911 - sqlalchemy.engine.Engine - INFO - [cached since 0.002159s ago] ()
+2026-05-13 15:19:09,912 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-05-13 15:19:09,912 - sqlalchemy.engine.Engine - INFO - SELECT "user".id, "user".email, "user".username, "user".hashed_password, "user".is_active, "user".role, "user".created_at, role_1.id AS id_1, role_1.name 
+FROM "user" LEFT OUTER JOIN role AS role_1 ON role_1.id = "user".role 
+WHERE "user".id = $1::INTEGER
+2026-05-13 15:19:09,912 - sqlalchemy.engine.Engine - INFO - [cached since 0.179s ago] (24,)
+2026-05-13 15:19:09,916 - sqlalchemy.engine.Engine - INFO - SELECT "user".id, "user".email, "user".username, "user".hashed_password, "user".is_active, "user".role, "user".created_at, role_1.id AS id_1, role_1.name 
+FROM "user" LEFT OUTER JOIN role AS role_1 ON role_1.id = "user".role ORDER BY "user".id
+2026-05-13 15:19:09,916 - sqlalchemy.engine.Engine - INFO - [generated in 0.00030s] ()
+2026-05-13 15:19:09,917 - sqlalchemy.engine.Engine - INFO - SELECT count(lesson.id) AS count_1 
+FROM lesson
+2026-05-13 15:19:09,918 - sqlalchemy.engine.Engine - INFO - [generated in 0.00021s] ()
+2026-05-13 15:19:09,918 - sqlalchemy.engine.Engine - INFO - SELECT count(lesson.id) AS count_1 
+FROM lesson
+2026-05-13 15:19:09,918 - sqlalchemy.engine.Engine - INFO - [cached since 0.0009249s ago] ()
+2026-05-13 15:19:09,919 - sqlalchemy.engine.Engine - INFO - SELECT count(topic.id) AS count_1 
+FROM topic
+2026-05-13 15:19:09,919 - sqlalchemy.engine.Engine - INFO - [cached since 0.01018s ago] ()
+2026-05-13 15:19:09,920 - sqlalchemy.engine.Engine - INFO - SELECT count("user".id) AS count_1 
+FROM "user"
+2026-05-13 15:19:09,921 - sqlalchemy.engine.Engine - INFO - [generated in 0.00017s] ()
+2026-05-13 15:19:09,922 - sqlalchemy.engine.Engine - INFO - SELECT count("user".id) AS count_1 
+FROM "user"
+2026-05-13 15:19:09,923 - sqlalchemy.engine.Engine - INFO - [cached since 0.002129s ago] ()
+2026-05-13 15:19:09,927 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-05-13 15:19:09,928 - sqlalchemy.engine.Engine - INFO - SELECT count(lesson.id) AS count_1 
+FROM lesson
+2026-05-13 15:19:09,929 - sqlalchemy.engine.Engine - INFO - [cached since 0.01118s ago] ()
+2026-05-13 15:19:09,930 - sqlalchemy.engine.Engine - INFO - SELECT topic.id, topic.name, topic.description, count(lesson.id) AS lessons_count, count(CASE WHEN (lesson_progress.completed_at IS NOT NULL) THEN lesson.id END) AS completed_lessons_count 
+FROM topic LEFT OUTER JOIN lesson ON lesson.topic_id = topic.id LEFT OUTER JOIN lesson_progress ON lesson_progress.lesson_id = lesson.id AND lesson_progress.user_id = $1::INTEGER GROUP BY topic.id ORDER BY topic.id
+2026-05-13 15:19:09,930 - sqlalchemy.engine.Engine - INFO - [cached since 0.05518s ago] (24,)
+2026-05-13 15:19:09,931 - sqlalchemy.engine.Engine - INFO - SELECT count(topic.id) AS count_1 
+FROM topic
+2026-05-13 15:19:09,931 - sqlalchemy.engine.Engine - INFO - [cached since 0.0217s ago] ()
+2026-05-13 15:19:09,931 - sqlalchemy.engine.Engine - INFO - SELECT count("user".id) AS count_1 
+FROM "user"
+2026-05-13 15:19:09,932 - sqlalchemy.engine.Engine - INFO - [cached since 0.01123s ago] ()
+2026-05-13 15:19:09,933 - sqlalchemy.engine.Engine - INFO - SELECT count("user".id) AS count_1 
+FROM "user" 
+WHERE "user".is_active IS true
+2026-05-13 15:19:09,934 - sqlalchemy.engine.Engine - INFO - [generated in 0.00025s] ()
+2026-05-13 15:19:09,935 - sqlalchemy.engine.Engine - INFO - SELECT count("user".id) AS count_1 
+FROM "user"
+2026-05-13 15:19:09,935 - sqlalchemy.engine.Engine - INFO - [cached since 0.01449s ago] ()
+2026-05-13 15:19:09,936 - sqlalchemy.engine.Engine - INFO - SELECT count(lesson_progress.id) AS count_1 
+FROM lesson_progress 
+WHERE lesson_progress.user_id = $1::INTEGER AND lesson_progress.completed_at IS NOT NULL
+2026-05-13 15:19:09,936 - sqlalchemy.engine.Engine - INFO - [generated in 0.00021s] (24,)
+2026-05-13 15:19:09,938 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-05-13 15:19:09,938 - sqlalchemy.engine.Engine - INFO - SELECT count("user".id) AS count_1 
+FROM "user" 
+WHERE "user".is_active IS true
+2026-05-13 15:19:09,939 - sqlalchemy.engine.Engine - INFO - [cached since 0.0051s ago] ()
+2026-05-13 15:19:09,940 - sqlalchemy.engine.Engine - INFO - SELECT count(lesson_progress.id) AS count_1 
+FROM lesson_progress 
+WHERE lesson_progress.completed_at >= $1::TIMESTAMP WITH TIME ZONE
+2026-05-13 15:19:09,941 - sqlalchemy.engine.Engine - INFO - [generated in 0.00026s] (datetime.datetime(2026, 5, 7, 0, 0, tzinfo=datetime.timezone.utc),)
+2026-05-13 15:19:09,942 - sqlalchemy.engine.Engine - INFO - SELECT count("user".id) AS count_1 
+FROM "user" 
+WHERE "user".is_active IS true
+2026-05-13 15:19:09,942 - sqlalchemy.engine.Engine - INFO - [cached since 0.008311s ago] ()
+2026-05-13 15:19:09,944 - sqlalchemy.engine.Engine - INFO - SELECT topic.id, count(lesson.id) AS lessons_count, count(CASE WHEN (lesson_progress.user_id = $1::INTEGER AND lesson_progress.completed_at IS NOT NULL) THEN lesson.id END) AS completed_lessons_count 
+FROM topic LEFT OUTER JOIN lesson ON lesson.topic_id = topic.id LEFT OUTER JOIN lesson_progress ON lesson_progress.lesson_id = lesson.id GROUP BY topic.id
+2026-05-13 15:19:09,944 - sqlalchemy.engine.Engine - INFO - [generated in 0.00020s] (24,)
+2026-05-13 15:19:09,945 - sqlalchemy.engine.Engine - INFO - SELECT count(lesson_progress.id) AS count_1 
+FROM lesson_progress 
+WHERE lesson_progress.completed_at >= $1::TIMESTAMP WITH TIME ZONE
+2026-05-13 15:19:09,945 - sqlalchemy.engine.Engine - INFO - [cached since 0.004748s ago] (datetime.datetime(2026, 4, 14, 0, 0, tzinfo=datetime.timezone.utc),)
+2026-05-13 15:19:09,948 - sqlalchemy.engine.Engine - INFO - SELECT topic.id, topic.name, count(lesson_progress.id) AS completions_count 
+FROM topic LEFT OUTER JOIN lesson ON lesson.topic_id = topic.id LEFT OUTER JOIN lesson_progress ON lesson_progress.lesson_id = lesson.id AND lesson_progress.completed_at IS NOT NULL AND lesson_progress.completed_at >= $1::TIMESTAMP WITH TIME ZONE GROUP BY topic.id, topic.name ORDER BY count(lesson_progress.id) DESC, topic.name ASC
+2026-05-13 15:19:09,948 - sqlalchemy.engine.Engine - INFO - [generated in 0.00027s] (datetime.datetime(2026, 5, 7, 0, 0, tzinfo=datetime.timezone.utc),)
+2026-05-13 15:19:09,949 - sqlalchemy.engine.Engine - INFO - SELECT count(lesson_progress.id) AS count_1 
+FROM lesson_progress 
+WHERE lesson_progress.completed_at >= $1::TIMESTAMP WITH TIME ZONE
+2026-05-13 15:19:09,949 - sqlalchemy.engine.Engine - INFO - [cached since 0.009144s ago] (datetime.datetime(2026, 4, 14, 0, 0, tzinfo=datetime.timezone.utc),)
+2026-05-13 15:19:09,952 - sqlalchemy.engine.Engine - INFO - SELECT "user".id, lesson.topic_id, count(lesson_progress.id) AS completed_lessons_count 
+FROM "user" LEFT OUTER JOIN lesson_progress ON lesson_progress.user_id = "user".id AND lesson_progress.completed_at IS NOT NULL LEFT OUTER JOIN lesson ON lesson.id = lesson_progress.lesson_id GROUP BY "user".id, lesson.topic_id
+2026-05-13 15:19:09,952 - sqlalchemy.engine.Engine - INFO - [generated in 0.00024s] ()
+2026-05-13 15:19:09,953 - sqlalchemy.engine.Engine - INFO - SELECT topic.id, topic.name, count(lesson_progress.id) AS completions_count 
+FROM topic LEFT OUTER JOIN lesson ON lesson.topic_id = topic.id LEFT OUTER JOIN lesson_progress ON lesson_progress.lesson_id = lesson.id AND lesson_progress.completed_at IS NOT NULL AND lesson_progress.completed_at >= $1::TIMESTAMP WITH TIME ZONE GROUP BY topic.id, topic.name ORDER BY count(lesson_progress.id) DESC, topic.name ASC
+2026-05-13 15:19:09,954 - sqlalchemy.engine.Engine - INFO - [cached since 0.005691s ago] (datetime.datetime(2026, 4, 14, 0, 0, tzinfo=datetime.timezone.utc),)
+2026-05-13 15:19:09,955 - sqlalchemy.engine.Engine - INFO - SELECT topic.id, topic.name, count(lesson.id) AS lessons_count 
+FROM topic LEFT OUTER JOIN lesson ON lesson.topic_id = topic.id GROUP BY topic.id, topic.name ORDER BY topic.name ASC
+2026-05-13 15:19:09,956 - sqlalchemy.engine.Engine - INFO - [generated in 0.00022s] ()
+2026-05-13 15:19:09,957 - sqlalchemy.engine.Engine - INFO - SELECT topic.id, topic.name, count(lesson_progress.id) AS completions_count 
+FROM topic LEFT OUTER JOIN lesson ON lesson.topic_id = topic.id LEFT OUTER JOIN lesson_progress ON lesson_progress.lesson_id = lesson.id AND lesson_progress.completed_at IS NOT NULL AND lesson_progress.completed_at >= $1::TIMESTAMP WITH TIME ZONE GROUP BY topic.id, topic.name ORDER BY count(lesson_progress.id) DESC, topic.name ASC
+2026-05-13 15:19:09,957 - sqlalchemy.engine.Engine - INFO - [cached since 0.009292s ago] (datetime.datetime(2026, 4, 14, 0, 0, tzinfo=datetime.timezone.utc),)
+2026-05-13 15:19:09,958 - sqlalchemy.engine.Engine - INFO - SELECT "user".id 
+FROM "user"
+2026-05-13 15:19:09,958 - sqlalchemy.engine.Engine - INFO - [generated in 0.00022s] ()
+2026-05-13 15:19:09,960 - sqlalchemy.engine.Engine - INFO - SELECT topic.id, topic.name, count(lesson.id) AS lessons_count 
+FROM topic LEFT OUTER JOIN lesson ON lesson.topic_id = topic.id GROUP BY topic.id, topic.name ORDER BY topic.name ASC
+2026-05-13 15:19:09,960 - sqlalchemy.engine.Engine - INFO - [cached since 0.00467s ago] ()
+2026-05-13 15:19:09,962 - sqlalchemy.engine.Engine - INFO - SELECT topic.id, topic.name, lesson_progress.user_id, count(lesson_progress.id) AS completed_count 
+FROM topic JOIN lesson ON lesson.topic_id = topic.id JOIN lesson_progress ON lesson_progress.lesson_id = lesson.id 
+WHERE lesson_progress.completed_at IS NOT NULL GROUP BY topic.id, topic.name, lesson_progress.user_id
+2026-05-13 15:19:09,963 - sqlalchemy.engine.Engine - INFO - [generated in 0.00025s] ()
+2026-05-13 15:19:09,963 - sqlalchemy.engine.Engine - INFO - SELECT topic.id, topic.name, count(lesson.id) AS lessons_count 
+FROM topic LEFT OUTER JOIN lesson ON lesson.topic_id = topic.id GROUP BY topic.id, topic.name ORDER BY topic.name ASC
+2026-05-13 15:19:09,964 - sqlalchemy.engine.Engine - INFO - [cached since 0.008254s ago] ()
+2026-05-13 15:19:09,965 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-05-13 15:19:09,966 - sqlalchemy.engine.Engine - INFO - SELECT topic.id, topic.name, lesson_progress.user_id, count(lesson_progress.id) AS completed_count 
+FROM topic JOIN lesson ON lesson.topic_id = topic.id JOIN lesson_progress ON lesson_progress.lesson_id = lesson.id 
+WHERE lesson_progress.completed_at IS NOT NULL GROUP BY topic.id, topic.name, lesson_progress.user_id
+2026-05-13 15:19:09,966 - sqlalchemy.engine.Engine - INFO - [cached since 0.004064s ago] ()
+2026-05-13 15:19:09,969 - sqlalchemy.engine.Engine - INFO - SELECT date(lesson_progress.completed_at) AS day, count(lesson_progress.id) AS completions_count 
+FROM lesson_progress 
+WHERE lesson_progress.completed_at IS NOT NULL AND lesson_progress.completed_at >= $1::TIMESTAMP WITH TIME ZONE GROUP BY date(lesson_progress.completed_at) ORDER BY date(lesson_progress.completed_at)
+2026-05-13 15:19:09,969 - sqlalchemy.engine.Engine - INFO - [generated in 0.00029s] (datetime.datetime(2026, 5, 7, 0, 0, tzinfo=datetime.timezone.utc),)
+2026-05-13 15:19:09,970 - sqlalchemy.engine.Engine - INFO - SELECT topic.id, topic.name, lesson_progress.user_id, count(lesson_progress.id) AS completed_count 
+FROM topic JOIN lesson ON lesson.topic_id = topic.id JOIN lesson_progress ON lesson_progress.lesson_id = lesson.id 
+WHERE lesson_progress.completed_at IS NOT NULL GROUP BY topic.id, topic.name, lesson_progress.user_id
+2026-05-13 15:19:09,971 - sqlalchemy.engine.Engine - INFO - [cached since 0.008319s ago] ()
+2026-05-13 15:19:09,972 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-05-13 15:19:09,974 - sqlalchemy.engine.Engine - INFO - SELECT date(lesson_progress.completed_at) AS day, count(lesson_progress.id) AS completions_count 
+FROM lesson_progress 
+WHERE lesson_progress.completed_at IS NOT NULL AND lesson_progress.completed_at >= $1::TIMESTAMP WITH TIME ZONE GROUP BY date(lesson_progress.completed_at) ORDER BY date(lesson_progress.completed_at)
+2026-05-13 15:19:09,974 - sqlalchemy.engine.Engine - INFO - [cached since 0.004803s ago] (datetime.datetime(2026, 4, 14, 0, 0, tzinfo=datetime.timezone.utc),)
+2026-05-13 15:19:09,975 - sqlalchemy.engine.Engine - INFO - SELECT date(lesson_progress.completed_at) AS day, count(lesson_progress.id) AS completions_count 
+FROM lesson_progress 
+WHERE lesson_progress.completed_at IS NOT NULL AND lesson_progress.completed_at >= $1::TIMESTAMP WITH TIME ZONE GROUP BY date(lesson_progress.completed_at) ORDER BY date(lesson_progress.completed_at)
+2026-05-13 15:19:09,975 - sqlalchemy.engine.Engine - INFO - [cached since 0.0063s ago] (datetime.datetime(2026, 4, 14, 0, 0, tzinfo=datetime.timezone.utc),)
+2026-05-13 15:19:09,977 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-05-13 15:19:09,979 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-05-13 15:19:11,061 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-05-13 15:19:11,062 - sqlalchemy.engine.Engine - INFO - SELECT "user".id, "user".email, "user".username, "user".hashed_password, "user".is_active, "user".role, "user".created_at, role_1.id AS id_1, role_1.name 
+FROM "user" LEFT OUTER JOIN role AS role_1 ON role_1.id = "user".role 
+WHERE "user".id = $1::INTEGER
+2026-05-13 15:19:11,062 - sqlalchemy.engine.Engine - INFO - [cached since 1.329s ago] (24,)
+2026-05-13 15:19:11,065 - sqlalchemy.engine.Engine - INFO - SELECT topic.id, topic.name, topic.description, count(lesson.id) AS lessons_count, count(CASE WHEN (lesson_progress.completed_at IS NOT NULL) THEN lesson.id END) AS completed_lessons_count 
+FROM topic LEFT OUTER JOIN lesson ON lesson.topic_id = topic.id LEFT OUTER JOIN lesson_progress ON lesson_progress.lesson_id = lesson.id AND lesson_progress.user_id = $1::INTEGER GROUP BY topic.id ORDER BY topic.id
+2026-05-13 15:19:11,066 - sqlalchemy.engine.Engine - INFO - [cached since 1.191s ago] (24,)
+2026-05-13 15:19:11,069 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-05-13 15:19:13,423 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-05-13 15:19:13,424 - sqlalchemy.engine.Engine - INFO - SELECT "user".id, "user".email, "user".username, "user".hashed_password, "user".is_active, "user".role, "user".created_at, role_1.id AS id_1, role_1.name 
+FROM "user" LEFT OUTER JOIN role AS role_1 ON role_1.id = "user".role 
+WHERE "user".id = $1::INTEGER
+2026-05-13 15:19:13,424 - sqlalchemy.engine.Engine - INFO - [cached since 3.69s ago] (24,)
+2026-05-13 15:19:13,426 - sqlalchemy.engine.Engine - INFO - SELECT lesson.id, lesson.name, lesson.description, lesson.difficult, lesson.rhythm, lesson.notes, lesson.hand, lesson.topic_id, lesson.order_in_topic 
+FROM lesson 
+WHERE lesson.topic_id = $1::INTEGER ORDER BY lesson.order_in_topic ASC
+2026-05-13 15:19:13,427 - sqlalchemy.engine.Engine - INFO - [generated in 0.00024s] (1,)
+2026-05-13 15:19:13,429 - sqlalchemy.engine.Engine - INFO - SELECT lesson_progress.lesson_id 
+FROM lesson_progress JOIN lesson ON lesson.id = lesson_progress.lesson_id 
+WHERE lesson_progress.user_id = $1::INTEGER AND lesson.topic_id = $2::INTEGER AND lesson_progress.completed_at IS NOT NULL
+2026-05-13 15:19:13,429 - sqlalchemy.engine.Engine - INFO - [generated in 0.00023s] (24, 1)
+2026-05-13 15:19:13,432 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-05-13 15:19:40,332 - sqlalchemy.engine.Engine - INFO - select pg_catalog.version()
+2026-05-13 15:19:40,332 - sqlalchemy.engine.Engine - INFO - [raw sql] ()
+2026-05-13 15:19:40,335 - sqlalchemy.engine.Engine - INFO - select current_schema()
+2026-05-13 15:19:40,335 - sqlalchemy.engine.Engine - INFO - [raw sql] ()
+2026-05-13 15:19:40,337 - sqlalchemy.engine.Engine - INFO - show standard_conforming_strings
+2026-05-13 15:19:40,337 - sqlalchemy.engine.Engine - INFO - [raw sql] ()
+2026-05-13 15:19:40,338 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-05-13 15:19:40,354 - sqlalchemy.engine.Engine - INFO - SELECT "user".id, "user".email, "user".username, "user".hashed_password, "user".is_active, "user".role, "user".created_at, role_1.id AS id_1, role_1.name 
+FROM "user" LEFT OUTER JOIN role AS role_1 ON role_1.id = "user".role 
+WHERE "user".id = $1::INTEGER
+2026-05-13 15:19:40,354 - sqlalchemy.engine.Engine - INFO - [generated in 0.00032s] (24,)
+2026-05-13 15:19:40,364 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-05-13 15:19:40,511 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-05-13 15:19:40,511 - sqlalchemy.engine.Engine - INFO - SELECT "user".id, "user".email, "user".username, "user".hashed_password, "user".is_active, "user".role, "user".created_at, role_1.id AS id_1, role_1.name 
+FROM "user" LEFT OUTER JOIN role AS role_1 ON role_1.id = "user".role 
+WHERE "user".id = $1::INTEGER
+2026-05-13 15:19:40,512 - sqlalchemy.engine.Engine - INFO - [cached since 0.1575s ago] (24,)
+2026-05-13 15:19:40,525 - sqlalchemy.engine.Engine - INFO - SELECT topic.id, topic.name, topic.description, count(lesson.id) AS lessons_count, count(CASE WHEN (lesson_progress.completed_at IS NOT NULL) THEN lesson.id END) AS completed_lessons_count 
+FROM topic LEFT OUTER JOIN lesson ON lesson.topic_id = topic.id LEFT OUTER JOIN lesson_progress ON lesson_progress.lesson_id = lesson.id AND lesson_progress.user_id = $1::INTEGER GROUP BY topic.id ORDER BY topic.id
+2026-05-13 15:19:40,525 - sqlalchemy.engine.Engine - INFO - [generated in 0.00037s] (24,)
+2026-05-13 15:19:40,542 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-05-13 15:19:40,549 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-05-13 15:19:40,549 - sqlalchemy.engine.Engine - INFO - SELECT "user".id, "user".email, "user".username, "user".hashed_password, "user".is_active, "user".role, "user".created_at, role_1.id AS id_1, role_1.name 
+FROM "user" LEFT OUTER JOIN role AS role_1 ON role_1.id = "user".role 
+WHERE "user".id = $1::INTEGER
+2026-05-13 15:19:40,550 - sqlalchemy.engine.Engine - INFO - [cached since 0.1955s ago] (24,)
+2026-05-13 15:19:40,550 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-05-13 15:19:40,551 - sqlalchemy.engine.Engine - INFO - SELECT "user".id, "user".email, "user".username, "user".hashed_password, "user".is_active, "user".role, "user".created_at, role_1.id AS id_1, role_1.name 
+FROM "user" LEFT OUTER JOIN role AS role_1 ON role_1.id = "user".role 
+WHERE "user".id = $1::INTEGER
+2026-05-13 15:19:40,551 - sqlalchemy.engine.Engine - INFO - [cached since 0.1968s ago] (24,)
+2026-05-13 15:19:40,554 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-05-13 15:19:40,554 - sqlalchemy.engine.Engine - INFO - SELECT "user".id, "user".email, "user".username, "user".hashed_password, "user".is_active, "user".role, "user".created_at, role_1.id AS id_1, role_1.name 
+FROM "user" LEFT OUTER JOIN role AS role_1 ON role_1.id = "user".role 
+WHERE "user".id = $1::INTEGER
+2026-05-13 15:19:40,555 - sqlalchemy.engine.Engine - INFO - [cached since 0.2005s ago] (24,)
+2026-05-13 15:19:40,556 - sqlalchemy.engine.Engine - INFO - SELECT count(topic.id) AS count_1 
+FROM topic
+2026-05-13 15:19:40,557 - sqlalchemy.engine.Engine - INFO - [generated in 0.00019s] ()
+2026-05-13 15:19:40,557 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-05-13 15:19:40,557 - sqlalchemy.engine.Engine - INFO - SELECT "user".id, "user".email, "user".username, "user".hashed_password, "user".is_active, "user".role, "user".created_at, role_1.id AS id_1, role_1.name 
+FROM "user" LEFT OUTER JOIN role AS role_1 ON role_1.id = "user".role 
+WHERE "user".id = $1::INTEGER
+2026-05-13 15:19:40,558 - sqlalchemy.engine.Engine - INFO - [cached since 0.2035s ago] (24,)
+2026-05-13 15:19:40,558 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-05-13 15:19:40,558 - sqlalchemy.engine.Engine - INFO - SELECT "user".id, "user".email, "user".username, "user".hashed_password, "user".is_active, "user".role, "user".created_at, role_1.id AS id_1, role_1.name 
+FROM "user" LEFT OUTER JOIN role AS role_1 ON role_1.id = "user".role 
+WHERE "user".id = $1::INTEGER
+2026-05-13 15:19:40,558 - sqlalchemy.engine.Engine - INFO - [cached since 0.2042s ago] (24,)
+2026-05-13 15:19:40,559 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-05-13 15:19:40,559 - sqlalchemy.engine.Engine - INFO - SELECT "user".id, "user".email, "user".username, "user".hashed_password, "user".is_active, "user".role, "user".created_at, role_1.id AS id_1, role_1.name 
+FROM "user" LEFT OUTER JOIN role AS role_1 ON role_1.id = "user".role 
+WHERE "user".id = $1::INTEGER
+2026-05-13 15:19:40,559 - sqlalchemy.engine.Engine - INFO - [cached since 0.2049s ago] (24,)
+2026-05-13 15:19:40,560 - sqlalchemy.engine.Engine - INFO - SELECT count(topic.id) AS count_1 
+FROM topic
+2026-05-13 15:19:40,560 - sqlalchemy.engine.Engine - INFO - [cached since 0.00401s ago] ()
+2026-05-13 15:19:40,563 - sqlalchemy.engine.Engine - INFO - SELECT count(lesson.id) AS count_1 
+FROM lesson
+2026-05-13 15:19:40,563 - sqlalchemy.engine.Engine - INFO - [generated in 0.00023s] ()
+2026-05-13 15:19:40,564 - sqlalchemy.engine.Engine - INFO - SELECT count(lesson.id) AS count_1 
+FROM lesson
+2026-05-13 15:19:40,564 - sqlalchemy.engine.Engine - INFO - [cached since 0.001628s ago] ()
+2026-05-13 15:19:40,565 - sqlalchemy.engine.Engine - INFO - SELECT count(topic.id) AS count_1 
+FROM topic
+2026-05-13 15:19:40,566 - sqlalchemy.engine.Engine - INFO - [cached since 0.009266s ago] ()
+2026-05-13 15:19:40,568 - sqlalchemy.engine.Engine - INFO - SELECT "user".id, "user".email, "user".username, "user".hashed_password, "user".is_active, "user".role, "user".created_at, role_1.id AS id_1, role_1.name 
+FROM "user" LEFT OUTER JOIN role AS role_1 ON role_1.id = "user".role ORDER BY "user".id
+2026-05-13 15:19:40,568 - sqlalchemy.engine.Engine - INFO - [generated in 0.00030s] ()
+2026-05-13 15:19:40,570 - sqlalchemy.engine.Engine - INFO - SELECT topic.id, topic.name, topic.description, count(lesson.id) AS lessons_count, count(CASE WHEN (lesson_progress.completed_at IS NOT NULL) THEN lesson.id END) AS completed_lessons_count 
+FROM topic LEFT OUTER JOIN lesson ON lesson.topic_id = topic.id LEFT OUTER JOIN lesson_progress ON lesson_progress.lesson_id = lesson.id AND lesson_progress.user_id = $1::INTEGER GROUP BY topic.id ORDER BY topic.id
+2026-05-13 15:19:40,570 - sqlalchemy.engine.Engine - INFO - [cached since 0.04532s ago] (24,)
+2026-05-13 15:19:40,571 - sqlalchemy.engine.Engine - INFO - SELECT count("user".id) AS count_1 
+FROM "user"
+2026-05-13 15:19:40,572 - sqlalchemy.engine.Engine - INFO - [generated in 0.00019s] ()
+2026-05-13 15:19:40,572 - sqlalchemy.engine.Engine - INFO - SELECT count("user".id) AS count_1 
+FROM "user"
+2026-05-13 15:19:40,572 - sqlalchemy.engine.Engine - INFO - [cached since 0.001036s ago] ()
+2026-05-13 15:19:40,573 - sqlalchemy.engine.Engine - INFO - SELECT count("user".id) AS count_1 
+FROM "user"
+2026-05-13 15:19:40,574 - sqlalchemy.engine.Engine - INFO - [cached since 0.002144s ago] ()
+2026-05-13 15:19:40,574 - sqlalchemy.engine.Engine - INFO - SELECT count(lesson.id) AS count_1 
+FROM lesson
+2026-05-13 15:19:40,574 - sqlalchemy.engine.Engine - INFO - [cached since 0.0119s ago] ()
+2026-05-13 15:19:40,580 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-05-13 15:19:40,582 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-05-13 15:19:40,583 - sqlalchemy.engine.Engine - INFO - SELECT count(topic.id) AS count_1 
+FROM topic
+2026-05-13 15:19:40,583 - sqlalchemy.engine.Engine - INFO - [cached since 0.02652s ago] ()
+2026-05-13 15:19:40,585 - sqlalchemy.engine.Engine - INFO - SELECT count("user".id) AS count_1 
+FROM "user" 
+WHERE "user".is_active IS true
+2026-05-13 15:19:40,585 - sqlalchemy.engine.Engine - INFO - [generated in 0.00029s] ()
+2026-05-13 15:19:40,586 - sqlalchemy.engine.Engine - INFO - SELECT count("user".id) AS count_1 
+FROM "user" 
+WHERE "user".is_active IS true
+2026-05-13 15:19:40,586 - sqlalchemy.engine.Engine - INFO - [cached since 0.001761s ago] ()
+2026-05-13 15:19:40,588 - sqlalchemy.engine.Engine - INFO - SELECT count("user".id) AS count_1 
+FROM "user"
+2026-05-13 15:19:40,588 - sqlalchemy.engine.Engine - INFO - [cached since 0.01654s ago] ()
+2026-05-13 15:19:40,591 - sqlalchemy.engine.Engine - INFO - SELECT count(lesson_progress.id) AS count_1 
+FROM lesson_progress 
+WHERE lesson_progress.user_id = $1::INTEGER AND lesson_progress.completed_at IS NOT NULL
+2026-05-13 15:19:40,592 - sqlalchemy.engine.Engine - INFO - [generated in 0.00045s] (24,)
+2026-05-13 15:19:40,595 - sqlalchemy.engine.Engine - INFO - SELECT count(lesson_progress.id) AS count_1 
+FROM lesson_progress 
+WHERE lesson_progress.completed_at >= $1::TIMESTAMP WITH TIME ZONE
+2026-05-13 15:19:40,595 - sqlalchemy.engine.Engine - INFO - [generated in 0.00044s] (datetime.datetime(2026, 5, 7, 0, 0, tzinfo=datetime.timezone.utc),)
+2026-05-13 15:19:40,597 - sqlalchemy.engine.Engine - INFO - SELECT count(lesson_progress.id) AS count_1 
+FROM lesson_progress 
+WHERE lesson_progress.completed_at >= $1::TIMESTAMP WITH TIME ZONE
+2026-05-13 15:19:40,597 - sqlalchemy.engine.Engine - INFO - [cached since 0.002526s ago] (datetime.datetime(2026, 4, 14, 0, 0, tzinfo=datetime.timezone.utc),)
+2026-05-13 15:19:40,599 - sqlalchemy.engine.Engine - INFO - SELECT count("user".id) AS count_1 
+FROM "user" 
+WHERE "user".is_active IS true
+2026-05-13 15:19:40,600 - sqlalchemy.engine.Engine - INFO - [cached since 0.01506s ago] ()
+2026-05-13 15:19:40,605 - sqlalchemy.engine.Engine - INFO - SELECT topic.id, count(lesson.id) AS lessons_count, count(CASE WHEN (lesson_progress.user_id = $1::INTEGER AND lesson_progress.completed_at IS NOT NULL) THEN lesson.id END) AS completed_lessons_count 
+FROM topic LEFT OUTER JOIN lesson ON lesson.topic_id = topic.id LEFT OUTER JOIN lesson_progress ON lesson_progress.lesson_id = lesson.id GROUP BY topic.id
+2026-05-13 15:19:40,605 - sqlalchemy.engine.Engine - INFO - [generated in 0.00043s] (24,)
+2026-05-13 15:19:40,609 - sqlalchemy.engine.Engine - INFO - SELECT topic.id, topic.name, count(lesson_progress.id) AS completions_count 
+FROM topic LEFT OUTER JOIN lesson ON lesson.topic_id = topic.id LEFT OUTER JOIN lesson_progress ON lesson_progress.lesson_id = lesson.id AND lesson_progress.completed_at IS NOT NULL AND lesson_progress.completed_at >= $1::TIMESTAMP WITH TIME ZONE GROUP BY topic.id, topic.name ORDER BY count(lesson_progress.id) DESC, topic.name ASC
+2026-05-13 15:19:40,610 - sqlalchemy.engine.Engine - INFO - [generated in 0.00047s] (datetime.datetime(2026, 5, 7, 0, 0, tzinfo=datetime.timezone.utc),)
+2026-05-13 15:19:40,613 - sqlalchemy.engine.Engine - INFO - SELECT topic.id, topic.name, count(lesson_progress.id) AS completions_count 
+FROM topic LEFT OUTER JOIN lesson ON lesson.topic_id = topic.id LEFT OUTER JOIN lesson_progress ON lesson_progress.lesson_id = lesson.id AND lesson_progress.completed_at IS NOT NULL AND lesson_progress.completed_at >= $1::TIMESTAMP WITH TIME ZONE GROUP BY topic.id, topic.name ORDER BY count(lesson_progress.id) DESC, topic.name ASC
+2026-05-13 15:19:40,613 - sqlalchemy.engine.Engine - INFO - [cached since 0.004066s ago] (datetime.datetime(2026, 4, 14, 0, 0, tzinfo=datetime.timezone.utc),)
+2026-05-13 15:19:40,617 - sqlalchemy.engine.Engine - INFO - SELECT count(lesson_progress.id) AS count_1 
+FROM lesson_progress 
+WHERE lesson_progress.completed_at >= $1::TIMESTAMP WITH TIME ZONE
+2026-05-13 15:19:40,617 - sqlalchemy.engine.Engine - INFO - [cached since 0.02245s ago] (datetime.datetime(2026, 4, 14, 0, 0, tzinfo=datetime.timezone.utc),)
+2026-05-13 15:19:40,622 - sqlalchemy.engine.Engine - INFO - SELECT "user".id, lesson.topic_id, count(lesson_progress.id) AS completed_lessons_count 
+FROM "user" LEFT OUTER JOIN lesson_progress ON lesson_progress.user_id = "user".id AND lesson_progress.completed_at IS NOT NULL LEFT OUTER JOIN lesson ON lesson.id = lesson_progress.lesson_id GROUP BY "user".id, lesson.topic_id
+2026-05-13 15:19:40,623 - sqlalchemy.engine.Engine - INFO - [generated in 0.00028s] ()
+2026-05-13 15:19:40,625 - sqlalchemy.engine.Engine - INFO - SELECT topic.id, topic.name, count(lesson.id) AS lessons_count 
+FROM topic LEFT OUTER JOIN lesson ON lesson.topic_id = topic.id GROUP BY topic.id, topic.name ORDER BY topic.name ASC
+2026-05-13 15:19:40,625 - sqlalchemy.engine.Engine - INFO - [generated in 0.00027s] ()
+2026-05-13 15:19:40,627 - sqlalchemy.engine.Engine - INFO - SELECT topic.id, topic.name, count(lesson.id) AS lessons_count 
+FROM topic LEFT OUTER JOIN lesson ON lesson.topic_id = topic.id GROUP BY topic.id, topic.name ORDER BY topic.name ASC
+2026-05-13 15:19:40,627 - sqlalchemy.engine.Engine - INFO - [cached since 0.001541s ago] ()
+2026-05-13 15:19:40,628 - sqlalchemy.engine.Engine - INFO - SELECT topic.id, topic.name, count(lesson_progress.id) AS completions_count 
+FROM topic LEFT OUTER JOIN lesson ON lesson.topic_id = topic.id LEFT OUTER JOIN lesson_progress ON lesson_progress.lesson_id = lesson.id AND lesson_progress.completed_at IS NOT NULL AND lesson_progress.completed_at >= $1::TIMESTAMP WITH TIME ZONE GROUP BY topic.id, topic.name ORDER BY count(lesson_progress.id) DESC, topic.name ASC
+2026-05-13 15:19:40,628 - sqlalchemy.engine.Engine - INFO - [cached since 0.01895s ago] (datetime.datetime(2026, 4, 14, 0, 0, tzinfo=datetime.timezone.utc),)
+2026-05-13 15:19:40,630 - sqlalchemy.engine.Engine - INFO - SELECT "user".id 
+FROM "user"
+2026-05-13 15:19:40,630 - sqlalchemy.engine.Engine - INFO - [generated in 0.00019s] ()
+2026-05-13 15:19:40,632 - sqlalchemy.engine.Engine - INFO - SELECT topic.id, topic.name, lesson_progress.user_id, count(lesson_progress.id) AS completed_count 
+FROM topic JOIN lesson ON lesson.topic_id = topic.id JOIN lesson_progress ON lesson_progress.lesson_id = lesson.id 
+WHERE lesson_progress.completed_at IS NOT NULL GROUP BY topic.id, topic.name, lesson_progress.user_id
+2026-05-13 15:19:40,633 - sqlalchemy.engine.Engine - INFO - [generated in 0.00031s] ()
+2026-05-13 15:19:40,634 - sqlalchemy.engine.Engine - INFO - SELECT topic.id, topic.name, lesson_progress.user_id, count(lesson_progress.id) AS completed_count 
+FROM topic JOIN lesson ON lesson.topic_id = topic.id JOIN lesson_progress ON lesson_progress.lesson_id = lesson.id 
+WHERE lesson_progress.completed_at IS NOT NULL GROUP BY topic.id, topic.name, lesson_progress.user_id
+2026-05-13 15:19:40,635 - sqlalchemy.engine.Engine - INFO - [cached since 0.002339s ago] ()
+2026-05-13 15:19:40,636 - sqlalchemy.engine.Engine - INFO - SELECT topic.id, topic.name, count(lesson.id) AS lessons_count 
+FROM topic LEFT OUTER JOIN lesson ON lesson.topic_id = topic.id GROUP BY topic.id, topic.name ORDER BY topic.name ASC
+2026-05-13 15:19:40,636 - sqlalchemy.engine.Engine - INFO - [cached since 0.01117s ago] ()
+2026-05-13 15:19:40,638 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-05-13 15:19:40,641 - sqlalchemy.engine.Engine - INFO - SELECT date(lesson_progress.completed_at) AS day, count(lesson_progress.id) AS completions_count 
+FROM lesson_progress 
+WHERE lesson_progress.completed_at IS NOT NULL AND lesson_progress.completed_at >= $1::TIMESTAMP WITH TIME ZONE GROUP BY date(lesson_progress.completed_at) ORDER BY date(lesson_progress.completed_at)
+2026-05-13 15:19:40,641 - sqlalchemy.engine.Engine - INFO - [generated in 0.00020s] (datetime.datetime(2026, 5, 7, 0, 0, tzinfo=datetime.timezone.utc),)
+2026-05-13 15:19:40,642 - sqlalchemy.engine.Engine - INFO - SELECT date(lesson_progress.completed_at) AS day, count(lesson_progress.id) AS completions_count 
+FROM lesson_progress 
+WHERE lesson_progress.completed_at IS NOT NULL AND lesson_progress.completed_at >= $1::TIMESTAMP WITH TIME ZONE GROUP BY date(lesson_progress.completed_at) ORDER BY date(lesson_progress.completed_at)
+2026-05-13 15:19:40,642 - sqlalchemy.engine.Engine - INFO - [cached since 0.001732s ago] (datetime.datetime(2026, 4, 14, 0, 0, tzinfo=datetime.timezone.utc),)
+2026-05-13 15:19:40,644 - sqlalchemy.engine.Engine - INFO - SELECT topic.id, topic.name, lesson_progress.user_id, count(lesson_progress.id) AS completed_count 
+FROM topic JOIN lesson ON lesson.topic_id = topic.id JOIN lesson_progress ON lesson_progress.lesson_id = lesson.id 
+WHERE lesson_progress.completed_at IS NOT NULL GROUP BY topic.id, topic.name, lesson_progress.user_id
+2026-05-13 15:19:40,644 - sqlalchemy.engine.Engine - INFO - [cached since 0.01166s ago] ()
+2026-05-13 15:19:40,646 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-05-13 15:19:40,647 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-05-13 15:19:40,648 - sqlalchemy.engine.Engine - INFO - SELECT date(lesson_progress.completed_at) AS day, count(lesson_progress.id) AS completions_count 
+FROM lesson_progress 
+WHERE lesson_progress.completed_at IS NOT NULL AND lesson_progress.completed_at >= $1::TIMESTAMP WITH TIME ZONE GROUP BY date(lesson_progress.completed_at) ORDER BY date(lesson_progress.completed_at)
+2026-05-13 15:19:40,649 - sqlalchemy.engine.Engine - INFO - [cached since 0.008133s ago] (datetime.datetime(2026, 4, 14, 0, 0, tzinfo=datetime.timezone.utc),)
+2026-05-13 15:19:40,651 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-05-13 15:19:42,394 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-05-13 15:19:42,395 - sqlalchemy.engine.Engine - INFO - SELECT "user".id, "user".email, "user".username, "user".hashed_password, "user".is_active, "user".role, "user".created_at, role_1.id AS id_1, role_1.name 
+FROM "user" LEFT OUTER JOIN role AS role_1 ON role_1.id = "user".role 
+WHERE "user".id = $1::INTEGER
+2026-05-13 15:19:42,395 - sqlalchemy.engine.Engine - INFO - [cached since 2.041s ago] (24,)
+2026-05-13 15:19:42,402 - sqlalchemy.engine.Engine - INFO - SELECT lesson.id, lesson.name, lesson.description, lesson.difficult, lesson.rhythm, lesson.notes, lesson.hand, lesson.topic_id, lesson.order_in_topic 
+FROM lesson 
+WHERE lesson.topic_id = $1::INTEGER ORDER BY lesson.order_in_topic ASC
+2026-05-13 15:19:42,402 - sqlalchemy.engine.Engine - INFO - [generated in 0.00061s] (1,)
+2026-05-13 15:19:42,406 - sqlalchemy.engine.Engine - INFO - SELECT lesson_progress.lesson_id 
+FROM lesson_progress JOIN lesson ON lesson.id = lesson_progress.lesson_id 
+WHERE lesson_progress.user_id = $1::INTEGER AND lesson.topic_id = $2::INTEGER AND lesson_progress.completed_at IS NOT NULL
+2026-05-13 15:19:42,406 - sqlalchemy.engine.Engine - INFO - [generated in 0.00028s] (24, 1)
+2026-05-13 15:19:42,409 - sqlalchemy.engine.Engine - INFO - ROLLBACK

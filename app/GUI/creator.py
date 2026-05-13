@@ -143,9 +143,6 @@ class Ui_MainWindow(object):
         self.label_hand = QtWidgets.QLabel(parent=MainWindow)
         self.label_hand.setObjectName("label_hand")
         self.settingsRow.addWidget(self.label_hand)
-        self.hand_combo = QtWidgets.QComboBox(parent=MainWindow)
-        self.hand_combo.setObjectName("hand_combo")
-        self.settingsRow.addWidget(self.hand_combo)
         spacerItem1 = QtWidgets.QSpacerItem(
             40,
             20,
@@ -173,7 +170,6 @@ class Ui_MainWindow(object):
         self.label_time_signature.setText(_translate("MainWindow", "Длительность:"))
         self.label_accidental.setText(_translate("MainWindow", "Знак:"))
         self.label_input_mode.setText(_translate("MainWindow", "Режим:"))
-        self.label_hand.setText(_translate("MainWindow", "Рука:"))
 
 
 from GUI.helpful import ScalableGraphicsView

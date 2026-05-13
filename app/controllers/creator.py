@@ -115,17 +115,6 @@ class SaveLessonDialog(QDialog):
         self.rating_error_label.hide()
         layout.addWidget(self.rating_error_label)
 
-        layout.addWidget(QLabel("Рука:"))
-        self.hand_combo = QComboBox()
-        self.hand_combo.addItem("Правая рука", "right")
-        self.hand_combo.addItem("Левая рука", "left")
-        if lesson and hasattr(lesson, "hand") and lesson.hand == "left":
-            self.hand_combo.setCurrentIndex(1)
-        else:
-            self.hand_combo.setCurrentIndex(0)
-        self.hand_combo.setStyleSheet(self.DEFAULT_STYLE)
-        layout.addWidget(self.hand_combo)
-
         buttons_layout = QHBoxLayout()
         buttons_layout.addStretch()
 
@@ -175,7 +164,6 @@ class SaveLessonDialog(QDialog):
             "name": self.name_edit.text().strip(),
             "description": self.description_edit.toPlainText().strip(),
             "difficult": self.rating_widget.rating,
-            "hand": self.hand_combo.currentData(),
             "topic_id": self.topic_id,
         }
 
@@ -245,16 +233,6 @@ class CreatorController(QWidget):
         input_mode_combo.setCurrentIndex(0)
         input_mode_combo.currentIndexChanged.connect(self.on_input_mode_changed)
 
-        hand_combo = self.ui.hand_combo
-        hand_combo.addItem("Правая", "right")
-        hand_combo.addItem("Левая", "left")
-        # Устанавливаем выбранную руку (либо переданную, либо из существующего урока)
-        if self.hand == "left":
-            hand_combo.setCurrentIndex(1)
-        else:
-            hand_combo.setCurrentIndex(0)
-        hand_combo.currentIndexChanged.connect(self.on_hand_changed)
-
         self.load_scene(self.hand)
         self.init_playhead()
         self.on_input_mode_changed(self.ui.input_mode_combo.currentIndex())
@@ -277,9 +255,6 @@ class CreatorController(QWidget):
         is_note_mode = settings.input_mode == "note"
         self.ui.accidental_combo.setEnabled(is_note_mode)
 
-    def on_hand_changed(self, _index):
-        hand = self.ui.hand_combo.currentData()
-        self.load_scene(hand)
 
     def on_note_correct_graphic(self, note_item, _note_name):
         if not self.practice_mode:
@@ -489,7 +464,7 @@ class CreatorController(QWidget):
                 description=form_data["description"],
                 difficult=form_data["difficult"],
                 topic_id=form_data["topic_id"],
-                hand=form_data["hand"],
+                hand=self.hand,
             )
             if self.lesson_id is None:
                 self.api.create_lesson(lesson_data)

@@ -402,24 +402,31 @@ class Auth(QMainWindow):
     def on_error(self, error: str) -> None:
         """
         Обработчик ошибок от сервера.
-
-        Аргументы:
-            error: Сообщение об ошибке от сервера
         """
         logger.warning(f"Authentication error: {error}")
+        
+        # Определяем, на какой вкладке мы находимся: 0 - регистрация, 1 - вход
+        is_registration = self.ui.stackedWidget.currentIndex() == 0
 
-        # Обработка ошибок по типам
+        # Обработка ошибок по ключевым словам в зависимости от контекста
         if "username" in error.lower():
-            self.show_error("username", "Такой логин уже занят")
-            self.cached_usernames.add(self.ui.usernameInput.text().strip())
-        elif "email" in error.lower():
-            email = (
-                self.ui.emailInput1.text().strip() or self.ui.emailInput.text().strip()
-            )
-            self.show_error(
-                "email" if self.ui.stackedWidget.currentIndex() == 0 else "email_auth",
-                "Пользователь с такой почтой уже существует",
-            )
-            self.cached_emails.add(email)
+            if is_registration:
+                self.show_error("username", "Такой логин уже занят")
+                self.cached_usernames.add(self.ui.usernameInput.text().strip())
+            else:
+                QMessageBox.warning(self, "Ошибка", error)
 
-        QMessageBox.warning(self, "Ошибка аутентификации", error)
+        elif "email" in error.lower() or "пароль" in error.lower() or "unauthorized" in error.lower():
+            if is_registration:
+                # Сообщение только для регистрации
+                self.show_error("email", "Пользователь с такой почтой уже существует")
+                self.cached_emails.add(self.ui.emailInput.text().strip())
+            else:
+                # Сообщение для входа (общая ошибка для безопасности)
+                self.show_error("email_auth", "Неверный email или пароль")
+                self.show_error("password_auth", "Неверный email или пароль")
+                QMessageBox.warning(self, "Ошибка аутентификации", error)
+        
+        else:
+            # Для всех остальных непредвиденных ошибок (например, 500 Internal Server Error)
+            QMessageBox.warning(self, "Ошибка аутентификации", error)

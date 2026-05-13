@@ -223,7 +223,7 @@ class BaseAPIWorker(QObject):
             logger.warning("Таймаут при ожидании ответа сервера")
             error_callback("Превышено время ожидания ответа (таймаут)")
             return
-
+        error_message = "Неизвестная ошибка сервера"
         # Попытка получить детали ошибки от сервера
         try:
             raw_data = reply.readAll().data()
@@ -231,15 +231,13 @@ class BaseAPIWorker(QObject):
                 data = json.loads(raw_data.decode("utf-8"))
                 detail = data.get("detail", "Неизвестная ошибка сервера")
                 
-                # 🔥 ИСПРАВЛЕНИЕ: Если detail - это список (ошибки валидации), превращаем в строку
+                # ИСПРАВЛЕНИЕ: Если detail - это список (ошибки валидации), превращаем в строку
                 if isinstance(detail, list):
-                    # Собираем сообщения об ошибках в одну строку
                     messages = []
                     for item in detail:
                         if isinstance(item, dict):
                             msg = item.get("msg", str(item))
                             loc = item.get("loc", [])
-                            # Формируем красивое сообщение: "Ошибка в поле 'period': field required"
                             if loc:
                                 messages.append(f"Поле '{loc[-1]}': {msg}")
                             else:
@@ -247,15 +245,15 @@ class BaseAPIWorker(QObject):
                         else:
                             messages.append(str(item))
                     
-                    error_text = "; ".join(messages)
-                    error_callback(error_text)
+                    error_message = "; ".join(messages)
                 else:
-                    # Если detail - обычная строка, передаем как есть
-                    error_callback(str(detail))
+                    # Если detail - обычная строка
+                    error_message = str(detail)
             else:
                 error_message = f"Сетевая ошибка: {reply.errorString()}"
         except json.JSONDecodeError:
             error_message = f"Сетевая ошибка: {reply.errorString()}"
 
+        # Теперь переменная error_message ТОЧНО существует при любом сценарии
         logger.error(f"Ошибка API: {error_message}")
         error_callback(error_message)

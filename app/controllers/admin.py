@@ -976,6 +976,19 @@ class AdminController:
             self.worker.edit_topic(topic_id, topic_data)
             self.editing_row = row
 
+    def on_lesson_created(self, topic_id: int):
+        self.selected_topic_id = topic_id
+        self.close_creator()
+        self.refresh_lessons(topic_id)
+        self.fetch_topics()
+
+    def on_lesson_updated(self, topic_id: int):
+        self.selected_topic_id = topic_id
+        self.close_creator()
+        self.refresh_lessons(topic_id)
+        self.fetch_topics()
+
+
     def on_topic_added(self, new_topic: TopicResponse):
         self.ui.btn_add_topic.setEnabled(True)
         current_rows = self.ui.table_topics.rowCount()
@@ -1224,19 +1237,6 @@ class TimeSignatureDialog(QDialog):
     def get_signature(self) -> str:
         return self.combo.currentText()
 
-
-    def on_lessons_loaded(self, lessons):
-        """Отображение полученных уроков в таблице"""
-        self.ui.table_lessons.setRowCount(len(lessons))
-        for row, lesson in enumerate(lessons):
-            self.ui.table_lessons.setItem(row, 0, QTableWidgetItem(str(lesson.id)))
-            name_item = QTableWidgetItem(lesson.name)
-            name_item.setData(Qt.ItemDataRole.UserRole, lesson.description)
-            name_item.setData(Qt.ItemDataRole.UserRole + 1, lesson.difficult)
-            name_item.setData(Qt.ItemDataRole.UserRole + 2, float(lesson.rhythm))
-            name_item.setData(Qt.ItemDataRole.UserRole + 3, lesson.notes)
-            name_item.setData(Qt.ItemDataRole.UserRole + 4, lesson.topic)
-            self.ui.table_lessons.setItem(row, 1, name_item)
 
     def fetch_topics(self):
         self.ui.table_topics.setRowCount(0)
@@ -1589,17 +1589,7 @@ class TimeSignatureDialog(QDialog):
         """Возвращает выбранный размер такта."""
         return self.combo.currentText()
 
-    def on_lesson_created(self, topic_id: int):
-        self.selected_topic_id = topic_id
-        self.close_creator()
-        self.refresh_lessons(topic_id)
-        self.fetch_topics()
-
-    def on_lesson_updated(self, topic_id: int):
-        self.selected_topic_id = topic_id
-        self.close_creator()
-        self.refresh_lessons(topic_id)
-        self.fetch_topics()
+    
 
     def on_lessons_loaded(self, lessons):
         """Отображение полученных уроков в таблице"""
