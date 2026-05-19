@@ -6,7 +6,7 @@ import mido
 from GUI.creator import Ui_MainWindow
 from loader import settings
 from PyQt6.QtCore import Qt, QTimer, pyqtSignal
-from PyQt6.QtGui import QBrush, QColor, QPen
+from PyQt6.QtGui import QBrush, QColor, QPen, QPainter
 from PyQt6.QtWidgets import (
     QComboBox,
     QGraphicsEllipseItem,
@@ -52,6 +52,7 @@ class LessonPlayerController(QWidget):
         self._feedback_items = []
         self._input_active = False
         self._midi_input_port = None
+        self._is_closed = False
 
         self._repeat_timer = QTimer()
         self._repeat_timer.setSingleShot(True)
@@ -227,7 +228,7 @@ class LessonPlayerController(QWidget):
         )
 
         self.ui.verticalLayout.insertWidget(0, self._build_header())
-        self.ui.verticalLayout.addStretch()
+        # self.ui.verticalLayout.addStretch()
         self.ui.buttonsRow.insertWidget(1, self.repeat_button)
 
         self.ui.exit_button.clicked.connect(self._close)
@@ -235,16 +236,17 @@ class LessonPlayerController(QWidget):
         self.repeat_button.clicked.connect(self._repeat)
 
         self.ui.graphicsView.setSizePolicy(
-            QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+            QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         )
         self.ui.graphicsView.setMinimumHeight(400)
-        self.ui.graphicsView.setMaximumHeight(560)
+        # self.ui.graphicsView.setMaximumHeight(560)
         self.ui.graphicsView.setVerticalScrollBarPolicy(
             Qt.ScrollBarPolicy.ScrollBarAlwaysOff
         )
         self.ui.graphicsView.setHorizontalScrollBarPolicy(
             Qt.ScrollBarPolicy.ScrollBarAlwaysOff
         )
+        self.ui.graphicsView.setRenderHint(QPainter.RenderHint.Antialiasing)
 
     def _on_bpm_changed(self, _index: int):
         bpm = self.bpm_combo.currentData()
@@ -416,7 +418,7 @@ class LessonPlayerController(QWidget):
     def _count_in(
         self, remaining_beats: int, interval_ms: int, token: int, practice_mode: bool
     ):
-        if token != self._playback_token:
+        if token != self._playback_token or self._is_closed:
             return
 
         if remaining_beats > 1:
@@ -436,7 +438,7 @@ class LessonPlayerController(QWidget):
             )
 
     def _start_synced_playback(self, token: int, practice_mode: bool):
-        if token != self._playback_token:
+        if token != self._playback_token or self._is_closed:
             return
 
         self._input_active = practice_mode
@@ -642,6 +644,7 @@ class LessonPlayerController(QWidget):
         self._close()
 
     def _close(self):
+        self._is_closed = True
         self.playhead_timer.stop()
         self.playhead_line.hide()
         self._metronome_active = False
@@ -649,14 +652,17 @@ class LessonPlayerController(QWidget):
         self._close_midi_input()
         self._stop_practice_listeners()
         self._clear_feedback_markers()
+        self.staff_layout.stop_lesson()
         self.closed.emit(self._was_completed)
 
     def closeEvent(self, event):
+        self._is_closed = True
         self._metronome_active = False
         self._input_active = False
         self._close_midi_input()
         self._stop_practice_listeners()
         self._clear_feedback_markers()
+        self.staff_layout.stop_lesson()
         super().closeEvent(event)
 
     def _show_error(self, msg: str):

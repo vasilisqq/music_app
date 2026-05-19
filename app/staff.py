@@ -1356,6 +1356,7 @@ class StaffLayout:
         self.current_duration = 0.25
         self.init_staff(scene)
         self.accidental = None
+        self.stop_event = threading.Event()
 
     @property
     def y_bottom(self) -> float:
@@ -1584,27 +1585,37 @@ class StaffLayout:
     def touch_thread(self):
         for tact in self.tacts:
             for bit in tact.bits:
+                if self.stop_event.is_set(): return
                 duration = 60 / self.bpm * bit.weigth * 4
                 if bit.notes:
                     note_item = bit.notes[0]
                     player.start_waiting_for_note(note_item.note_name, note_item)
-                time.sleep(duration)
+                if self.stop_event.wait(duration): return
 
     def sound_thread(self):
-        time.sleep(0.05)
+        if self.stop_event.wait(0.05): return
         for tact in self.tacts:
             for bit in tact.bits:
+                if self.stop_event.is_set(): return
+                print(self.stop_event.is_set())
                 duration = 60 / self.bpm * bit.weigth * 4
                 if bit.notes:
                     chord_notes = [note.note_name for note in bit.notes]
                     player.play_chord(chord_notes, duration)
-                time.sleep(duration)
+                if self.stop_event.wait(duration):
+                    return
 
     def start_lesson(self, wait_for_input: bool = True, play_sound: bool = True):
+        self.stop_event.clear()
         if wait_for_input:
             threading.Thread(target=self.touch_thread, daemon=True).start()
         if play_sound:
             threading.Thread(target=self.sound_thread, daemon=True).start()
+
+    def stop_lesson(self):
+        # Мгновенно подаем сигнал всем потокам прервать wait() и завершиться
+        self.stop_event.set()
+
 
     def change_accidental(self, data):
         self.accidental = data
