@@ -4,6 +4,7 @@ import re
 import threading
 import time
 from collections import OrderedDict
+import concurrent.futures
 
 import numpy as np
 import sounddevice as sd
@@ -193,7 +194,6 @@ STAFF_NOTES_RIGHT_HAND = [
 ]
 STAFF_NOTES_LEFT_HAND = [
     "E4",
-    "C4",
     "A3",
     "F3",
     "D3",
@@ -203,16 +203,28 @@ STAFF_NOTES_LEFT_HAND = [
     "G3",
     "E3",
     "C3",
-]
-ALL_STAFF_NOTES = set(STAFF_NOTES_RIGHT_HAND + STAFF_NOTES_LEFT_HAND)
+    "E2",
+    "F2",
+    "G2",
+    "A2",
 
-# Кеш для всех нот - теперь используем LRU кеш вместо сохранения всех на диск
-note_cache = OrderedDict()  # LRU кеш - хранит только часто используемые ноты
+]
+
+base_staff_notes = set(STAFF_NOTES_RIGHT_HAND + STAFF_NOTES_LEFT_HAND)
+
+ALL_STAFF_NOTES = set()
+for base_note_ in base_staff_notes:
+    ALL_STAFF_NOTES.add(base_note_)          # Натуральная нота
+    ALL_STAFF_NOTES.add(f"{base_note_}#")    # Диез
+    ALL_STAFF_NOTES.add(f"{base_note_}b")    # Бемоль
+
+# Кеш для нот
+note_cache = OrderedDict()  
 note_cache_lock = threading.Lock()
 
-# Максимум 50 нот в памяти (примерно 5-10 МБ вместо 800 МБ!)
-MAX_CACHE_SIZE = 50
-
+# Лимит кеша ставим 100 (этого с запасом хватит для наших 57 предвычисленных нот, 
+# и останется место для клика метронома)
+MAX_CACHE_SIZE = 100
 _MIDI_NOTE_NAMES = ("C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B")
 _FLAT_TO_SHARP = {
     "Db": "C#",
@@ -330,42 +342,47 @@ def get_note_audio(note_name: str) -> np.ndarray:
         return audio
 
 
-def save_cache(filename="piano_cache.pkl"):
-    """Не используется - ноты генерируются по требованию"""
-    pass
-
-
-def load_cache(filename="piano_cache.pkl"):
-    """Не используется - ноты генерируются по требованию"""
-    return None
-
-
 # Event для синхронизации: когда ноты нотного стана готовы
 _staff_notes_ready = threading.Event()
 
 
 def preload_staff_notes_sync():
-    """Синхронно предвычисляет ноты нотного стана при старте"""
-    import time
-
+    global note_cache
     start = time.time()
-    print("⏳ Предвычисляю ноты нотного стана...")
-    count = 0
-    with note_cache_lock:
-        for note_name in ALL_STAFF_NOTES:
-            if note_name not in note_cache:
-                # Используем качественное кодирование при предвычислении
-                note_cache[note_name] = generate_note(
-                    note_name, use_fast_resample=False
-                )
-                count += 1
-    elapsed = time.time() - start
-    print(
-        f"✓ Предвычислено {count} нот нотного стана в {elapsed:.2f}сек (~{count * 0.5:.1f} МБ)"
-    )
-    print("✓ Метроном будет синхронизирован - все ноты готовы к воспроизведению")
-    _staff_notes_ready.set()  # Сигнализируем, что ноты готовы
+    
+    # 1. Пробуем загрузить готовые ноты с диска
+    loaded_cache = load_cache("piano_cache.pkl")
+    if loaded_cache is not None:
+        with note_cache_lock:
+            note_cache.update(loaded_cache)
 
+    # 2. Смотрим, каких нот не хватает
+    with note_cache_lock:
+        missing_notes = [n for n in ALL_STAFF_NOTES if n not in note_cache]
+
+    if not missing_notes:
+        print(f"✓ Все ноты загружены с диска мгновенно ({time.time() - start:.2f} сек)!")
+        _staff_notes_ready.set()
+        return
+
+    print(f"⏳ Вычисляем {len(missing_notes)} нот (сохранятся на диск для будущих запусков)...")
+
+    # 3. Вычисляем недостающие ноты параллельно (Scipy умеет использовать все ядра процессора)
+    def _gen(name):
+        return name, generate_note(name, use_fast_resample=False)
+
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        # Запускаем пулл потоков
+        results = executor.map(_gen, missing_notes)
+        for name, audio in results:
+            with note_cache_lock:
+                note_cache[name] = audio
+
+    # 4. Сохраняем всё на диск, чтобы при следующем запуске это заняло 0 секунд
+    save_cache("piano_cache.pkl")
+
+    print(f"✓ Вычисление завершено за {time.time() - start:.2f} сек!")
+    _staff_notes_ready.set()
 
 # ✓ Система готова! Ноты нотного стана предвычислены, остальные генерируются по требованию
 print("✓ Система аудио инициализирована")
