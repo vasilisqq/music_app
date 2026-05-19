@@ -3,8 +3,9 @@ import sys
 
 from config import *
 from PyQt6.QtCore import QLineF, QRectF, Qt
-from PyQt6.QtGui import QBrush, QColor, QFont, QPainter, QPainterPath, QPen
+from PyQt6.QtGui import QBrush, QColor, QFont, QPainter, QPainterPath, QPen, QPixmap
 from PyQt6.QtSvgWidgets import QGraphicsSvgItem
+from PyQt6.QtSvg import QSvgRenderer
 from PyQt6.QtWidgets import (
     QGraphicsEllipseItem,
     QGraphicsItem,
@@ -224,6 +225,10 @@ class NoteItem(QGraphicsEllipseItem):
             if not self.reversing
             else int(self.x - self.width / 2)
         )
+        self.svg_renderer = None
+        if durations_equal(self.base_duration, 1):
+            self.svg_renderer = QSvgRenderer("app/photos/whole.svg")
+
 
     def get_stem_group_notes(self):
         if self.bit is None:
@@ -391,14 +396,55 @@ class NoteItem(QGraphicsEllipseItem):
     def paint(self, painter: QPainter, option, widget):
         painter.save()
         painter.translate(self.x, self.y)
-        painter.rotate(self.tilt_angle)
-        painter.setBrush(self.brush())
-        painter.setPen(self.pen())
-        painter.drawEllipse(
-            QRectF(-self.width / 2, -self.height / 2, self.width, self.height)
-        )
+        
+        # --- 1. ДОБАВОЧНЫЕ ЛИНИИ (Перечеркивание для C4 и других) ---
+        if self.bit and getattr(self.bit, "tact", None):
+            tact_y0 = self.bit.tact.y0
+            
+            # Перо для линий стана
+            painter.setPen(QPen(Qt.GlobalColor.black, 1.5))
+            
+            # Добавочные снизу (начиная с C4 - это 5-я линия от tact_y0)
+            if self.y >= tact_y0 + 5 * LINE_SPACING - 1:
+                curr_y = tact_y0 + 5 * LINE_SPACING
+                while curr_y <= self.y + 1:
+                    local_y = curr_y - self.y
+                    # Рисуем линию (выступает за края ноты)
+                    painter.drawLine(QLineF(-self.width, local_y, self.width, local_y))
+                    curr_y += LINE_SPACING
+                    
+            # Добавочные сверху (начиная с A5)
+            elif self.y <= tact_y0 - LINE_SPACING + 1:
+                curr_y = tact_y0 - LINE_SPACING
+                while curr_y >= self.y - 1:
+                    local_y = curr_y - self.y
+                    painter.drawLine(QLineF(-self.width, local_y, self.width, local_y))
+                    curr_y -= LINE_SPACING
+        # -----------------------------------------------------------
+
+        # --- 2. ОТРИСОВКА ВЕКТОРНОЙ НОТЫ (Овал или SVG) ---
+        if self.svg_renderer and self.svg_renderer.isValid():
+            # Отрисовываем SVG напрямую через QPainter (без потери качества)
+            target_w = self.width + 6
+            target_h = self.height + 6
+            self.svg_renderer.render(
+                painter, 
+                QRectF(-target_w / 2, -target_h / 2, target_w, target_h)
+            )
+        else:
+            # Стандартный овал для четвертных и восьмых
+            painter.rotate(self.tilt_angle)
+            painter.setBrush(self.brush())
+            painter.setPen(self.pen())
+            painter.drawEllipse(
+                QRectF(-self.width / 2, -self.height / 2, self.width, self.height)
+            )
+        # ---------------------------------------------------
+        
         painter.restore()
 
+        # --- Отрисовка штилей (Остается без изменений!) ---
+        # Для половинной (0.5) штиль автоматически нарисуется поверх SVG
         if not durations_equal(self.base_duration, 1):
             painter.setPen(self.pen())
             self.draw_stem(painter)
