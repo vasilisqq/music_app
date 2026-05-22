@@ -24,6 +24,33 @@ sys.path.append(
 )
 from schemas.lesson import LessonCreate, LessonResponse
 
+_TRASH_BIN = set()
+
+def safe_delete_item(item, scene):
+    """Безопасно удаляет элемент, защищая от крашей Garbage Collector'а PyQt"""
+    if item is None:
+        return
+    try:
+        # Отключаем элемент от любых событий и делаем невидимым
+        item.setEnabled(False)
+        item.setVisible(False)
+        item.setParentItem(None)
+        
+        if scene is not None:
+            scene.removeItem(item)
+            
+        # Кладем в корзину, чтобы Python не уничтожил C++ объект прямо сейчас
+        _TRASH_BIN.add(item)
+        
+        from PyQt6.QtCore import QTimer
+        # Очищаем память через 1 секунду (когда Qt гарантированно про него забудет)
+        QTimer.singleShot(1000, lambda: _TRASH_BIN.discard(item))
+    except Exception:
+        pass
+
+
+
+
 DURATION_EPSILON = 1e-6
 
 
@@ -231,11 +258,10 @@ class NoteItem(QGraphicsEllipseItem):
 
 
     def get_stem_group_notes(self):
-        if self.bit is None:
+        # ЗАЩИТА: Если нота уже удалена из бита, она вернет саму себя. min() больше не упадет!
+        if self.bit is None or self not in getattr(self.bit, 'notes', []):
             return [self]
-        return [
-            note for note in self.bit.notes if note.reversing == self.reversing
-        ] or [self]
+        return self.bit.notes
 
     def has_split_upward_chord(self) -> bool:
         if self.bit is None or self.reversing or len(self.bit.notes) < 2:
@@ -250,24 +276,15 @@ class NoteItem(QGraphicsEllipseItem):
         )
 
     def get_stem_start_y(self) -> float:
+        # Низ штиля — это всегда центр самой НИЖНЕЙ ноты аккорда (с максимальным Y)
         group_notes = self.get_stem_group_notes()
-        if self.reversing:
-            return min(note.y for note in group_notes)
         return max(note.y for note in group_notes)
 
     def get_stem_top_y(self) -> float:
-        stem_top_y = self.get_stem_start_y() - 32
-        if self.has_split_upward_chord():
-            upward_notes = sorted(
-                [note for note in self.bit.notes if not note.reversing],
-                key=lambda note: note.y,
-                reverse=True,
-            )
-            lowest_note = upward_notes[0]
-            highest_note = upward_notes[-1]
-            if self is lowest_note:
-                return min(stem_top_y, highest_note.y - 32)
-        return stem_top_y
+        # Верх штиля — это центр самой ВЕРХНЕЙ ноты (с минимальным Y) минус 32 пикселя
+        group_notes = self.get_stem_group_notes()
+        highest_note_y = min(note.y for note in group_notes)
+        return highest_note_y - 32
 
     def is_stem_leader(self) -> bool:
         group_notes = self.get_stem_group_notes()
@@ -546,22 +563,46 @@ class NoteItem(QGraphicsEllipseItem):
         }
         return mapping.get(acc_type, "")
 
-    def delete(self):
-        self.bit.remove_note(self)
-        self.scene.removeItem(self)
-        if self.accidental_item is not None:
-            self.scene.removeItem(self.accidental_item)
-        self.scene.update()
 
     def mousePressEvent(self, event):
         if event.button() == Qt.MouseButton.RightButton:
-            # Безопасное удаление через QTimer.singleShot, чтобы не удалять себя в процессе mousePressEvent
+            # Жесткая блокировка двойных кликов и спама
+            if getattr(self, "_is_deleting", False):
+                return
+            self._is_deleting = True
+            
+            event.accept()
+            self.clearFocus()
+            self.ungrabMouse()
+            
             from PyQt6.QtCore import QTimer
-
             QTimer.singleShot(0, self.delete)
             return
+            
         self.accidental = settings.accidental
         self.bit.recalculate_accidental(self)
+        super().mousePressEvent(event)
+
+    def delete(self):
+        if getattr(self, "_is_deleted", False):
+            return
+        self._is_deleted = True
+
+        # 1. Безопасно убираем знак альтерации
+        if getattr(self, "accidental_item", None) is not None:
+            safe_delete_item(self.accidental_item, getattr(self, "scene", None))
+            self.accidental_item = None
+
+        # 2. Обновляем логику такта ДО того, как нота исчезнет
+        if hasattr(self, "bit") and self.bit is not None and self in self.bit.notes:
+            self.bit.remove_note(self)
+
+        # 3. Безопасно удаляем саму ноту со сцены (отправляем в корзину)
+        safe_delete_item(self, getattr(self, "scene", None))
+
+        if hasattr(self, "scene") and self.scene is not None:
+            self.scene.update()
+
 
     def draw_accidental(self, index):
         if self.accidental_item is not None:
@@ -920,7 +961,6 @@ class Bits(QGraphicsRectItem):
         self.notes.sort(key=lambda note: note.y, reverse=True)
         self.update_notes()
         self.tact.recalculate_all_accidentals(note_item)
-        print(note_item.note_name)
         return note_item
 
     def remove_note(self, note):
