@@ -6,7 +6,7 @@ dist/
 wheels/
 *.egg-info
 .sf2
-.pkl
+*.pkl
 # Virtual environments
 .venv
 .env

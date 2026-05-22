@@ -1233,7 +1233,7 @@ class Tact:
                 x = empty_bit.x0
                 for i in range(ratio):
                     new_bit = Bits(
-                        QRectF(x, Y0, new_width, self.y_bottom - Y0),
+                        QRectF(x, self.y0, new_width, self.y_bottom - self.y0),
                         x,
                         x + new_width,
                         weigth=self.duration,
