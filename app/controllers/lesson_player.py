@@ -355,7 +355,8 @@ class LessonPlayerController(QWidget):
         self._correct = 0
         self._wrong = 0
         self._idle_presses = 0
-
+        
+        self._processed_notes = set()
         if practice_mode:
             if not self._open_selected_midi_input():
                 self._practice_mode = False
@@ -498,7 +499,7 @@ class LessonPlayerController(QWidget):
 
         line = self.playhead_line.line()
         x = line.x1()
-        y = line.y1() + 28
+        y = line.y1() + 80
         self._add_feedback_circle(x, y, is_correct=is_correct)
 
     def _create_feedback_markers(self, note_item, is_correct: bool):
@@ -534,11 +535,24 @@ class LessonPlayerController(QWidget):
 
         diatonic_steps = {"C": 0, "D": 1, "E": 2, "F": 3, "G": 4, "A": 5, "B": 6}
         note_step = (octave * 7) + diatonic_steps[letter]
-        top_line_step = (5 * 7) + diatonic_steps["F"]
+        
+        # --- ИСПРАВЛЕНИЕ: Динамически определяем ноту верхней линии ---
+        top_line_note = first_tact.lines[0].note_name  # Это может быть "F5" или "A3"
+        top_letter = top_line_note[0]
+        top_octave = int(top_line_note[1:]) # Берем октаву (напр. 5 из "F5")
+        top_line_step = (top_octave * 7) + diatonic_steps[top_letter]
+        # --------------------------------------------------------------
+        
         step_delta = top_line_step - note_step
+        
+        # Опционально: Ограничиваем "разлет" точек, чтобы если человек нажал ноту C1, 
+        # точка не улетала далеко за экран, а оставалась в пределах видимости
+        if step_delta > 15: step_delta = 15
+        if step_delta < -10: step_delta = -10
 
         top_line_y = first_tact.lines[0].y
         return top_line_y + (step_delta * (LINE_SPACING / 2))
+
 
     def _create_played_note_feedback_circle(self, note_name: str, is_correct: bool):
         if not self.playhead_line.isVisible():
@@ -554,25 +568,49 @@ class LessonPlayerController(QWidget):
     def _on_note_correct(self, note_item, _note_name):
         if not self._practice_mode:
             return
+            
+        # --- ДОБАВЛЕНА ЗАЩИТА ---
+        if not hasattr(self, '_processed_notes'): self._processed_notes = set()
+        if note_item is not None:
+            if note_item in self._processed_notes:
+                return # Если нота уже обработана, игнорируем
+            self._processed_notes.add(note_item)
+        # ------------------------
+
         self._correct += 1
         self._create_feedback_markers(note_item, is_correct=True)
 
-    def _on_note_wrong(
-        self, note_item, _expected_note_name, played_note_name, is_timeout
-    ):
+
+    def _on_note_wrong(self, note_item, _expected_note_name, played_note_name, is_timeout):
         if not self._practice_mode:
             return
+            
+        # --- ДОБАВЛЕНА ЗАЩИТА ---
+        if not hasattr(self, '_processed_notes'): self._processed_notes = set()
+        if note_item is not None:
+            if note_item in self._processed_notes:
+                return # Мы УЖЕ наказали (или похвалили) пользователя за эту ноту. Игнорируем таймаут!
+            self._processed_notes.add(note_item)
+        # ------------------------
+
         self._wrong += 1
+        
         if is_timeout:
+            import time
+            self._last_timeout_time = time.time()
             self._create_feedback_markers(note_item, is_correct=False)
         elif played_note_name:
-            self._create_played_note_feedback_circle(played_note_name, is_correct=False)
+            self._create_feedback_markers(note_item, is_correct=False)
         else:
             self._create_playhead_feedback_circle(is_correct=False)
 
     def _on_note_ignored(self):
         if not self._practice_mode:
             return
+        import time
+        if hasattr(self, '_last_timeout_time'):
+            if time.time() - self._last_timeout_time < 0.4:
+                return # Игнорируем нажатие, не рисуем точку и не портим стату
         self._idle_presses += 1
         self._create_playhead_feedback_circle(is_correct=False)
 
