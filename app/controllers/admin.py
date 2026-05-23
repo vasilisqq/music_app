@@ -28,6 +28,9 @@ from schemas.lesson import LessonResponse, LessonUpdate
 from schemas.topic import TopicCreate, TopicResponse
 
 
+
+
+
 class StatsLineChart(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -366,6 +369,73 @@ class EditUserDialog(QDialog):
     def close_success(self):
         self.accept()
 
+from PyQt6.QtWidgets import QDialog, QVBoxLayout, QGridLayout, QFrame, QLabel
+
+class UserStatsDialog(QDialog):
+    def __init__(self, parent=None, username="Пользователь"):
+        super().__init__(parent)
+        self.setWindowTitle(f"Статистика: {username}")
+        self.setMinimumSize(450, 320)
+        self.setStyleSheet("QDialog { background: white; }")
+
+        layout = QVBoxLayout(self)
+
+        self.stats_frame = QFrame(self)
+        self.stats_frame.setStyleSheet(
+            "QFrame { background: #f7faff; border: 1px solid rgba(63, 139, 222, 0.18); border-radius: 18px; }"
+            "QLabel { background: transparent; border: none; }"
+        )
+        stats_layout = QVBoxLayout(self.stats_frame)
+        stats_layout.setContentsMargins(18, 18, 18, 18)
+        stats_layout.setSpacing(12)
+
+        title = QLabel(f"Статистика пользователя: {username}")
+        title.setStyleSheet("font-size: 18px; font-weight: 800; color: #1a1a1a;")
+        stats_layout.addWidget(title)
+
+        grid = QGridLayout()
+        grid.setHorizontalSpacing(12)
+        grid.setVerticalSpacing(12)
+
+        # Вспомогательная функция для генерации карточек в стиле профиля
+        def create_card(title_text):
+            card = QFrame()
+            card.setStyleSheet("QFrame { background: white; border-radius: 14px; border: 1px solid rgba(63, 139, 222, 0.12); }")
+            card_layout = QVBoxLayout(card)
+            card_layout.setContentsMargins(14, 12, 14, 12)
+
+            t_label = QLabel(title_text)
+            t_label.setStyleSheet("font-size: 12px; color: #667085; border: none")
+            card_layout.addWidget(t_label)
+
+            v_label = QLabel("Загрузка...")
+            v_label.setStyleSheet("font-size: 24px; font-weight: 800; color: #1a1a1a; border: none")
+            card_layout.addWidget(v_label)
+
+            return card, v_label
+
+        self.card_lessons, self.val_lessons = create_card("Пройдено уроков")
+        self.card_topics, self.val_topics = create_card("Тем начато")
+        self.card_completed, self.val_completed = create_card("Тем завершено")
+        self.card_avg, self.val_avg = create_card("Средний прогресс")
+        self.card_rating, self.val_rating = create_card("Рейтинг среди всех")
+
+        grid.addWidget(self.card_lessons, 0, 0)
+        grid.addWidget(self.card_topics, 0, 1)
+        grid.addWidget(self.card_completed, 1, 0)
+        grid.addWidget(self.card_avg, 1, 1)
+        grid.addWidget(self.card_rating, 2, 0, 1, 2)
+
+        stats_layout.addLayout(grid)
+        layout.addWidget(self.stats_frame)
+
+    def update_stats(self, stats):
+        self.val_lessons.setText(str(stats.completed_lessons_count))
+        self.val_topics.setText(str(stats.started_topics_count))
+        self.val_completed.setText(str(stats.completed_topics_count))
+        self.val_avg.setText(f"{stats.average_progress_percent:.1f}%")
+        self.val_rating.setText(f"{stats.rating_place} из {stats.total_users}")
+
 
 class AdminController:
     def __init__(self, ui, user_data=None):
@@ -438,7 +508,7 @@ class AdminController:
         self.ui.statsPeriodCombo.currentIndexChanged.connect(
             self._on_stats_period_changed
         )
-
+        self.stats_worker.user_stats_loaded_signal.connect(self.on_user_stats_loaded)
         self._pending_lesson_topic_change_to: int | None = None
         self.setup_admin_panel()
         self.setup_users_table()
@@ -1156,6 +1226,7 @@ class AdminController:
         row = item.row()
         user_id = int(self.ui.table_users.item(row, 0).text())
         email = self.ui.table_users.item(row, 2).text()
+        username = self.ui.table_users.item(row, 1).text()
 
         if self.current_user_data.get("email") == email:
             menu = QMenu()
@@ -1167,6 +1238,7 @@ class AdminController:
         is_active = "Активен" in self.ui.table_users.item(row, 4).text()
 
         menu = QMenu()
+        stats_action = menu.addAction("📊 Посмотреть статистику")
         edit_action = menu.addAction("✏️ Изменить")
         toggle_action = menu.addAction(
             "🚫 Заблокировать" if is_active else "✅ Разблокировать"
@@ -1188,6 +1260,19 @@ class AdminController:
                 lambda u, e: self.process_user_edit(user_id, username, email, u, e)
             )
             self.current_edit_dialog.exec()
+        elif action == stats_action:  # <--- Обработчик для статистики
+            self.show_user_stats(user_id, username)
+
+    def show_user_stats(self, user_id: int, username: str):
+        # Создаем и открываем окно, сразу отправляем запрос к API
+        self.current_user_stats_dialog = UserStatsDialog(self.ui.centralwidget, username)
+        self.current_user_stats_dialog.show()  # Окно открыто, показывает "Загрузка..."
+        self.stats_worker.get_user_stats(user_id)
+
+    def on_user_stats_loaded(self, stats):
+        # Когда данные приходят с сервера, обновляем открытое окно
+        if hasattr(self, "current_user_stats_dialog") and self.current_user_stats_dialog.isVisible():
+            self.current_user_stats_dialog.update_stats(stats)
 
     def process_user_edit(
         self, user_id, old_username, old_email, new_username, new_email

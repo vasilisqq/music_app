@@ -9,7 +9,7 @@ from workers.base_worker import BaseAPIWorker
 # Добавляем путь для импорта схем
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from schemas.admin_stats import AdminStatsResponse
-
+from schemas.profile_stats import ProfileStatsResponse
 
 class AdminStatsWorker(BaseAPIWorker):
     """
@@ -17,6 +17,7 @@ class AdminStatsWorker(BaseAPIWorker):
     """
 
     stats_loaded_signal = pyqtSignal(AdminStatsResponse)
+    user_stats_loaded_signal = pyqtSignal(ProfileStatsResponse)
     error_signal = pyqtSignal(str)
 
     def __init__(self):
@@ -59,3 +60,18 @@ class AdminStatsWorker(BaseAPIWorker):
             success_callback=lambda d: print("Отчет получен:", d),
             error_callback=self.error_signal.emit,
         )
+
+    def get_user_stats(self, user_id: int) -> None:
+        self._make_request(
+            method="GET",
+            endpoint=f"/admin/stats/user/{user_id}/stats",
+            success_callback=self._on_user_stats_received,
+            error_callback=self.error_signal.emit,
+        )
+
+    def _on_user_stats_received(self, data: dict) -> None:
+        try:
+            stats = ProfileStatsResponse.model_validate(data)
+            self.user_stats_loaded_signal.emit(stats)
+        except Exception as e:
+            self.error_signal.emit(f"Ошибка валидации статистики пользователя: {str(e)}")
