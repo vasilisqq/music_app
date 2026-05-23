@@ -265,6 +265,17 @@ class NoteItem(QGraphicsEllipseItem):
         if durations_equal(self.base_duration, 1):
             self.svg_renderer = QSvgRenderer("app/photos/whole.svg")
 
+    @property
+    def next_note(self):
+        return getattr(self, "_next_note", None)
+
+    @next_note.setter
+    def next_note(self, value):
+        if getattr(self, "_next_note", None) != value:
+            self.prepareGeometryChange()  # Предупреждаем сцену перед перерисовкой ребра!
+            self._next_note = value
+
+
 
     def get_stem_group_notes(self):
         # ЗАЩИТА: Если нота уже удалена из бита, она вернет саму себя. min() больше не упадет!
@@ -311,9 +322,6 @@ class NoteItem(QGraphicsEllipseItem):
             else int(self.x - self.width / 2)
         )
 
-    def sync_geometry(self):
-        self.update_stem_x()
-        self.update()
 
     def refresh_group_geometry(self):
         if self.bit is None:
@@ -385,18 +393,29 @@ class NoteItem(QGraphicsEllipseItem):
     def reverse(self, reverse):
         if self.reversing == reverse:
             return
+        self.prepareGeometryChange()
         self.reversing = reverse
         self.x += self.width if self.reversing else -self.width
         self.update_stem_x()
         self.update()
 
     def remove_shtil(self):
-        self.shtil = False
-        self.update()
+        if self.shtil:
+            self.prepareGeometryChange()  # ДОБАВЛЕНО
+            self.shtil = False
+            self.update()
 
     def create_shtil(self):
-        self.shtil = True
+        if not self.shtil:
+            self.prepareGeometryChange()  # ДОБАВЛЕНО
+            self.shtil = True
+            self.update()
+
+    def sync_geometry(self):
+        self.prepareGeometryChange()  # ДОБАВЛЕНО
+        self.update_stem_x()
         self.update()
+
 
     def boundingRect(self):
         return self.get_visual_bounds()
@@ -970,6 +989,11 @@ class Bits(QGraphicsRectItem):
             return False
         if self.isExist_note(line):
             return False
+            
+        # ДОБАВЛЕНО: обновляем границы старых нот до изменения списка
+        for n in self.notes:
+            n.prepareGeometryChange()
+
         note_item = NoteItem(
             self.x0 + 15, line.y, line.note_name, scene, duration, bit=self
         )
@@ -980,19 +1004,19 @@ class Bits(QGraphicsRectItem):
         return note_item
 
     def remove_note(self, note):
+        # ДОБАВЛЕНО: обновляем границы перед удалением из списка
+        for n in self.notes:
+            n.prepareGeometryChange()
+            
         self.notes.remove(note)
         if durations_equal(note.base_duration, 0.125):
-            if next_note := note.next_note:
+            if next_note := getattr(note, 'next_note', None):
                 next_note.prev_note = None
-                next_note.shtil = True
-                next_note.update()
-            elif prev_note := note.prev_note:
-                prev_note.shtil = True
+                next_note.create_shtil()  # Изменено: используем безопасный метод вместо прямого shtil = True
+            elif prev_note := getattr(note, 'prev_note', None):
+                prev_note.create_shtil()  # Изменено
                 prev_note.next_note = None
-                prev_note.update()
         self.update_notes()
-
-        # Пересчитываем знаки для всего такта (после удаления)
         self.tact.recalculate_all_accidentals(note)
 
     def recalculate_accidental(self, note):
@@ -1531,6 +1555,7 @@ class StaffLayout:
                     QRectF(current_x, tact.y0, bit_width, tact.y_bottom - tact.y0)
                 )
                 for note in bit.notes:
+                    note.prepareGeometryChange()
                     note.x = current_x + 15
                     note.stem_x = (
                         int(note.x + note.width / 2)
