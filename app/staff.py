@@ -26,28 +26,36 @@ from schemas.lesson import LessonCreate, LessonResponse
 
 _TRASH_BIN = set()
 
-def safe_delete_item(item, scene):
-    """Безопасно удаляет элемент, защищая от крашей Garbage Collector'а PyQt"""
+def safe_delete_item(item, scene=None):
     if item is None:
         return
     try:
-        # Отключаем элемент от любых событий и делаем невидимым
         item.setEnabled(False)
         item.setVisible(False)
-        item.setParentItem(None)
         
-        if scene is not None:
-            scene.removeItem(item)
+        # 1. Отвязываем элемент от родителя (очень важно для NoteItem!)
+        if hasattr(item, "setParentItem"):
+            item.setParentItem(None)
+        
+        # 2. Безопасно убираем со сцены
+        current_scene = None
+        if hasattr(item, "scene"):
+            current_scene = item.scene()
             
-        # Кладем в корзину, чтобы Python не уничтожил C++ объект прямо сейчас
+        if current_scene is not None:
+            current_scene.removeItem(item)
+        elif scene is not None:
+            try:
+                scene.removeItem(item)
+            except Exception:
+                pass
+                
+        # 3. Отправляем в корзину
         _TRASH_BIN.add(item)
-        
         from PyQt6.QtCore import QTimer
-        # Очищаем память через 1 секунду (когда Qt гарантированно про него забудет)
         QTimer.singleShot(1000, lambda: _TRASH_BIN.discard(item))
     except Exception:
         pass
-
 
 
 
@@ -155,7 +163,8 @@ class RestItem(QGraphicsItem):
     def _clear_svg_item(self):
         if self.svg_item is None:
             return
-        self.scene.removeItem(self.svg_item)
+        safe_delete_item(self.svg_item, self.scene)
+        # self.scene.removeItem(self.svg_item)
         self.svg_item = None
 
     def _position_svg_item(self):
@@ -315,7 +324,8 @@ class NoteItem(QGraphicsEllipseItem):
 
     def delete_accidental(self):
         if self.accidental_item:
-            self.scene.removeItem(self.accidental_item)
+            safe_delete_item(self.accidental_item, self.scene)
+            # self.scene.removeItem(self.accidental_item)
             self.accidental_item = None
 
     def draw_stem(self, painter: QPainter):
@@ -495,7 +505,8 @@ class NoteItem(QGraphicsEllipseItem):
 
     def _add_accidental(self, acc_type, display=True):
         if self.accidental_item is not None:
-            self.scene.removeItem(self.accidental_item)
+            safe_delete_item(self.accidental_item, self.scene)
+            # self.scene.removeItem(self.accidental_item)
             self.accidental_item = None
 
         if acc_type == "natural":
@@ -546,7 +557,8 @@ class NoteItem(QGraphicsEllipseItem):
 
     def _remove_accidental(self):
         if self.accidental_item is not None:
-            self.scene.removeItem(self.accidental_item)
+            safe_delete_item(self.accidental_item, self.scene)
+            # self.scene.removeItem(self.accidental_item)
             self.accidental_item = None
         if self.accidental and self.accidental != "natural":
             symbol = self._accidental_to_symbol(self.accidental)
@@ -606,7 +618,8 @@ class NoteItem(QGraphicsEllipseItem):
 
     def draw_accidental(self, index):
         if self.accidental_item is not None:
-            self.scene.removeItem(self.accidental_item)
+            safe_delete_item(self.accidental_item, self.scene)
+            # self.scene.removeItem(self.accidental_item)
             self.accidental_item = None
         if self.accidental == "natural" and index == 0:
             return
@@ -871,7 +884,8 @@ class Bits(QGraphicsRectItem):
     def remove_rest(self):
         if self.rest_item is None:
             return
-        self.scene().removeItem(self.rest_item)
+        safe_delete_item(self.rest_item, self.scene())
+        # self.scene().removeItem(self.rest_item)
         self.rest_item = None
         self.tact.change_bits(self)
         self.tact.update_beams()
@@ -879,10 +893,12 @@ class Bits(QGraphicsRectItem):
 
     def clear_contents(self):
         for note in self.notes[:]:
-            self.scene().removeItem(note)
+            safe_delete_item(note, self.scene())
+            # self.scene().removeItem(note)
         self.notes.clear()
         if self.rest_item is not None:
-            self.scene().removeItem(self.rest_item)
+            safe_delete_item(self.rest_item, self.scene())
+            # self.scene().removeItem(self.rest_item)
             self.rest_item = None
         self.update()
 
@@ -1081,10 +1097,13 @@ class Tact:
     def set_bit_weights(self, bit_weights):
         for bit in self.bits:
             for note in bit.notes[:]:
-                self.scene.removeItem(note)
+                safe_delete_item(note, self.scene)
+                # self.scene.removeItem(note)
             if bit.rest_item is not None:
-                self.scene.removeItem(bit.rest_item)
-            self.scene.removeItem(bit)
+                safe_delete_item(bit.rest_item, self.scene)
+                # self.scene.removeItem(bit.rest_item)
+            safe_delete_item(bit, self.scene)
+            # self.scene.removeItem(bit)
         self.bits.clear()
 
         tact_total_duration = self.numerator / 4
@@ -1208,8 +1227,10 @@ class Tact:
                         )
                     )
                     self.scene.addItem(new_bits[-1])
-                    self.scene.removeItem(bit)
-                    self.scene.removeItem(available_bit)
+                    safe_delete_item(bit, self.scene)
+                    # self.scene.removeItem(bit)
+                    safe_delete_item(available_bit, self.scene)
+                    # self.scene.removeItem(available_bit)
                     available_bit = None
             elif not bit.notes:
                 available_bit = bit
@@ -1243,7 +1264,8 @@ class Tact:
                     new_bits.append(new_bit)
                     x += new_width
                 # Удаляем старый бит
-                self.scene.removeItem(empty_bit)
+                safe_delete_item(empty_bit, self.scene)
+                # self.scene.removeItem(empty_bit)
                 # Заменяем старый бит в списке на новые
                 idx = self.bits.index(empty_bit)
                 self.bits.pop(idx)
@@ -1279,8 +1301,10 @@ class Tact:
                 tact=self,
             )
             self.scene.addItem(new_bit)
-            self.scene.removeItem(left_bit)
-            self.scene.removeItem(empty_bit)
+            safe_delete_item(left_bit, self.scene)
+            # self.scene.removeItem(left_bit)
+            safe_delete_item(empty_bit, self.scene)
+            # self.scene.removeItem(empty_bit)
             self.bits.pop(left_idx)
             self.bits.pop(left_idx)
             self.bits.insert(left_idx, new_bit)
@@ -1306,8 +1330,10 @@ class Tact:
                 tact=self,
             )
             self.scene.addItem(new_bit)
-            self.scene.removeItem(empty_bit)
-            self.scene.removeItem(right_bit)
+            safe_delete_item(empty_bit, self.scene)
+            # self.scene.removeItem(empty_bit)
+            safe_delete_item(right_bit, self.scene)
+            # self.scene.removeItem(right_bit)
             # Индексы: сначала удаляем правый, потом пустой (индекс пустого смещается после удаления правого?)
             # Удаляем правый, индекс idx остаётся действительным, пока мы не удалили empty_bit
             self.bits.pop(right_idx)
@@ -1347,7 +1373,8 @@ class Tact:
                 )
                 self.scene.addItem(new_bits[-2])
                 self.scene.addItem(new_bits[-1])
-                self.scene.removeItem(bit)
+                safe_delete_item(bit, self.scene)
+                # self.scene.removeItem(bit)
             else:
                 new_bits.append(bit)
         self.bits = new_bits
@@ -1357,30 +1384,37 @@ class Tact:
     def remove_from_scene(self):
         # Удаляем линии
         for line in self.lines[:]:  # копия списка для безопасной итерации
-            self.scene.removeItem(line)
+            safe_delete_item(line, self.scene)
+            # self.scene.removeItem(line)
             # При необходимости: del line
         self.lines.clear()
         # Удаляем пробелы
         for space in self.spaces[:]:
-            self.scene.removeItem(space)
+            safe_delete_item(space, self.scene)
+            # self.scene.removeItem(space)
         self.spaces.clear()
         # Удаляем тактовые черты
         for bar in self.bar_lines[:]:
-            self.scene.removeItem(bar.line_item)
+            safe_delete_item(bar.line_item, self.scene)
+            # self.scene.removeItem(bar.line_item)
         self.bar_lines.clear()
 
         # Удаляем биты (и их ноты)
         for bit in self.bits:
             for note in bit.notes[:]:
-                self.scene.removeItem(note)
+                safe_delete_item(note, self.scene)
+                # self.scene.removeItem(note)
             if bit.rest_item is not None:
-                self.scene.removeItem(bit.rest_item)
-            self.scene.removeItem(bit)
+                safe_delete_item(bit.rest_item, self.scene)
+                # self.scene.removeItem(bit.rest_item)
+            safe_delete_item(bit, self.scene)
+            # self.scene.removeItem(bit)
         self.bits.clear()
 
         # Дополнительно: удаляем ноты, если они хранятся отдельно
         for note in self.notes[:]:
-            self.scene.removeItem(note)
+            safe_delete_item(note, self.scene)
+            # self.scene.removeItem(note)
         del self
 
     def recalculate_all_accidentals(self, note_item):
@@ -1478,7 +1512,8 @@ class StaffLayout:
 
         for bit in tact.bits:
             if not bit.is_filled:
-                self.scene.removeItem(bit)
+                safe_delete_item(bit, self.scene)
+                # self.scene.removeItem(bit)
 
         tact_total_duration = tact.numerator / 4
         x_start_offset = 100 if tact.tact_number == 0 else 0
