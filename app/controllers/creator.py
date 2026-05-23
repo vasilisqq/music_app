@@ -331,6 +331,7 @@ class CreatorController(QWidget):
 
     def connect_buttons(self):
         self.ui.start_button.clicked.connect(self.on_start_clicked)
+        self.ui.pause_button.clicked.connect(self.on_pause_clicked)
         self.ui.save_button.clicked.connect(self.on_save_clicked)
         self.ui.add_tact_button.clicked.connect(self.on_add_tact_clicked)
         self.ui.reset_button.clicked.connect(self.on_reset_clicked)
@@ -366,6 +367,9 @@ class CreatorController(QWidget):
         return None
 
     def on_start_clicked(self):
+        self.ui.graphicsView.setInteractive(False)
+        self.ui.add_tact_button.setEnabled(False)
+        self.ui.delete_tact_button.setEnabled(False)
         if self.animation_timer.isActive():
             self.animation_timer.stop()
 
@@ -381,6 +385,7 @@ class CreatorController(QWidget):
                 "Нельзя воспроизвести",
                 f"Не все биты заполнены нотами.\nПусто: такт {tact_index}, бит {bit_index}.",
             )
+            self.ui.graphicsView.setInteractive(True)
             return
 
         self._playback_token += 1
@@ -389,6 +394,28 @@ class CreatorController(QWidget):
         self.metronome_count = 0
         self.start_playhead_animation()
         self.play_metronome_beat(self._playback_token)
+
+    def on_pause_clicked(self):
+        """Останавливает воспроизведение и снимает блокировку интерфейса"""
+        if self.animation_timer.isActive():
+            self.animation_timer.stop()
+
+        self._metronome_active = False
+        self.play_started = False
+        
+        if hasattr(self, "playhead") and self.playhead.isVisible():
+            self.playhead.hide()
+
+        # Останавливаем звуковые потоки
+        if hasattr(self, "lay"):
+            self.lay.stop_lesson()
+            
+        # === ВЕРНУТЬ УПРАВЛЕНИЕ (Разблокировка) ===
+        self.ui.graphicsView.setInteractive(True)
+        self.ui.add_tact_button.setEnabled(True)
+        self.ui.delete_tact_button.setEnabled(True)
+        print("Воспроизведение на паузе: интерфейс разблокирован")
+
 
     def play_metronome_beat(self, token: int):
         if token != self._playback_token or not self._metronome_active:
@@ -437,6 +464,9 @@ class CreatorController(QWidget):
             self.animation_timer.stop()
             self.playhead.hide()
             self._metronome_active = False
+            self.ui.graphicsView.setInteractive(True)
+            self.ui.add_tact_button.setEnabled(True)    
+            self.ui.delete_tact_button.setEnabled(True) 
             return
 
         progress = elapsed / self.anim_total_duration
@@ -453,6 +483,12 @@ class CreatorController(QWidget):
                 break
 
     def on_save_clicked(self):
+        # === 1. АВТОМАТИЧЕСКАЯ ПАУЗА ПЕРЕД СОХРАНЕНИЕМ ===
+        # Если идет воспроизведение или отсчет метронома — глушим всё.
+        # Метод on_pause_clicked безопасен для вызова в любой момент.
+        self.on_pause_clicked()
+        # =================================================
+
         unfilled = self._find_first_unfilled_bit()
         if unfilled is not None:
             tact_index, bit_index = unfilled
@@ -462,6 +498,7 @@ class CreatorController(QWidget):
                 f"Не все биты заполнены нотами или паузами.\nПусто: такт {tact_index}, бит {bit_index}."
             )
             return
+            
         dialog = SaveLessonDialog(self.topic_id, self, self.lesson)
         if dialog.exec() != QDialog.DialogCode.Accepted:
             return
@@ -487,16 +524,20 @@ class CreatorController(QWidget):
             )
 
     def on_reset_clicked(self):
+        # Вызываем паузу, чтобы корректно убить потоки звука и снять блокировку
+        if hasattr(self, "on_pause_clicked"):
+            self.on_pause_clicked()
+            
         self.score = 0
         self.misses = 0
         self.metronome_count = 0
-        self.play_started = False
-        self._metronome_active = False
-        self.animation_timer.stop()
-        self.playhead.hide()
-        self.load_scene()
+        
+        self.load_scene(self.hand)
         self.init_playhead()
-        print("Состояние сброшено")
+        
+        # Гарантированная разблокировка интерфейса при сбросе
+        self.ui.graphicsView.setInteractive(True)
+        print("Состояние сброшено: интерфейс разблокирован")
 
     def on_listen_clicked(self):
         if self.lesson is not None:

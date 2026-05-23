@@ -89,6 +89,7 @@ class LaySettings:
         self.accidental = "natural"
         self.input_mode = "note"
         self.scene = None
+        self.is_playing = False
 
 
 settings = LaySettings()
@@ -206,6 +207,9 @@ class RestItem(QGraphicsItem):
         self.update()
 
     def mousePressEvent(self, event):
+        if settings.is_playing:  # ДОБАВЛЕНО: защита от редактирования
+            event.accept()
+            return
         if event.button() == Qt.MouseButton.RightButton and self.bit is not None:
             self.bit.remove_rest()
             return
@@ -595,7 +599,11 @@ class NoteItem(QGraphicsEllipseItem):
         return mapping.get(acc_type, "")
 
 
-    def mousePressEvent(self, event):
+    def mousePressEvent(self, event): 
+        print(settings.is_playing)
+        if settings.is_playing:
+            event.accept()
+            return
         if event.button() == Qt.MouseButton.RightButton:
             # Жесткая блокировка двойных кликов и спама
             if getattr(self, "_is_deleting", False):
@@ -726,7 +734,7 @@ class HighlightableLineItem(QGraphicsLineItem):
 
     def mousePressEvent(self, event):
         """Обработка клика на линии"""
-        if self.read_only:
+        if self.read_only or settings.is_playing:
             super().mousePressEvent(event)
             return
 
@@ -791,7 +799,7 @@ class StaffSpaceItem(QGraphicsRectItem):
 
     def mousePressEvent(self, event):
         """Обработка клика на линии"""
-        if self.read_only:
+        if self.read_only or settings.is_playing:
             super().mousePressEvent(event)
             return
 
@@ -1688,7 +1696,6 @@ class StaffLayout:
             if hasattr(lesson, "hand") and lesson.hand == "left"
             else "right_hand"
         )
-        print(hand_key)
         saved_tacts = lesson.notes.get(hand_key, lesson.notes.get("right_hand", []))
 
         while len(self.tacts) < len(saved_tacts):
@@ -1729,38 +1736,50 @@ class StaffLayout:
                             break
 
     def touch_thread(self):
-        for tact in self.tacts:
-            for bit in tact.bits:
-                if self.stop_event.is_set(): return
-                duration = 60 / self.bpm * bit.weigth * 4
-                if bit.notes:
-                    note_item = bit.notes[0]
-                    player.start_waiting_for_note(note_item.note_name, note_item)
-                if self.stop_event.wait(duration): return
+        try:
+            for tact in self.tacts:
+                for bit in tact.bits:
+                    if self.stop_event.is_set(): return
+                    duration = 60 / self.bpm * bit.weigth * 4
+                    if bit.notes:
+                        note_item = bit.notes[0]
+                        player.start_waiting_for_note(note_item.note_name, note_item)
+                    if self.stop_event.wait(duration): return
+        finally:
+            # Гарантируем сброс флага, если этот поток завершился последним
+            settings.is_playing = False
 
     def sound_thread(self):
-        if self.stop_event.wait(0.05): return
-        for tact in self.tacts:
-            for bit in tact.bits:
-                if self.stop_event.is_set(): return
-                print(self.stop_event.is_set())
-                duration = 60 / self.bpm * bit.weigth * 4
-                if bit.notes:
-                    chord_notes = [note.note_name for note in bit.notes]
-                    player.play_chord(chord_notes, duration)
-                if self.stop_event.wait(duration):
-                    return
+        try:
+            if self.stop_event.wait(0.05): return
+            for tact in self.tacts:
+                for bit in tact.bits:
+                    if self.stop_event.is_set(): return
+                    duration = 60 / self.bpm * bit.weigth * 4
+                    if bit.notes:
+                        chord_notes = [note.note_name for note in bit.notes]
+                        player.play_chord(chord_notes, duration)
+                    if self.stop_event.wait(duration):
+                        return
+        finally:
+            # Гарантируем сброс флага, если этот поток завершился последним
+            settings.is_playing = False
 
     def start_lesson(self, wait_for_input: bool = True, play_sound: bool = True):
+        if settings.is_playing:
+            return 
         self.stop_event.clear()
+        # settings.is_playing = True
         if wait_for_input:
             threading.Thread(target=self.touch_thread, daemon=True).start()
         if play_sound:
             threading.Thread(target=self.sound_thread, daemon=True).start()
 
     def stop_lesson(self):
-        # Мгновенно подаем сигнал всем потокам прервать wait() и завершиться
         self.stop_event.set()
+        settings.is_playing = False  # Отключаем блокировку интерфейса
+        if hasattr(self, "scene") and self.scene is not None:
+            self.scene.update()
 
 
     def change_accidental(self, data):

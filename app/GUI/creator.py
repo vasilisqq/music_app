@@ -76,6 +76,12 @@ class Ui_MainWindow(object):
             "  border: 2px solid rgba(63, 139, 222, 0.15);\n"
             "}\n"
             "   "
+            "QPushButton#pause_button {\n"
+            "  background: qlineargradient(x1:0,y1:0,x2:0,y2:1, stop:0 #f0ad4e, stop:1 #ec971f);\n"
+            "}\n"
+            "QPushButton#pause_button:hover {\n"
+            "  background: qlineargradient(x1:0,y1:0,x2:0,y2:1, stop:0 #ec971f, stop:1 #d58512);\n"
+            "}\n"
         )
         self.verticalLayout = QtWidgets.QVBoxLayout(MainWindow)
         self.verticalLayout.setContentsMargins(20, 20, 20, 20)
@@ -87,6 +93,9 @@ class Ui_MainWindow(object):
         self.start_button = QtWidgets.QPushButton(parent=MainWindow)
         self.start_button.setObjectName("start_button")
         self.buttonsRow.addWidget(self.start_button)
+        self.pause_button = QtWidgets.QPushButton(parent=MainWindow)
+        self.pause_button.setObjectName("pause_button")
+        self.buttonsRow.addWidget(self.pause_button)
         self.add_tact_button = QtWidgets.QPushButton(parent=MainWindow)
         self.add_tact_button.setObjectName("add_tact_button")
         self.buttonsRow.addWidget(self.add_tact_button)
@@ -103,6 +112,7 @@ class Ui_MainWindow(object):
             QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Fixed
         )
         self.start_button.setSizePolicy(policy)
+        self.pause_button.setSizePolicy(policy)
         self.add_tact_button.setSizePolicy(policy)
         self.delete_tact_button.setSizePolicy(policy)
         self.save_button.setSizePolicy(policy)
@@ -162,6 +172,7 @@ class Ui_MainWindow(object):
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
         self.start_button.setText(_translate("MainWindow", "▶ Старт"))
+        self.pause_button.setText(_translate("MainWindow", "⏸ Пауза"))
         self.add_tact_button.setText(_translate("MainWindow", "➕ Такт"))
         self.delete_tact_button.setText(_translate("MainWindow", "➖ Такт"))
         self.save_button.setText(_translate("MainWindow", "💾 Сохранить"))
