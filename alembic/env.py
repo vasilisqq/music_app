@@ -7,13 +7,15 @@ from sqlalchemy import engine_from_config, pool
 from alembic import context
 from server.core.config import settings
 
-# Добавляем корневую директорию в путь
-sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+BASE_DIR = os.path.dirname(os.path.dirname(__file__))
+sys.path.append(BASE_DIR)
+# Директория server (чтобы работали импорты вроде `from core.config...` внутри db.py)
+sys.path.append(os.path.join(BASE_DIR, "server"))
 
-
+# --- 2. Затем делаем импорты ---
+from server.core.config import settings
 from server.db import Base
 from server.models import *
-
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config

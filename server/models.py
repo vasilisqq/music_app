@@ -154,8 +154,8 @@ class LessonProgress(Base):
     __table_args__ = (UniqueConstraint("user_id", "lesson_id", name="uq_user_lesson"),)
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("user.id"), nullable=False, index=True)
-    lesson_id = Column(Integer, ForeignKey("lesson.id"), nullable=False, index=True)
+    user_id = Column(Integer, ForeignKey("user.id", ondelete="CASCADE"), nullable=False, index=True)
+    lesson_id = Column(Integer, ForeignKey("lesson.id", ondelete="CASCADE"), nullable=False, index=True)
     completed_at = Column(DateTime(timezone=True), nullable=True)
 
     user = relationship("User")
