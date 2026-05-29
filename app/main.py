@@ -6,8 +6,16 @@ Main Application Entry Point
 """
 
 import logging
+import os
 import sys
 from typing import Optional
+
+# При запуске из PyInstaller бандла текущая папка может отличаться от app/.
+# Добавляем папку со скриптом в sys.path, чтобы относительные импорты
+# (controllers, workers, GUI и т.д.) работали корректно.
+_APP_DIR = os.path.dirname(os.path.abspath(__file__))
+if _APP_DIR not in sys.path:
+    sys.path.insert(0, _APP_DIR)
 
 from controllers.auth import Auth
 from controllers.main_window import Main

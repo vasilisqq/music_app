@@ -2,6 +2,7 @@ import time
 
 from config import BACKGROUND_SCENE_COLOR, X0, Y0
 from GUI.creator import Ui_MainWindow
+from loader import resource_path
 from PyQt6.QtCore import QSize, Qt, QTimer, pyqtSignal
 from PyQt6.QtGui import QBrush, QColor, QIcon, QPainter, QPen
 from PyQt6.QtWidgets import (
@@ -210,13 +211,13 @@ class CreatorController(QWidget):
 
         combo = self.ui.duration_combo
         combo.setIconSize(QSize(28, 28))
-        combo.addItem(QIcon("app/photos/whole.png"), "Целая", 1.0)
-        combo.addItem(QIcon("app/photos/half.png"), "Половинная", 0.5)
-        combo.addItem(QIcon("app/photos/half_dot.png"), "Половинная с точкой", 0.75)
-        combo.addItem(QIcon("app/photos/quarter.png"), "Четверть", 0.25)
-        combo.addItem(QIcon("app/photos/quarter_dot.png"), "Четверть с точкой", 0.375)
-        combo.addItem(QIcon("app/photos/eight.png"), "Восьмая", 0.125)
-        # combo.addItem(QIcon("app/photos/eight_dot.png"), "Восьмая с точкой", 0.1875)
+        combo.addItem(QIcon(resource_path("app/photos/whole.png")), "Целая", 1.0)
+        combo.addItem(QIcon(resource_path("app/photos/half.png")), "Половинная", 0.5)
+        combo.addItem(QIcon(resource_path("app/photos/half_dot.png")), "Половинная с точкой", 0.75)
+        combo.addItem(QIcon(resource_path("app/photos/quarter.png")), "Четверть", 0.25)
+        combo.addItem(QIcon(resource_path("app/photos/quarter_dot.png")), "Четверть с точкой", 0.375)
+        combo.addItem(QIcon(resource_path("app/photos/eight.png")), "Восьмая", 0.125)
+        # combo.addItem(QIcon(resource_path("app/photos/eight_dot.png")), "Восьмая с точкой", 0.1875)
         combo.setCurrentIndex(3)
         combo.currentIndexChanged.connect(self.on_duration_changed)
 

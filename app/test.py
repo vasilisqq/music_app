@@ -1,6 +1,7 @@
 import os
 import pickle
 import re
+import sys
 import threading
 import time
 from collections import OrderedDict
@@ -13,8 +14,10 @@ from scipy.io import wavfile
 from scipy.ndimage import zoom
 from scipy.signal import butter, lfilter
 
+from loader import resource_path
+
 # Загружаем ОДИН реальный сэмпл пианино C4
-SAMPLE_RATE, PIANO_C4 = wavfile.read("single-piano-note-c4_100bpm_C_major.wav")
+SAMPLE_RATE, PIANO_C4 = wavfile.read(resource_path("single-piano-note-c4_100bpm_C_major.wav"))
 
 if PIANO_C4.ndim == 2:
     base_note = PIANO_C4[:, 0].astype(np.float32) / 32768.0
@@ -255,7 +258,9 @@ def midi_note_to_name(note_number: int) -> str:
     return f"{note_name}{octave}"
 
 
-def save_cache(filename="piano_cache.pkl"):
+def save_cache(filename=None):
+    if filename is None:
+        filename = resource_path("piano_cache.pkl")
     """Сохраняет note_cache в pickle файл (быстрее, чем npz)."""
     try:
         with open(filename, "wb") as f:
@@ -266,7 +271,9 @@ def save_cache(filename="piano_cache.pkl"):
         print(f"⚠ Ошибка при сохранении кеша: {e}")
 
 
-def load_cache(filename="piano_cache.pkl"):
+def load_cache(filename=None):
+    if filename is None:
+        filename = resource_path("piano_cache.pkl")
     if not os.path.exists(filename):
         return None
     try:
@@ -351,35 +358,10 @@ def preload_staff_notes_sync():
     start = time.time()
     
     # 1. Пробуем загрузить готовые ноты с диска
-    loaded_cache = load_cache("piano_cache.pkl")
-    if loaded_cache is not None:
-        with note_cache_lock:
-            note_cache.update(loaded_cache)
+    loaded_cache = load_cache(resource_path("piano_cache.pkl"))
 
-    # 2. Смотрим, каких нот не хватает
-    with note_cache_lock:
-        missing_notes = [n for n in ALL_STAFF_NOTES if n not in note_cache]
-
-    if not missing_notes:
-        print(f"✓ Все ноты загружены с диска мгновенно ({time.time() - start:.2f} сек)!")
-        _staff_notes_ready.set()
-        return
-
-    print(f"⏳ Вычисляем {len(missing_notes)} нот (сохранятся на диск для будущих запусков)...")
-
-    # 3. Вычисляем недостающие ноты параллельно (Scipy умеет использовать все ядра процессора)
-    def _gen(name):
-        return name, generate_note(name, use_fast_resample=False)
-
-    with concurrent.futures.ThreadPoolExecutor() as executor:
-        # Запускаем пулл потоков
-        results = executor.map(_gen, missing_notes)
-        for name, audio in results:
-            with note_cache_lock:
-                note_cache[name] = audio
-
-    # 4. Сохраняем всё на диск, чтобы при следующем запуске это заняло 0 секунд
-    save_cache("piano_cache.pkl")
+    ...
+    save_cache(resource_path("piano_cache.pkl"))
 
     print(f"✓ Вычисление завершено за {time.time() - start:.2f} сек!")
     _staff_notes_ready.set()

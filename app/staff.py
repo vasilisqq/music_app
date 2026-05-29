@@ -2,6 +2,7 @@ import os
 import sys
 
 from config import *
+from loader import resource_path
 from PyQt6.QtCore import QLineF, QRectF, Qt
 from PyQt6.QtGui import QBrush, QColor, QFont, QPainter, QPainterPath, QPen, QPixmap
 from PyQt6.QtSvgWidgets import QGraphicsSvgItem
@@ -97,8 +98,8 @@ settings = LaySettings()
 
 class RestItem(QGraphicsItem):
     SVG_PATHS = {
-        0.25: "app/photos/quarter_pause.svg",
-        0.125: "app/photos/eight_pause.svg",
+        0.25: resource_path("app/photos/quarter_pause.svg"),
+        0.125: resource_path("app/photos/eight_pause.svg"),
     }
 
     def __init__(self, x: float, y: float, duration: float, scene, bit=None):
@@ -267,7 +268,7 @@ class NoteItem(QGraphicsEllipseItem):
         )
         self.svg_renderer = None
         if durations_equal(self.base_duration, 1):
-            self.svg_renderer = QSvgRenderer("app/photos/whole.svg")
+            self.svg_renderer = QSvgRenderer(resource_path("app/photos/whole.svg"))
 
     @property
     def next_note(self):
@@ -534,7 +535,7 @@ class NoteItem(QGraphicsEllipseItem):
 
         if acc_type == "natural":
             if display:
-                svg_path = "app/photos/natural.svg"
+                svg_path = resource_path("app/photos/natural.svg")
                 acc_item = QGraphicsSvgItem(svg_path)
                 target_height = 15.0
                 x_pos = self.x - 20
@@ -555,7 +556,7 @@ class NoteItem(QGraphicsEllipseItem):
         self.accidental = acc_type
 
         if display:
-            svg_path = f"app/photos/{acc_type}.svg"
+            svg_path = resource_path(f"app/photos/{acc_type}.svg")
             acc_item = QGraphicsSvgItem(svg_path)
             original_rect = acc_item.boundingRect()
             if acc_type == "sharp":
@@ -653,7 +654,7 @@ class NoteItem(QGraphicsEllipseItem):
         symbol = self._accidental_to_symbol(self.accidental)
         if not self.note_name.endswith(symbol):
             self.note_name += symbol
-        svg_path = f"app/photos/{self.accidental}.svg"
+        svg_path = resource_path(f"app/photos/{self.accidental}.svg")
         acc_item = QGraphicsSvgItem(svg_path)
         original_rect = acc_item.boundingRect()
         if self.accidental == "sharp":
@@ -1622,11 +1623,11 @@ class StaffLayout:
         """Добавляет скрипичный или басовый ключ на нотный стан в зависимости от руки"""
         # Выбираем правильный ключ в зависимости от руки
         if self.hand == "left":
-            clef_file = "app/photos/bass.svg"
+            clef_file = resource_path("app/photos/bass.svg")
             target_height = LINE_SPACING * 3.4
             y_pos = Y0 + 1.3 * LINE_SPACING - target_height / 2.5
         else:
-            clef_file = "app/photos/scrip.svg"
+            clef_file = resource_path("app/photos/scrip.svg")
             target_height = LINE_SPACING * 7
             y_pos = Y0 + 1.5 * LINE_SPACING - target_height / 2.5
         clef_item = QGraphicsSvgItem(clef_file)

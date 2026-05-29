@@ -7,8 +7,11 @@ Base API Worker Module
 
 import json
 import logging
+import os
+import sys
 from typing import Any, Callable, Optional, Union
 
+from dotenv import find_dotenv, load_dotenv
 from loader import settings
 from pydantic import BaseModel
 from PyQt6.QtCore import QObject, QUrl
@@ -16,6 +19,20 @@ from PyQt6.QtNetwork import QNetworkAccessManager, QNetworkReply, QNetworkReques
 
 # Настройка логирования
 logger = logging.getLogger(__name__)
+
+
+def _load_env() -> None:
+    """Загружает .env: рядом с exe при сборке PyInstaller, иначе через find_dotenv."""
+    if getattr(sys, "frozen", False):
+        exe_dir = os.path.dirname(sys.executable)
+        env_path = os.path.join(exe_dir, ".env")
+        if os.path.isfile(env_path):
+            load_dotenv(env_path)
+            return
+    load_dotenv(find_dotenv())
+
+
+_load_env()
 
 
 class BaseAPIWorker(QObject):
@@ -34,16 +51,20 @@ class BaseAPIWorker(QObject):
     DEFAULT_TIMEOUT_MS: int = 10000
     """Стандартный таймаут для запросов (10 секунд)"""
 
-    def __init__(self, base_url: str = "http://localhost:8000") -> None:
+    def __init__(self, base_url: Optional[str] = None) -> None:
         """
         Инициализация базового API воркера.
 
         Аргументы:
-            base_url: Базовый URL API сервера (по умолчанию localhost:8000)
+            base_url: Базовый URL API сервера.
+                По умолчанию берется из переменной окружения API_BASE_URL
+                (или http://localhost:8000, если переменная не задана).
         """
         super().__init__()
         self.manager: QNetworkAccessManager = QNetworkAccessManager()
-        self.base_url: str = base_url
+        self.base_url: str = base_url or os.getenv(
+            "API_BASE_URL", "http://localhost:8000"
+        )
         self.timeout_ms: int = self.DEFAULT_TIMEOUT_MS
 
     def _make_request(
