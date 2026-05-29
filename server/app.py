@@ -46,7 +46,7 @@ async def custom_http_exception_handler(request, exc):
     return await http_exception_handler(request, exc)
 
 
-# ✅ Обработчик всех остальных исключений
+
 @app.exception_handler(Exception)
 async def general_exception_handler(request, exc):
     logger.error(f"Unhandled exception: {exc}", exc_info=True)
@@ -65,17 +65,6 @@ async def health_check():
     return {"status": "ok", "timestamp": datetime.utcnow().isoformat()}
 
 
-# порядок важен - они выполняются в обратном порядке
-# app.add_middleware(ErrorHandlingMiddleware)
-# app.add_middleware(LoggingMiddleware)
-
-# app.add_middleware(
-#     CORSMiddleware,
-#     allow_origins=["*"],  # Разрешенные домены
-#     allow_credentials=True,  # Разрешить куки и авторизацию
-#     allow_methods=["*"],  # Разрешенные HTTP-методы
-#     allow_headers=["*"],  # Разрешенные заголовки
-# )
 
 # Подключение роутеров
 app.include_router(api_router)
