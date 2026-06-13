@@ -254,7 +254,7 @@ class BaseAPIWorker(QObject):
                 data = json.loads(raw_data.decode("utf-8"))
                 detail = data.get("detail", "Неизвестная ошибка сервера")
                 
-                # ИСПРАВЛЕНИЕ: Если detail - это список (ошибки валидации), превращаем в строку
+                # ИСПРАВЛЕНИЕ: Если detail - это список превращаем в строку
                 if isinstance(detail, list):
                     messages = []
                     for item in detail:

@@ -51,10 +51,8 @@ class FlowLayout(QLayout):
         return size
 
     def _doLayout(self, rect, testOnly):
-        x = rect.x()
         y = rect.y()
         lineHeight = 0
-
         # 1. Сначала рассчитываем, сколько карточек влезет в один ряд (по первой строке)
         cards_per_row = 0
         current_w = 0
@@ -64,25 +62,19 @@ class FlowLayout(QLayout):
                 break
             current_w += item_w + self.spacing()
             cards_per_row += 1
-
         cards_per_row = max(1, cards_per_row)  # Минимум одна карточка
-
-        # 2. Вычисляем ширину "контента" (целых карточек в ряду) для общего отступа
-        # Берем только те карточки, которые реально помещаются
+        # 2. Вычисляем ширину целых карточек в ряду для общего отступа
+        # Берем только те карточки, которые помещаются
         actual_line_width = 0
         for i in range(min(cards_per_row, self.count())):
             actual_line_width += self.itemAt(i).sizeHint().width()
         actual_line_width += (min(cards_per_row, self.count()) - 1) * self.spacing()
-
-        # 3. Общий отступ для ВСЕХ строк
+        # 3. Общий отступ для строк
         left_offset = max(0, (rect.width() - actual_line_width) // 2)
-
         # 4. Расставляем все карточки с этим фиксированным отступом
         current_x = rect.x() + left_offset
         for i in range(self.count()):
             item = self.itemAt(i)
-
-            # Если карточка не влезает в текущую строку по ширине
             if (
                 current_x + item.sizeHint().width()
                 > rect.x() + rect.width() - left_offset
@@ -90,16 +82,13 @@ class FlowLayout(QLayout):
             ):
                 current_x = (
                     rect.x() + left_offset
-                )  # Возвращаемся к началу с тем же отступом
+                )
                 y = y + lineHeight + self.spacing()
                 lineHeight = 0
-
             if not testOnly:
                 item.setGeometry(QRect(QPoint(current_x, y), item.sizeHint()))
-
             current_x += item.sizeHint().width() + self.spacing()
             lineHeight = max(lineHeight, item.sizeHint().height())
-
         return y + lineHeight - rect.y()
 
     def _center_line(self, widgets, total_width, line_height, y_offset):

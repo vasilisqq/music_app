@@ -53,10 +53,6 @@ class SettingsController(QObject):
     _BT_PATTERN = re.compile(r"bluetooth|ble|\bbt\b|wireless|air", re.IGNORECASE)
 
 
-class SettingsController(QObject):
-    MIDI_INPUT_KEY = "midi/input_device_name"
-    _BT_PATTERN = re.compile(r"bluetooth|ble|\bbt\b|wireless|air", re.IGNORECASE)
-
     def __init__(self, ui):
         super().__init__()
         self.ui = ui
@@ -68,7 +64,6 @@ class SettingsController(QObject):
     def _on_refresh_clicked(self):
         self.refresh_midi_inputs()
         
-        # 2. Показываем всплывающее окно (обратная связь)
         QMessageBox.information(
             self.ui.centralwidget,
             "Успех",
@@ -98,15 +93,9 @@ class SettingsController(QObject):
             display_name = _display_midi_device_name(name)
             self.ui.midiInputCombo.addItem(f"{prefix} {display_name}", name)
 
-        hidden_duplicates = _count_hidden_duplicates(raw_input_names)
         self.ui.midiSettingsHint.setText(
             "Используется один общий список подключённых MIDI-входов. "
             "Если устройство подключено позже, обнови список."
-            # + (
-            #     f" Скрыто дополнительных портов: {hidden_duplicates}."
-            #     if hidden_duplicates
-            #     else ""
-            # )
         )
         selected_name = current_name or saved_name
         selected_index = self.ui.midiInputCombo.findData(selected_name)
