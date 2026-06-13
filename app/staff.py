@@ -1278,7 +1278,7 @@ class Tact:
     def change_bits(self, empty_bit):
         """Обрабатывает изменения битов: объединяет пустые биты одинаковой длительности или разбивает слишком большие пустые биты."""
         # Если бит пуст и его длительность больше текущей (требуется разбиение)
-        if not empty_bit.notes and empty_bit.weigth > self.duration:
+        if not empty_bit.notes and empty_bit.rest_item is None and empty_bit.weigth > self.duration:
             # Разбиваем на несколько битов текущей длительности
             ratio = int(empty_bit.weigth / self.duration)
             if ratio > 1:
@@ -1321,6 +1321,7 @@ class Tact:
             left_idx >= 0
             and self.bits[left_idx].weigth == empty_bit.weigth
             and not self.bits[left_idx].notes
+            and self.bits[left_idx].rest_item is None
         ):
             left_bit = self.bits[left_idx]
             new_x0 = left_bit.x0
@@ -1350,6 +1351,7 @@ class Tact:
             right_idx < len(self.bits)
             and self.bits[right_idx].weigth == empty_bit.weigth
             and not self.bits[right_idx].notes
+            and self.bits[right_idx].rest_item is None
         ):
             right_bit = self.bits[right_idx]
             new_x0 = empty_bit.x0

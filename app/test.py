@@ -359,8 +359,36 @@ def preload_staff_notes_sync():
     
     # 1. Пробуем загрузить готовые ноты с диска
     loaded_cache = load_cache(resource_path("piano_cache.pkl"))
+    if loaded_cache is not None:
+        with note_cache_lock:
+            if isinstance(loaded_cache, OrderedDict):
+                note_cache = loaded_cache
+            else:
+                note_cache = OrderedDict(loaded_cache)
 
-    ...
+    # 2. Смотрим, каких нот не хватает
+    with note_cache_lock:
+        missing_notes = [n for n in ALL_STAFF_NOTES if n not in note_cache]
+
+    if missing_notes:
+        print(f"  - Предвычисляю {len(missing_notes)} нот...")
+
+        def _gen(note):
+            return note, generate_note(note, use_fast_resample=False)
+
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            results = executor.map(_gen, missing_notes)
+
+        with note_cache_lock:
+            for note, audio in results:
+                note_cache[note] = audio
+
+        # Удаляем лишние, если превысили лимит (маловероятно, но на всякий случай)
+        with note_cache_lock:
+            while len(note_cache) > MAX_CACHE_SIZE:
+                oldest = next(iter(note_cache))
+                del note_cache[oldest]
+
     save_cache(resource_path("piano_cache.pkl"))
 
     print(f"✓ Вычисление завершено за {time.time() - start:.2f} сек!")
