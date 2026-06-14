@@ -1,4 +1,5 @@
 import os
+import re
 import sys
 
 from config import *
@@ -33,11 +34,11 @@ def safe_delete_item(item, scene=None):
     try:
         item.setEnabled(False)
         item.setVisible(False)
-        
+
         # 1. Отвязываем элемент от родителя (очень важно для NoteItem!)
         if hasattr(item, "setParentItem"):
             item.setParentItem(None)
-        
+
         # 2. Безопасно убираем со сцены
         current_scene = None
         if hasattr(item, "scene"):
@@ -58,6 +59,33 @@ def safe_delete_item(item, scene=None):
     except Exception:
         pass
 
+
+_BASE_NOTE_RE = re.compile(r'^([A-G])(?:#|b)?(\d+)[#b]?$')
+
+
+def extract_base_note_name(note_name: str) -> str:
+    """Извлекает базовое имя (C4) из любого формата: C4, C#4, Db4, C4#, C#4#."""
+    if note_name == "REST":
+        return note_name
+    m = _BASE_NOTE_RE.match(note_name)
+    if m:
+        return m.group(1) + m.group(2)
+    return note_name
+
+
+def get_full_note_name(note_item):
+    """Возвращает имя ноты с учетом альтерации (например, 'C#4' или 'Db4')."""
+    name = note_item.note_name
+    # Очищаем accidental-ы из конца (старый формат C4#, C#4# и т.д.)
+    for symbol in ("#", "b"):
+        while name.endswith(symbol):
+            name = name[:-len(symbol)]
+    acc = note_item.accidental
+    if acc == "sharp":
+        return f"{name[0]}#{name[1:]}"
+    elif acc == "flat":
+        return f"{name[0]}b{name[1:]}"
+    return name
 
 
 DURATION_EPSILON = 1e-6
@@ -1673,7 +1701,7 @@ class StaffLayout:
                     note_names.append("REST")
                 else:
                     for note in bit.notes:
-                        note_names.append(note.note_name)
+                        note_names.append(get_full_note_name(note))
 
                 tact_data.append({"duration": bit.weigth, "notes": note_names})
 
@@ -1725,7 +1753,7 @@ class StaffLayout:
                         bit.add_rest(bit.weigth, self.scene)
                         continue
 
-                    base_name = note_name[:2]
+                    base_name = extract_base_note_name(note_name)
 
                     for item in lines_and_spaces:
                         if item.note_name == base_name:
@@ -1747,7 +1775,7 @@ class StaffLayout:
                     duration = 60 / self.bpm * bit.weigth * 4
                     if bit.notes:
                         note_item = bit.notes[0]
-                        player.start_waiting_for_note(note_item.note_name, note_item)
+                        player.start_waiting_for_note(get_full_note_name(note_item), note_item)
                     else:
                         player.current_note_await = None
                         player.current_note_await_time = None
@@ -1766,7 +1794,7 @@ class StaffLayout:
                     if self.stop_event.is_set(): return
                     duration = 60 / self.bpm * bit.weigth * 4
                     if bit.notes:
-                        chord_notes = [note.note_name for note in bit.notes]
+                        chord_notes = [get_full_note_name(note) for note in bit.notes]
                         player.play_chord(chord_notes, duration)
                     if self.stop_event.wait(duration):
                         return
