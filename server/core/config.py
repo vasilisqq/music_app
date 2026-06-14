@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     ALGORITHM: str
     ACCESS_TOKEN_EXPIRE_DAYS: int
 
+    API_BASE_URL: str
     class Config:
         env_file = ".env"
         case_sensitive = True

@@ -340,14 +340,28 @@ class LessonPlayerController(QWidget):
             self._close_midi_input()
             return
         for message in messages:
-            if (
-                getattr(message, "type", None) != "note_on"
-                or getattr(message, "velocity", 0) <= 0
-            ):
-                continue
-            player.check_midi_note_number(int(message.note))
+            msg_type = getattr(message, "type", None)
+            note_number = int(message.note)
+            if msg_type == "note_on":
+                if getattr(message, "velocity", 0) > 0:
+                    player.midi_note_on(note_number)
+                    if player.current_note_await_time is None:
+                        # Пауза — новое нажатие считаем как лишнее (1 раз на ноту)
+                        if note_number not in player._silence_violation_notes:
+                            player._silence_violation_notes.add(note_number)
+                            player.note_ignored.emit()
+                    else:
+                        player.check_midi_note_number(note_number)
+                else:
+                    player.midi_note_off(note_number)
+            elif msg_type == "note_off":
+                player.midi_note_off(note_number)
+
+        if self._practice_mode and self._input_active and self.playhead_line.isVisible():
+            player.check_silence_violation()
 
     def _start_sequence(self, practice_mode: bool):
+        self.staff_layout.stop_lesson()
         self._stop_practice_listeners()
         self._clear_feedback_markers()
         self._close_midi_input()
@@ -356,8 +370,10 @@ class LessonPlayerController(QWidget):
         self._correct = 0
         self._wrong = 0
         self._idle_presses = 0
-        
+
         self._processed_notes = set()
+        player._active_midi_notes.clear()
+        player._silence_violation_notes.clear()
         if practice_mode:
             if not self._open_selected_midi_input():
                 self._practice_mode = False

@@ -1712,6 +1712,7 @@ class StaffLayout:
             ]
             if bit_weights:
                 tact.set_bit_weights(bit_weights)
+                self._apply_read_only_to_tact(tact)
             lines_and_spaces = tact.lines + tact.spaces
 
             for bit_idx, saved_bit in enumerate(saved_tact):
@@ -1747,6 +1748,11 @@ class StaffLayout:
                     if bit.notes:
                         note_item = bit.notes[0]
                         player.start_waiting_for_note(note_item.note_name, note_item)
+                    else:
+                        player.current_note_await = None
+                        player.current_note_await_time = None
+                        player.current_note_item = None
+                        player.space_pressed_in_window = False
                     if self.stop_event.wait(duration): return
         finally:
             # Гарантируем сброс флага, если этот поток завершился последним

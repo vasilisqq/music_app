@@ -426,6 +426,9 @@ class PianoPlayer(QObject):
 
         self.space_pressed_in_window = False  # флаг: было ли попадание в окне
 
+        self._active_midi_notes = set()
+        self._silence_violation_notes = set()
+
         self.stream = sd.OutputStream(
             samplerate=sample_rate,
             channels=1,
@@ -534,6 +537,21 @@ class PianoPlayer(QObject):
             gain = 0.95 / peak
             outdata[:] *= gain
 
+    def midi_note_on(self, note_number: int):
+        self._active_midi_notes.add(note_number)
+        self._silence_violation_notes.discard(note_number)
+
+    def midi_note_off(self, note_number: int):
+        self._active_midi_notes.discard(note_number)
+
+    def check_silence_violation(self):
+        if self.current_note_await is not None:
+            return
+        for note_number in list(self._active_midi_notes):
+            if note_number not in self._silence_violation_notes:
+                self._silence_violation_notes.add(note_number)
+                self.note_ignored.emit()
+
     def check_note_press(self, note_name: str):
         if self.current_note_await_time is None:
             self.note_ignored.emit()
@@ -613,6 +631,7 @@ class PianoPlayer(QObject):
         self.current_note_item = note_item  # сохраняем объект ноты
         self.current_note_await_time = time.time()
         self.space_pressed_in_window = False
+        self._silence_violation_notes.clear()
         threading.Thread(target=self._check_window_timeout, daemon=True).start()
 
     def stop(self):
