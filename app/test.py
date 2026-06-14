@@ -217,9 +217,9 @@ base_staff_notes = set(STAFF_NOTES_RIGHT_HAND + STAFF_NOTES_LEFT_HAND)
 
 ALL_STAFF_NOTES = set()
 for base_note_ in base_staff_notes:
-    ALL_STAFF_NOTES.add(base_note_)          # Натуральная нота
-    ALL_STAFF_NOTES.add(f"{base_note_}#")    # Диез
-    ALL_STAFF_NOTES.add(f"{base_note_}b")    # Бемоль
+    ALL_STAFF_NOTES.add(base_note_)      
+    ALL_STAFF_NOTES.add(f"{base_note_}#")    
+    ALL_STAFF_NOTES.add(f"{base_note_}b")  
 
 # Кеш для нот
 note_cache = OrderedDict()  
