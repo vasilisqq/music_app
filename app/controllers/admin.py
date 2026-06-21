@@ -1669,7 +1669,7 @@ class TimeSignatureDialog(QDialog):
 
         # Выпадающий список с размерами
         self.combo = QComboBox(self)
-        self.combo.addItems(["4/4", "3/4", "2/4", "6/8"])
+        self.combo.addItems(["4/4", "3/4"])
         # Можно сделать 4/4 по умолчанию
         self.combo.setCurrentText("4/4")
         layout.addWidget(self.combo)
@@ -2036,7 +2036,7 @@ class TimeSignatureDialog(QDialog):
 
         # Выпадающий список с размерами
         self.combo = QComboBox(self)
-        self.combo.addItems(["4/4", "3/4", "2/4", "6/8"])
+        self.combo.addItems(["4/4", "3/4"])
         # Можно сделать 4/4 по умолчанию
         self.combo.setCurrentText("4/4")
         layout.addWidget(self.combo)
