@@ -298,8 +298,10 @@ class Auth(QMainWindow):
         password = self.ui.passwordInput.text()
         confirm = self.ui.passwordConfirmInput.text()
         self.clear_error("confirm")
-
-        if confirm and password != confirm:
+        if not confirm:
+            self.show_error("confirm", "Подтвердите пароль")
+            return False
+        if password != confirm:
             self.show_error("confirm", "Пароли не совпадают")
             return False
 
