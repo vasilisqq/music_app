@@ -361,6 +361,7 @@ class Auth(QMainWindow):
 
         if not self.is_login_valid():
             logger.warning("Login validation failed")
+            QMessageBox.warning(self, "Ошибка аутентификации", "Пожалуйста проверьте корректность данных")
             return
 
         user_data = UserLogin(
