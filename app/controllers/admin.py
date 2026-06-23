@@ -1137,6 +1137,8 @@ class AdminController:
             item = self.ui.table_topics.item(row, 0)
             if item and int(item.text()) == deleted_topic_id:
                 self.ui.table_topics.removeRow(row)
+                self.ui.table_lessons.setRowCount(0)
+                self.selected_topic_id = None
                 QMessageBox.information(
                     self.ui.centralwidget, "Успех", "Тема успешно удалена."
                 )
@@ -1473,6 +1475,8 @@ class TimeSignatureDialog(QDialog):
             item = self.ui.table_topics.item(row, 0)
             if item and int(item.text()) == deleted_topic_id:
                 self.ui.table_topics.removeRow(row)
+                self.ui.table_lessons.setRowCount(0)
+                self.selected_topic_id = None
                 QMessageBox.information(
                     self.ui.centralwidget, "Успех", "Тема успешно удалена."
                 )
@@ -1839,6 +1843,8 @@ class TimeSignatureDialog(QDialog):
             item = self.ui.table_topics.item(row, 0)
             if item and int(item.text()) == deleted_topic_id:
                 self.ui.table_topics.removeRow(row)
+                self.ui.table_lessons.setRowCount(0)
+                self.selected_topic_id = None
                 QMessageBox.information(
                     self.ui.centralwidget, "Успех", "Тема успешно удалена."
                 )
