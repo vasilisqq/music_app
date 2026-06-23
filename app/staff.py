@@ -997,6 +997,12 @@ class Bits(QGraphicsRectItem):
         linked_note_next = None
         linked_note_prev = None
         for note in self.notes:
+            if note.next_note is not None:
+                linked_note_next = note.next_note
+            if note.prev_note is not None:
+                linked_note_prev = note.prev_note
+            note.prev_note = None
+            note.next_note = None
             if pred_note:
                 pred_note.remove_shtil()
                 if abs(note.y - pred_note.y) <= 6:
@@ -1006,10 +1012,6 @@ class Bits(QGraphicsRectItem):
             elif note.reversing:
                 note.reverse(False)
             pred_note = note
-            if n := note.prev_note:
-                linked_note_prev, n = n, linked_note_prev
-            if n := note.next_note:
-                linked_note_next, note.next_note = note.next_note, linked_note_next
         if self.notes:
             last_note = self.notes[-1]
             last_note.create_shtil()
@@ -1258,6 +1260,14 @@ class Tact:
                     pred_bit = bit
             else:
                 pred_bit = None
+
+        # Восстанавливаем флаги для нот без связей (одиночные или крайние в группе)
+        for bit in self.bits:
+            if bit.notes and durations_equal(bit.weigth, 0.125):
+                for note in bit.notes:
+                    if not note.next_note and not note.prev_note:
+                        note.create_shtil()
+
         self.scene.update()
 
     def increase_duration(self, duration):
@@ -1573,6 +1583,13 @@ class StaffLayout:
             for weight in build_bit_weights(empty_group_duration, duration):
                 rebuilt_entries.append({"weight": weight})
 
+        # Очищаем старые связи beam и флаги перед перестроением
+        for bit in tact.bits:
+            for note in bit.notes:
+                note.prev_note = None
+                note.next_note = None
+                note.remove_shtil()
+
         for bit in tact.bits:
             if not bit.is_filled:
                 safe_delete_item(bit, self.scene)
@@ -1595,7 +1612,7 @@ class StaffLayout:
                 )
                 for note in bit.notes:
                     note.prepareGeometryChange()
-                    note.x = current_x + 15
+                    note.x = current_x + 15 + (note.width if note.reversing else 0)
                     note.stem_x = (
                         int(note.x + note.width / 2)
                         if not note.reversing
