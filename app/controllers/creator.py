@@ -184,6 +184,10 @@ class CreatorController(QWidget):
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self.api = LessonWorker()
+        # Сброс глобального состояния редактора в дефолт при каждом открытии
+        settings.accidental = "natural"
+        settings.input_mode = "note"
+        settings.is_playing = False
         self.time_signature = time_signature
         self.topic_id = int(topic_id)
         self.lesson = lesson
@@ -528,14 +532,23 @@ class CreatorController(QWidget):
         # Вызываем паузу, чтобы корректно убить потоки звука и снять блокировку
         if hasattr(self, "on_pause_clicked"):
             self.on_pause_clicked()
-            
+
         self.score = 0
         self.misses = 0
         self.metronome_count = 0
-        
+
+        # Сброс выбранных длительности, знака и режима в дефолт
+        self.ui.duration_combo.setCurrentIndex(3)
+        self.ui.accidental_combo.setCurrentIndex(0)
+        self.ui.input_mode_combo.setCurrentIndex(0)
+        self.current_duration = 0.25
+        self.on_duration_changed(3)
+        self.on_accidental_changed(0)
+        self.on_input_mode_changed(0)
+
         self.load_scene(self.hand)
         self.init_playhead()
-        
+
         # Гарантированная разблокировка интерфейса при сбросе
         self.ui.graphicsView.setInteractive(True)
         print("Состояние сброшено: интерфейс разблокирован")
