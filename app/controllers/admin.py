@@ -1,4 +1,12 @@
+import re
+
 from controllers.creator import CreatorController
+
+# Валидационные паттерны (дублируем из auth.py, чтобы избежать циклического импорта)
+EMAIL_PATTERN: str = r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
+USERNAME_PATTERN: str = r"^[a-zA-Zа-яА-ЯёЁ0-9_]{3,20}$"
+MIN_USERNAME_LENGTH: int = 3
+MAX_USERNAME_LENGTH: int = 20
 from PyQt6.QtCore import QRectF, Qt, pyqtSignal
 from PyQt6.QtGui import QBrush, QColor, QPainter, QPainterPath, QPen
 from PyQt6.QtWidgets import (
@@ -330,23 +338,42 @@ class EditUserDialog(QDialog):
         self.email_edit.textChanged.connect(self.validate_fields)
 
     def validate_fields(self):
-        """Динамическая проверка полей на пустоту"""
+        """Динамическая проверка полей"""
         is_valid = True
 
+        username = self.username_edit.text().strip()
+
         # Проверка логина
-        if not self.username_edit.text().strip():
+        if not username:
             self.username_edit.setStyleSheet(self.ERROR_STYLE)
             self.username_error.setText("Логин не может быть пустым!")
+            self.username_error.show()
+            is_valid = False
+        elif len(username) < MIN_USERNAME_LENGTH:
+            self.username_edit.setStyleSheet(self.ERROR_STYLE)
+            self.username_error.setText(f"Логин минимум {MIN_USERNAME_LENGTH} символа")
+            self.username_error.show()
+            is_valid = False
+        elif not re.match(USERNAME_PATTERN, username):
+            self.username_edit.setStyleSheet(self.ERROR_STYLE)
+            self.username_error.setText("Только буквы, цифры, подчёркивание")
             self.username_error.show()
             is_valid = False
         else:
             self.username_edit.setStyleSheet(self.DEFAULT_STYLE)
             self.username_error.hide()
 
+        email = self.email_edit.text().strip()
+
         # Проверка email
-        if not self.email_edit.text().strip():
+        if not email:
             self.email_edit.setStyleSheet(self.ERROR_STYLE)
             self.email_error.setText("Email не может быть пустым!")
+            self.email_error.show()
+            is_valid = False
+        elif not re.match(EMAIL_PATTERN, email):
+            self.email_edit.setStyleSheet(self.ERROR_STYLE)
+            self.email_error.setText("Неверный формат email")
             self.email_error.show()
             is_valid = False
         else:

@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 EMAIL_PATTERN: str = r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
 """Регулярное выражение для проверки email"""
 
-USERNAME_PATTERN: str = r"^[a-zA-Z0-9_]{3,20}$"
+USERNAME_PATTERN: str = r"^[a-zA-Zа-яА-ЯёЁ0-9_]{3,20}$"
 """Регулярное выражение для проверки username (3-20 символов)"""
 
 PASSWORD_PATTERN: str = r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)"

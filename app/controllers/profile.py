@@ -44,7 +44,7 @@ class ProfileController(QObject):
             QRegularExpressionValidator(email_re, self.ui.centralwidget)
         )
 
-        username_re = QRegularExpression(r"^[a-zA-Z0-9_]{3,20}$")
+        username_re = QRegularExpression(r"^[a-zA-Zа-яА-ЯёЁ0-9_]{3,20}$")
         self.ui.usernameEdit.setValidator(
             QRegularExpressionValidator(username_re, self.ui.centralwidget)
         )
@@ -113,11 +113,27 @@ class ProfileController(QObject):
                 self.ui.usernameErrors,
             )
             return False
+        if not re.match(r"^[a-zA-Zа-яА-ЯёЁ0-9_]{3,20}$", val):
+            self.show_error(
+                "username",
+                "Только буквы, цифры, подчёркивание",
+                self.ui.usernameEdit,
+                self.ui.usernameErrors,
+            )
+            return False
         return True
 
     def validate_email(self):
         val = self.ui.emailEdit.text().strip()
         self.clear_error("email", self.ui.emailEdit, self.ui.emailErrors)
+        if not val:
+            self.show_error(
+                "email",
+                "Email обязателен",
+                self.ui.emailEdit,
+                self.ui.emailErrors,
+            )
+            return False
         if not re.match(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$", val):
             self.show_error(
                 "email", "Неверный формат email", self.ui.emailEdit, self.ui.emailErrors
